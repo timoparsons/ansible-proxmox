@@ -43,6 +43,22 @@
     mode: '0600'
     content: "BACKUP_ID={{ inventory_hostname }}\n"
 
+- name: Write the local copy settings (only when a NAS share is configured)
+  ansible.builtin.copy:
+    dest: /etc/host-backup/local.conf
+    mode: '0600'
+    content: |
+      LOCAL_CIFS='{{ host_backup_local_cifs }}'
+      LOCAL_CREDS='{{ host_backup_local_creds }}'
+      LOCAL_KEEP={{ host_backup_local_keep }}
+  when: host_backup_local_cifs is defined
+
+- name: Remove the local copy settings when none is configured
+  ansible.builtin.file:
+    path: /etc/host-backup/local.conf
+    state: absent
+  when: host_backup_local_cifs is not defined
+
 - name: Install the systemd service and timer
   ansible.builtin.copy:
     src: "{{ item }}"

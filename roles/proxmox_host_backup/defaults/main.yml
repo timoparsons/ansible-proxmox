@@ -30,3 +30,6 @@ host_backup_paths_common:
   - /etc/nut/upssched.conf
 host_backup_paths_extra: []
 host_backup_newline: "\n"
+# Optional tar.gz copy on the site NAS (layer 3). Set host_backup_local_cifs in host_vars to turn it on.
+host_backup_local_creds: /root/.smbcredentials
+host_backup_local_keep: 8

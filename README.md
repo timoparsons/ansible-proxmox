@@ -29,3 +29,9 @@ After cloning, enable the hook: git config core.hooksPath .githooks (needs gitle
 - Host scripts read /etc/pushover.env (root only, mode 600) with PUSHOVER_TOKEN and PUSHOVER_USER. The hookscript check-mounts.pl on the Calliope host does this; it no longer holds the values itself.
 - Change them once for both sites: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/pushover-token.yml (hidden prompts). It checks the new values with Pushover first, writes /etc/pushover.env on each host and updates the token and user key inside the Proxmox webhook target pushover-webhook. Add -e send_test=true for a test message.
 - Not covered: guests and apps (n8n, Home Assistant and others) keep their own copies.
+
+## Local copy on the site NAS (layer 3)
+
+- Set host_backup_local_cifs in the host's host_vars (currently halcyon-proxmox: //10.2.1.10/backup/halcyon/proxmox) to also write a tar.gz of the same staged files to that share on every run. The script mounts it with the host's /root/.smbcredentials, writes the file, and unmounts. The newest 8 copies are kept, ordered by the timestamp in the name.
+- It does not depend on PBS or on the network between sites, so a rebuilt Halcyon host can be restored from the local copy alone: tar xzf FILE -C SCRATCH_FOLDER.
+- If the NAS cannot be mounted or PBS cannot be reached, the script still attempts the other destination and exits with an error.
