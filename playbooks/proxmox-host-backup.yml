@@ -1,0 +1,8 @@
+---
+# Install the weekly host config backup to PBS on every Proxmox host.
+# Run with both sites: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/proxmox-host-backup.yml --check --diff
+- name: Weekly host config backup to PBS
+  hosts: proxmox_hosts
+  become: true
+  roles:
+    - proxmox_host_backup

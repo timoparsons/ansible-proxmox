@@ -1,0 +1,32 @@
+---
+# Named files and folders copied from each Proxmox host and backed up to PBS.
+# Only paths listed here are copied. Never add /etc/pve/priv, /root/.ssh or /root/.smbcredentials.
+# Per-site additions go in inventories/<site>/group_vars/proxmox_hosts.yml (host_backup_paths_extra).
+host_backup_paths_common:
+  - /etc/fstab
+  - /etc/hosts
+  - /etc/hostname
+  - /etc/network/interfaces
+  - /etc/default/grub
+  - /etc/modules
+  - /etc/modprobe.d
+  - /etc/modules-load.d
+  - /etc/sysctl.d
+  - /etc/udev/rules.d
+  - /etc/ssh/sshd_config
+  - /etc/cron.d
+  - /etc/apt/sources.list
+  - /etc/apt/sources.list.d
+  - /etc/pve/storage.cfg
+  - /etc/pve/jobs.cfg
+  - /etc/pve/user.cfg
+  - /etc/pve/datacenter.cfg
+  - /etc/pve/vzdump.cron
+  - /etc/pve/notifications.cfg
+  - /etc/pve/replication.cfg
+  - /etc/nut/nut.conf
+  - /etc/nut/ups.conf
+  - /etc/nut/upsd.conf
+  - /etc/nut/upssched.conf
+host_backup_paths_extra: []
+host_backup_newline: "\n"

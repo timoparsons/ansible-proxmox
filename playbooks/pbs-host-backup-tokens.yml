@@ -1,0 +1,50 @@
+---
+# Create or rotate the PBS backup-only credentials used by the host config backup.
+# Run with both sites loaded, because the Halcyon token is delivered from here:
+#   ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/pbs-host-backup-tokens.yml
+# Add -e rotate=true to replace tokens that already exist.
+# Secrets never appear in output or in this repo: each token goes straight into
+# /etc/host-backup/pbs.env (mode 600) on its own host.
+- name: PBS backup-only user and tokens for the host config backup
+  hosts: calliope-proxmox
+  become: true
+  gather_facts: false
+  vars:
+    rotate: false
+    pbs_server: 10.1.1.21
+    pbs_port: 8007
+    pbs_manager: pct exec 121 -- proxmox-backup-manager
+    targets:
+      - host: calliope-proxmox
+        datastore: calliope
+      - host: halcyon-proxmox
+        datastore: halcyon
+  tasks:
+    - name: Fingerprint of the PBS certificate
+      ansible.builtin.shell: pct exec 121 -- openssl x509 -in /etc/proxmox-backup/proxy.pem -noout -fingerprint -sha256 | cut -d= -f2
+      register: pbs_fp
+      changed_when: false
+      check_mode: false
+
+    - name: Find existing PBS users
+      ansible.builtin.command: "{{ pbs_manager }} user list --output-format json"
+      register: pbs_users
+      changed_when: false
+      check_mode: false
+
+    - name: Create the backup-only user
+      ansible.builtin.command: "{{ pbs_manager }} user create hostbackup@pbs --comment 'Host config backups, backup only'"
+      when: "'hostbackup@pbs' not in (pbs_users.stdout | from_json | map(attribute='userid') | list)"
+
+    - name: Give the user backup rights on each datastore
+      ansible.builtin.command: "{{ pbs_manager }} acl update /datastore/{{ item.datastore }} DatastoreBackup --auth-id hostbackup@pbs"
+      loop: "{{ targets }}"
+      loop_control:
+        label: "{{ item.datastore }}"
+
+    - name: Create a token for each host
+      ansible.builtin.include_tasks: tasks/pbs-host-backup-token.yml
+      loop: "{{ targets }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target.host }}"

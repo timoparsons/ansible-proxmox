@@ -1,0 +1,5 @@
+---
+host_backup_paths_extra:
+  - /etc/systemd/system/t2fanrd.service
+  - /etc/systemd/system/sensor-server.service
+  - /var/lib/vz/snippets

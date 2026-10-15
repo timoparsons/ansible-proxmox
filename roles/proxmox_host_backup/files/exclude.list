@@ -1,0 +1,13 @@
+upsd.users
+upsmon.conf
+*.dpkg-dist
+*.dpkg-old
+*.dpkg-new
+*.bak
+*~
+.ssh
+.smbcredentials
+*.key
+*.pem
+*secret*
+*password*

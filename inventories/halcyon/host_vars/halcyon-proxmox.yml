@@ -1,0 +1,4 @@
+---
+host_backup_paths_extra:
+  - /etc/systemd/system/static-routes.service
+  - /etc/systemd/system/sensor-server.service

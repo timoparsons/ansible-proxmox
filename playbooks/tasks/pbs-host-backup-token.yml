@@ -1,0 +1,44 @@
+---
+- name: Is there already a credentials file on the host
+  ansible.builtin.stat:
+    path: /etc/host-backup/pbs.env
+  delegate_to: "{{ target.host }}"
+  register: env_file
+
+- name: Create the token and store it on the host
+  when: (rotate | bool) or not env_file.stat.exists
+  block:
+    - name: Remove any old token with this name
+      ansible.builtin.command: "{{ pbs_manager }} user delete-token hostbackup@pbs {{ target.host }}"
+      failed_when: false
+      changed_when: false
+
+    - name: Generate the token
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          {{ pbs_manager }} user generate-token hostbackup@pbs {{ target.host }} | python3 -c 'import sys,json; s=sys.stdin.read(); print(json.loads(s[s.find("{"):])["value"])'
+        executable: /bin/bash
+      register: tok
+      no_log: true
+
+    - name: Allow the token backup rights on its own datastore only
+      ansible.builtin.command: "{{ pbs_manager }} acl update /datastore/{{ target.datastore }} DatastoreBackup --auth-id 'hostbackup@pbs!{{ target.host }}'"
+
+    - name: Create the config folder on the host
+      ansible.builtin.file:
+        path: /etc/host-backup
+        state: directory
+        mode: '0700'
+      delegate_to: "{{ target.host }}"
+
+    - name: Store the credentials on the host
+      ansible.builtin.copy:
+        dest: /etc/host-backup/pbs.env
+        mode: '0600'
+        content: |
+          PBS_REPOSITORY='hostbackup@pbs!{{ target.host }}@{{ pbs_server }}:{{ pbs_port }}:{{ target.datastore }}'
+          PBS_PASSWORD='{{ tok.stdout | trim }}'
+          PBS_FINGERPRINT='{{ pbs_fp.stdout | trim }}'
+      delegate_to: "{{ target.host }}"
+      no_log: true

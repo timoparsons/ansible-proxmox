@@ -1,0 +1,61 @@
+---
+- name: Create the config folder
+  ansible.builtin.file:
+    path: /etc/host-backup
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+- name: Check the PBS credentials file exists
+  ansible.builtin.stat:
+    path: /etc/host-backup/pbs.env
+  register: pbs_env
+
+- name: Stop if the credentials are missing
+  ansible.builtin.assert:
+    that: pbs_env.stat.exists or ansible_check_mode
+    fail_msg: Credentials missing. Run playbooks/pbs-host-backup-tokens.yml first.
+
+- name: Install the backup script
+  ansible.builtin.copy:
+    src: host-config-backup.sh
+    dest: /usr/local/sbin/host-config-backup
+    mode: '0750'
+    owner: root
+    group: root
+
+- name: Install the exclude list
+  ansible.builtin.copy:
+    src: exclude.list
+    dest: /etc/host-backup/exclude.list
+    mode: '0600'
+
+- name: Write the list of paths to back up
+  ansible.builtin.copy:
+    dest: /etc/host-backup/paths.list
+    mode: '0600'
+    content: '{{ ((host_backup_paths_common + host_backup_paths_extra) | sort | unique | list + [""]) | join(host_backup_newline) }}'
+
+- name: Write the backup id
+  ansible.builtin.copy:
+    dest: /etc/host-backup/backup.conf
+    mode: '0600'
+    content: "BACKUP_ID={{ inventory_hostname }}\n"
+
+- name: Install the systemd service and timer
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    mode: '0644'
+  loop:
+    - host-config-backup.service
+    - host-config-backup.timer
+
+- name: Enable the weekly timer
+  ansible.builtin.systemd:
+    name: host-config-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  ignore_errors: "{{ ansible_check_mode }}"

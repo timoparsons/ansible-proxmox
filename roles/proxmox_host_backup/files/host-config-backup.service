@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up Proxmox host config files to PBS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/host-config-backup
+Nice=10

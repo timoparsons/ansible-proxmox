@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly Proxmox host config backup to PBS
+
+[Timer]
+OnCalendar=Sun *-*-* 07:00:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

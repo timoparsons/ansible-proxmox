@@ -14,3 +14,12 @@ Design and plan: Obsidian, Project - Homelab Ansible Repo.
 - Commits are scanned with gitleaks. A failed scan blocks the commit.
 
 After cloning, enable the hook: git config core.hooksPath .githooks (needs gitleaks installed).
+
+## Host config backup to PBS
+
+- Role: roles/proxmox_host_backup. Playbook: playbooks/proxmox-host-backup.yml. A weekly systemd timer (Sun 07:00) on each Proxmox host copies the named files into a staging folder and uploads them to PBS as backup type host.
+- Only paths listed in the role defaults (plus host_vars host_backup_paths_extra) are copied. Never add /etc/pve/priv, /root/.ssh or /root/.smbcredentials. NUT upsd.users and upsmon.conf are excluded (exclude.list). Hard-coded credentials in /var/lib/vz/snippets are redacted in the copy.
+- Credentials: playbooks/pbs-host-backup-tokens.yml creates the PBS user hostbackup@pbs (DatastoreBackup only) and one token per host, and writes each token straight into /etc/host-backup/pbs.env (mode 600) on that host. Secrets never appear in output or in this repo.
+- Run both sites together: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/proxmox-host-backup.yml --check --diff
+- Per-site settings go in host_vars (host names are unique across sites). Do not put site settings in group_vars for shared group names such as proxmox_hosts: loading both inventories merges those groups.
+- Restore one file or the whole archive: load /etc/host-backup/pbs.env, then proxmox-backup-client restore host/ID/TIMESTAMP host-config.pxar SCRATCH_FOLDER. Compare with the live files before copying anything back.
