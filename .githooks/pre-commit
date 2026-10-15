@@ -1,0 +1,3 @@
+#!/bin/sh
+# Block the commit if gitleaks finds a secret in the staged changes.
+exec gitleaks git --pre-commit --staged --redact --no-banner

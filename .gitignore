@@ -1,0 +1,31 @@
+# Allowlist: everything is ignored unless it sits in one of the named places below.
+*
+!*/
+!.gitignore
+!README.md
+!ansible.cfg
+!.githooks/**
+!inventories/**
+!playbooks/**
+!roles/**
+!files/**
+!snapshots/README.md
+
+# snapshots/ holds copies of files from the hosts. Nothing in it is tracked by default;
+# the snapshot role adds each named file with git add -f, after the secret scan passes.
+
+# Defence in depth: never track these, even inside an allowed folder.
+**/.env
+**/secrets.yaml
+**/*secret*
+**/*password*
+**/*.key
+**/*.pem
+**/Preferences.xml
+**/upsd.users
+**/coordinator_backup.json
+**/database*.db
+*.log
+*.bak
+*~
+.DS_Store

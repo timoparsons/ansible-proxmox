@@ -1,0 +1,120 @@
+---
+- name: Monthly LXC maintenance
+  hosts: "guests:!maintenance_skip"
+  gather_facts: true
+  become: true
+  vars:
+    docker_prune_all: false   # override with -e docker_prune_all=true for aggressive prune
+
+  tasks:
+    - name: Check whether docker is present
+      command: which docker
+      register: docker_check
+      failed_when: false
+      changed_when: false
+      check_mode: false
+
+    - name: Snapshot - disk usage (before)
+      command: df -h /
+      register: df_before
+      changed_when: false
+      check_mode: false
+
+    - name: Snapshot - journal disk usage (before)
+      command: journalctl --disk-usage
+      register: journal_before
+      changed_when: false
+      check_mode: false
+
+    - name: Snapshot - docker disk usage (before)
+      command: docker system df
+      register: docker_before
+      changed_when: false
+      check_mode: false
+      when: docker_check.rc == 0
+
+    - name: Ensure journald limits directory exists
+      file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        mode: '0755'
+
+    - name: Configure journald size limits
+      copy:
+        dest: /etc/systemd/journald.conf.d/size-limit.conf
+        content: |
+          [Journal]
+          SystemMaxUse=200M
+          RuntimeMaxUse=50M
+      notify: Restart journald
+
+    - name: Vacuum journal logs older than 2 weeks
+      command: journalctl --vacuum-time=2weeks
+      register: vacuum_result
+      changed_when: "'Vacuuming done' in vacuum_result.stdout"
+
+    - name: Clean apt package cache
+      apt:
+        autoclean: yes
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Remove unused apt packages
+      apt:
+        autoremove: yes
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Prune dangling docker images (safe default)
+      command: docker image prune -f
+      register: docker_prune_dangling
+      when: docker_check.rc == 0
+      changed_when: "'Total reclaimed space: 0B' not in docker_prune_dangling.stdout"
+
+    - name: Prune ALL unused docker images (opt-in, aggressive)
+      command: docker image prune -af
+      register: docker_prune_all_result
+      when: docker_check.rc == 0 and docker_prune_all | bool
+      changed_when: "'Total reclaimed space: 0B' not in docker_prune_all_result.stdout"
+
+    - name: Check for lingering .vscode-server installs
+      find:
+        paths: /root
+        patterns: ".vscode-server"
+        file_type: directory
+        hidden: true
+      register: vscode_dirs
+
+    - name: Snapshot - disk usage (after)
+      command: df -h /
+      register: df_after
+      changed_when: false
+      check_mode: false
+
+    - name: Snapshot - journal disk usage (after)
+      command: journalctl --disk-usage
+      register: journal_after
+      changed_when: false
+      check_mode: false
+
+    - name: Snapshot - docker disk usage (after)
+      command: docker system df
+      register: docker_after
+      changed_when: false
+      check_mode: false
+      when: docker_check.rc == 0
+
+    - name: Report
+      debug:
+        msg:
+          - "Disk before: {{ df_before.stdout_lines[1] }}"
+          - "Disk after:  {{ df_after.stdout_lines[1] }}"
+          - "Journal before: {{ journal_before.stdout }}"
+          - "Journal after:  {{ journal_after.stdout }}"
+          - "Docker before: {{ docker_before.stdout_lines[1:] | join(' | ') if docker_check.rc == 0 else 'n/a (no docker)' }}"
+          - "Docker after:  {{ docker_after.stdout_lines[1:] | join(' | ') if docker_check.rc == 0 else 'n/a (no docker)' }}"
+          - "Leftover .vscode-server dirs: {{ vscode_dirs.files | map(attribute='path') | list }}"
+
+  handlers:
+    - name: Restart journald
+      systemd:
+        name: systemd-journald
+        state: restarted
