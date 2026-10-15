@@ -1,0 +1,85 @@
+---
+# Change the Pushover credentials on every Proxmox host in one run.
+#   ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/pushover-token.yml
+# You are asked for the new token and user key (hidden, never stored in this repo or printed).
+# The new values are checked with Pushover first, so a typo cannot silence alerts.
+# Then it writes /etc/pushover.env (mode 600) and updates the token and user key inside the
+# Proxmox webhook target pushover-webhook on each host. Add -e send_test=true for a test message.
+- name: Change the Pushover credentials on the Proxmox hosts
+  hosts: proxmox_hosts
+  become: true
+  gather_facts: false
+  vars_prompt:
+    - name: pushover_token
+      prompt: New Pushover application token
+      private: true
+    - name: pushover_user
+      prompt: Pushover user key
+      private: true
+  tasks:
+    - name: Check the new credentials with Pushover before changing anything
+      run_once: true
+      delegate_to: localhost
+      become: false
+      check_mode: false
+      ansible.builtin.uri:
+        url: https://api.pushover.net/1/users/validate.json
+        method: POST
+        body_format: form-urlencoded
+        body:
+          token: "{{ pushover_token }}"
+          user: "{{ pushover_user }}"
+        status_code: [200, 400]
+        return_content: true
+      register: validation
+      no_log: true
+      failed_when: validation.json.status | default(0) != 1
+
+    - name: Write the credentials file for host scripts
+      ansible.builtin.copy:
+        dest: /etc/pushover.env
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          # Pushover credentials for host scripts. Root only. Change with playbooks/pushover-token.yml.
+          PUSHOVER_TOKEN='{{ pushover_token }}'
+          PUSHOVER_USER='{{ pushover_user }}'
+      no_log: true
+
+    - name: Read the current Proxmox webhook target
+      ansible.builtin.command: pvesh get /cluster/notifications/endpoints/webhook/pushover-webhook --output-format json
+      register: webhook
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Work out the new webhook body
+      ansible.builtin.set_fact:
+        old_body: "{{ (webhook.stdout | from_json).body | b64decode }}"
+        new_body: "{{ ((webhook.stdout | from_json).body | b64decode | regex_replace('token=[^&]*', 'token=' ~ pushover_token) | regex_replace('user=[^&]*', 'user=' ~ pushover_user)) }}"
+      no_log: true
+
+    - name: Update the Proxmox webhook target
+      ansible.builtin.command:
+        argv:
+          - pvesh
+          - set
+          - /cluster/notifications/endpoints/webhook/pushover-webhook
+          - --body
+          - "{{ new_body | b64encode }}"
+      when: new_body != old_body
+      no_log: true
+
+    - name: Check the webhook now holds the new credentials
+      ansible.builtin.command: pvesh get /cluster/notifications/endpoints/webhook/pushover-webhook --output-format json
+      register: webhook_after
+      changed_when: false
+      when: not ansible_check_mode
+      no_log: true
+      failed_when: >-
+        ('token=' ~ pushover_token) not in ((webhook_after.stdout | from_json).body | b64decode)
+
+    - name: Send a test notification through the Proxmox target
+      ansible.builtin.command: pvesh create /cluster/notifications/targets/pushover-webhook/test
+      when: (send_test | default(false) | bool) and not ansible_check_mode

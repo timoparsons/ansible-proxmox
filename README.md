@@ -23,3 +23,9 @@ After cloning, enable the hook: git config core.hooksPath .githooks (needs gitle
 - Run both sites together: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/proxmox-host-backup.yml --check --diff
 - Per-site settings go in host_vars (host names are unique across sites). Do not put site settings in group_vars for shared group names such as proxmox_hosts: loading both inventories merges those groups.
 - Restore one file or the whole archive: load /etc/host-backup/pbs.env, then proxmox-backup-client restore host/ID/TIMESTAMP host-config.pxar SCRATCH_FOLDER. Compare with the live files before copying anything back.
+
+## Pushover credentials
+
+- Host scripts read /etc/pushover.env (root only, mode 600) with PUSHOVER_TOKEN and PUSHOVER_USER. The hookscript check-mounts.pl on the Calliope host does this; it no longer holds the values itself.
+- Change them once for both sites: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/pushover-token.yml (hidden prompts). It checks the new values with Pushover first, writes /etc/pushover.env on each host and updates the token and user key inside the Proxmox webhook target pushover-webhook. Add -e send_test=true for a test message.
+- Not covered: guests and apps (n8n, Home Assistant and others) keep their own copies.

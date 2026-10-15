@@ -23,7 +23,7 @@ rsync -a --recursive --files-from="$STAGE/paths" --exclude-from="$CONF/exclude.l
 
 # 3. redact hard-coded credentials in the copies (the originals are untouched)
 if [ -d "$STAGE/files/var/lib/vz/snippets" ]; then
-  sed -i -E "s/((pushover|token|password|secret)[A-Za-z_]* *=[ >]*')[^']*'/\1REDACTED'/I" "$STAGE"/files/var/lib/vz/snippets/*
+  sed -i -E "s/((pushover_token|pushover_user|password|secret)[A-Za-z_]* *=[ >]*')[^']*'/\1REDACTED'/I" "$STAGE"/files/var/lib/vz/snippets/*
 fi
 
 # 4. add rebuild context
