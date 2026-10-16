@@ -1,0 +1,436 @@
+{
+  "updatedAt": "2026-06-24T22:32:55.622Z",
+  "createdAt": "2026-04-08T08:54:34.596Z",
+  "id": "sIFafe1z7T84IYVH",
+  "name": "PDA LLM Pass 1",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        0
+      ],
+      "id": "333912bf-81fa-4f36-bb2b-e0cf6c6092d2",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/inbox/feed_gmail.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "989014bf-cff6-4e84-88ca-cbe022eb53c7",
+      "name": "Read Feed – Gmail",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/inbox/feed_calendar.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -304,
+        0
+      ],
+      "id": "25ddec91-0b4f-41ff-a1e8-6fb4aef2b486",
+      "name": "Read Feed – Calendar",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/inbox/feed_clickup_chat.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -128,
+        0
+      ],
+      "id": "c5cf6adb-8c46-4468-8188-a23701ea7fea",
+      "name": "Read Feed – ClickUp",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('projects-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        48,
+        0
+      ],
+      "id": "d537e4f2-b1cb-443d-8e78-8576a4857264",
+      "name": "Read Feed – Projects",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Parse fenced JSON from each feed file ──────────────────────────\nfunction parseFencedJSON(fileContent) {\n  const match = fileContent.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (!match) throw new Error('No fenced JSON block found');\n  return JSON.parse(match[1]);\n}\n\nconst gmailRaw    = $('Read Feed – Gmail').first().json.data || '';\nconst clickupRaw  = $('Read Feed – ClickUp').first().json.data || '';\nconst projectsRaw = $('Read Feed – Projects').first().json.data || '';\n\nconst gmailMessages    = parseFencedJSON(gmailRaw);\nconst clickupMessages  = parseFencedJSON(clickupRaw);\nconst projects         = parseFencedJSON(projectsRaw);\n\n// ── 2. Filter out noise ─ LLM doesn't need to classify it ────────────────\nconst NOISE_SENDERS = [\n  'REDACTED-EMAIL',  // ClickUp — keep, useful signal\n];\n\nconst gmailFiltered = gmailMessages.filter(m => m.gmail_category !== 'noise');\n\n// Drop pure emoji-only ClickUp messages — no signal value\nconst clickupFiltered = clickupMessages.filter(m => {\n  const stripped = (m.text || '').replace(/:[a-z_]+:/g, '').replace(/[\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{1F1E6}-\\u{1F1FF}]/gu, '').trim();\n  return stripped.length > 0;\n});\n\n// Normalise ClickUp messages onto the common shape (source/message_id/channel/sender/body)\nconst clickupNormalised = clickupFiltered.map(m => ({\n  source: 'clickup_chat',\n  source_type: m.source_type,\n  message_id: m.comment_id,\n  timestamp: m.timestamp,\n  channel: m.channel_id || null,\n  subject: null,\n  sender: m.author,\n  body: m.text\n}));\n\n// Merge and sort chronologically\nconst allMessages = [...gmailFiltered, ...clickupNormalised].sort((a, b) => {\n  if (!a.timestamp) return 1;\n  if (!b.timestamp) return -1;\n  return a.timestamp.localeCompare(b.timestamp);\n});\n\n// ── 3. Build compact project reference (keywords only ─ keep prompt lean) ─\nconst projectRef = projects.map(p => ({\n  id:           p.id,\n  job_name:     p.job_name,\n  status:       p.status,\n  keywords:     p.keywords,\n  clickup_channel_ids: p.clickup_channel_ids || []\n}));\n\n// ── 4. Build message list for prompt (strip heavy body content) ───────\nconst messageList = allMessages.map(m => ({\n  id:        m.message_id,\n  source:    m.source,\n  timestamp: m.timestamp,\n  channel:   m.channel || null,\n  subject:   m.subject || null,\n  sender:    m.sender,\n  body:      (m.body || '').substring(0, 400)  // cap body for prompt efficiency\n}));\n\n// ── 5. Assemble system prompt ───────────────────────────────\nconst systemPrompt = `You are a classifier for a personal daily briefing system. Your job is to assign every message to exactly one project ID from the project list, or to a special category.\n\nPROJECTS:\n${JSON.stringify(projectRef, null, 2)}\n\nCLASSIFICATION RULES:\n- Match messages to projects using keywords, sender names, and subject content.\n- ClickUp chat messages: match by the message's \"channel\" field against a project's clickup_channel_ids list. If channel matches a project's clickup_channel_ids, use that project's id.\n- ClickUp notifications (via Gmail): match by task name against project keywords.\n- If a message clearly relates to a project: use that project's id (e.g. \"ijm-ghana\").\n- If a message relates to Tim's personal life (non-work): use \"PERSONAL\".\n- If a message is a newsletter, promotion, or automated noise with no decision value: use \"NOISE\".\n- If a message relates to work admin not tied to a specific project (tax, scheduling, general): use \"ADMIN\".\n- If genuinely ambiguous: use \"MISC\".\n- STARRED ITEMS: Any message with source_type \"gmail_starred\" has been explicitly flagged by Tim as requiring action. Never classify these as NOISE. They must always be assigned to a project, PERSONAL_ADMIN, or MISC.\n\nOUTPUT FORMAT:\nRespond with a single JSON array — nothing else, no explanation, no markdown fences. Each element must have exactly these fields:\n- \"id\": the message_id from the input\n- \"project_id\": the project id string or special category\n- \"confidence\": \"high\", \"medium\", or \"low\"\n- \"note\": null, or a brief string only if confidence is low or the match is non-obvious\n\nExample output:\n[{\"id\":\"19d6b387e4d457b3\",\"project_id\":\"ijm-ghana\",\"confidence\":\"high\",\"note\":null}]`;\n\nconst userPrompt = `Classify these ${messageList.length} messages:\\n${JSON.stringify(messageList, null, 2)}`;\n\n// ── 6. Return data + Benchmarking markers ───────────────────────\nreturn [{\n  json: {\n    systemPrompt,\n    userPrompt,\n    allMessages,\n    messageCount: messageList.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "83c761e4-409e-4a10-9cbe-b241d291f93c",
+      "name": "Code - Build Prompt",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.1.1.200:1234/v1/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $('Config').item.json.manualModelName }}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": {{ JSON.stringify($json.systemPrompt) }}\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($json.userPrompt) }}\n    }\n  ],\n  \"options\": {\n    \"temperature\": 0.2\n  }\n}",
+        "options": {
+          "timeout": 1200000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        0
+      ],
+      "id": "94c692d3-dc4f-4db9-b6c0-f2c5e1c0dde3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Extract raw text from LM Studio response ───────────────────────────\nconst responseText = $json.choices?.[0]?.message?.content || '';\n\n// ── 1.5 Extract Metadata & Calculate Performance ──────────────────────────\nconst configNode = $('Config').first()?.json || {};\n\n// Strip extra double quotes if they exist in the pinned string\nconst rawStartTime = configNode.starttime || \"\";\nconst startTimeStr = rawStartTime.replace(/^\"|\"$/g, ''); \n\nconst modelUsed = configNode.manualModelName || $json.model || 'unknown';\n\n// Resilience: Parse the date safely\nconst startTime = startTimeStr ? new Date(startTimeStr).getTime() : null;\nconst endTime = new Date().getTime();\n\nlet generationTimeSec = 0;\nlet tokensPerSecond = 0;\n\n// Validate that startTime is a valid number before doing math\nif (startTime && !isNaN(startTime)) {\n  generationTimeSec = parseFloat(((endTime - startTime) / 1000).toFixed(2));\n}\n\n// Extract token usage\nconst completionTokens = $json.usage?.completion_tokens || 0;\nconst totalTokens = $json.usage?.total_tokens || 0;\n\n// Calculate TPS\nif (generationTimeSec > 0) {\n  tokensPerSecond = parseFloat((completionTokens / generationTimeSec).toFixed(2));\n}\n\n\n// ── 1.6 Format Duration into Min/Sec ──────────────────────────────────────\nconst mins = Math.floor(generationTimeSec / 60);\nconst secs = (generationTimeSec % 60).toFixed(1); // Keep 1 decimal point\nconst durationFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;\n\nconst metadata = {\n  model: modelUsed,\n  duration: durationFormatted, // e.g., \"5m 53.3s\"\n  generationTimeSeconds: generationTimeSec,\n  tokensPerSecond: tokensPerSecond || 0,\n  completionTokens,\n  totalTokens\n};\n\n// ── 2. Strip <think>...</think> block (Qwen3 thinking model) ─────────────\nconst stripped = responseText.replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n\n// ── 3. Extract JSON — handle any accidental fences the model adds ─────────\nlet jsonStr = stripped;\nconst fenceMatch = stripped.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\nif (fenceMatch) jsonStr = fenceMatch[1];\n\n// ── 4. Parse and validate ─────────────────────────────────────────────────\nlet classifications;\ntry {\n  classifications = JSON.parse(jsonStr);\n} catch (e) {\n  throw new Error(`JSON parse failed. Raw response was:\\n${stripped.substring(0, 500)}`);\n}\n\nif (!Array.isArray(classifications)) {\n  throw new Error('Expected a JSON array from LLM');\n}\n\n// ── 5. Build output — merge classifications back onto original messages ────\nconst allMessages = $('Code - Build Prompt').first().json.allMessages;\nconst classMap = {};\nfor (const c of classifications) {\n  classMap[c.id] = c;\n}\n\nconst categorisedMessages = allMessages.map(m => ({\n  ...m,\n  project_id:  classMap[m.message_id]?.project_id  || 'MISC',\n  confidence:  classMap[m.message_id]?.confidence  || 'low',\n  note:        classMap[m.message_id]?.note        || null,\n}));\n\n\n// ── 6. Build summary stats ────────────────────────────────────────────────\nconst stats = {};\nfor (const m of categorisedMessages) {\n  stats[m.project_id] = (stats[m.project_id] || 0) + 1;\n}\n\n// ── 6.5 Build Obsidian Properties (YAML Frontmatter) ──────────────────────\nconst properties = `---\nmodel: \"${metadata.model}\"\nduration: \"${metadata.duration}\"\ntokens_per_sec: ${metadata.tokensPerSecond}\ntokens_completion: ${metadata.completionTokens}\ntokens_total: ${metadata.totalTokens}\n---`;\n\nconst fence = '```';\nconst content = `${properties}\\n\\n${fence}json\\n${JSON.stringify(categorisedMessages, null, 2)}\\n${fence}`;\n\nreturn [{ json: { content, stats, totalMessages: categorisedMessages.length, metadata } }];\n\n// ── 7. Return payload ─────────────────────────────────────────────────────\nreturn [{ \n  json: { \n    content, \n    stats, \n    totalMessages: categorisedMessages.length,\n    metadata \n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "92dee0c2-73d2-48ac-a9ad-90f16fc39940",
+      "name": "Code - Parse Response"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('feeds-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        752,
+        0
+      ],
+      "id": "52aabd66-e33a-4022-b437-16b68173cab4",
+      "name": "create obsidian feed",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6fb49f6-b87a-4b8d-9526-453bde4dec80",
+              "name": "manualModelName",
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx",
+              "type": "string"
+            },
+            {
+              "id": "983f42a0-b44e-403d-ac77-0195e83c91b4",
+              "name": "starttime",
+              "value": "={{ new Date() }}",
+              "type": "string"
+            },
+            {
+              "id": "6aeb809a-7833-43c9-bb68-a5018844dd22",
+              "name": "shared_date",
+              "value": "={{ $json.shared_date || $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -816,
+        0
+      ],
+      "id": "b8fc95b9-b16d-4cab-a665-219a0cae2d64",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -992,
+        -160
+      ],
+      "id": "5384c487-7d8c-40ab-b157-c47cf84804be",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9u9lYZyviZunbye1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9u9lYZyviZunbye1",
+          "cachedResultName": "Util LLM Unload Model"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "manualModelName": "={{ $('Config').item.json.manualModelName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "key": "manualModelName",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "65b461b7-0ad0-4171-9068-b63bcabdac00",
+      "name": "Call 'Util LLM Unload Model'",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Feed – Gmail": {
+      "main": [
+        [
+          {
+            "node": "Read Feed – Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Feed – Calendar": {
+      "main": [
+        [
+          {
+            "node": "Read Feed – ClickUp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Feed – ClickUp": {
+      "main": [
+        [
+          {
+            "node": "Read Feed – Projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Feed – Projects": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Response": {
+      "main": [
+        [
+          {
+            "node": "create obsidian feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Call 'Util LLM Unload Model'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Util LLM Unload Model'": {
+      "main": [
+        [
+          {
+            "node": "Read Feed – Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "ea941715-94b2-40e4-ae7c-236aec58910b",
+  "activeVersionId": "ea941715-94b2-40e4-ae7c-236aec58910b",
+  "versionCounter": 279,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version ea941715",
+    "description": ""
+  }
+}

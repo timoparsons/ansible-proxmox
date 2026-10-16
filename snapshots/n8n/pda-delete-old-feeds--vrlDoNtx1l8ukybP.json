@@ -1,0 +1,108 @@
+{
+  "updatedAt": "2026-06-01T21:06:28.938Z",
+  "createdAt": "2026-04-22T00:48:37.801Z",
+  "id": "vrlDoNtx1l8ukybP",
+  "name": "PDA Delete Old Feeds",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        112
+      ],
+      "id": "d2d2a6b6-0e4b-4311-bfc4-eb8c05288532",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -608,
+        -128
+      ],
+      "id": "fc7e8abb-3da5-4322-a51e-befde340c7b7",
+      "name": "When Executed by Another Workflow",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=TODAY=$(date +%Y-%m-%d); find \"/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Obsidian/PDA/Inbox\" -maxdepth 1 -type f \\( -name 'feeds-*.md' -o -name 'projects-*.md' -o -name 'skeleton-*.md' \\) ! -name \"*${TODAY}*\" -delete"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -16
+      ],
+      "id": "255301c9-2272-4581-9fd0-e8d5334c15f3",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "CHHENAbxE0xrNy8M",
+          "name": "SSH Mac Studio - ansible-to-systems"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "versionId": "2c06ed30-a5fc-4a35-96ff-4e40c888102a",
+  "activeVersionId": "2c06ed30-a5fc-4a35-96ff-4e40c888102a",
+  "versionCounter": 38,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "updatedAt": "2026-05-23T00:48:54.525Z",
+  "createdAt": "2026-05-20T09:41:43.741Z",
+  "id": "NlcBQ4uWSZW9vlB9",
+  "name": "Housekeeping – Resolve Sibling Project",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "rsp-trigger",
+      "name": "Execute Workflow Trigger",
+      "notes": "Input: { filePath, obsidianBaseUrl, obsidianApiKey, allKnownFiles }",
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "filePath",
+              "type": "string"
+            },
+            {
+              "name": "obsidianBaseUrl",
+              "type": "string"
+            },
+            {
+              "name": "allKnownFiles",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "position": [
+        -464,
+        304
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "rsp-find-sibling",
+      "name": "Find Sibling Path",
+      "notes": "Looks up allKnownFiles for a sibling Project – file in the same folder. Outputs siblingPath (string or null).",
+      "parameters": {
+        "jsCode": "// Find a sibling Project – file in the same folder as filePath\nconst filePath      = $json.filePath ?? '';\nconst allKnownFiles = Array.isArray($json.allKnownFiles) ? $json.allKnownFiles : [];\n\nconst parts  = filePath.split('/');\nconst folder = parts.length > 1 ? parts.slice(0, -1).join('/') : null;\n\nlet siblingPath = null;\n\nif (folder) {\n  // Only assign if exactly one Project – file exists in the folder\n  // Multiple siblings = ambiguous = treat as no sibling\n  const siblings = allKnownFiles.filter(f => {\n    const fParts  = f.split('/');\n    const fFolder = fParts.length > 1 ? fParts.slice(0, -1).join('/') : null;\n    const fName   = fParts[fParts.length - 1];\n    return fFolder === folder && /^Project\\s*[\\u2013\\-]/i.test(fName);\n  });\n  if (siblings.length === 1) siblingPath = siblings[0];\n}\n\nreturn {\n  ...$json,\n  siblingPath,\n};",
+        "mode": "runOnceForEachItem"
+      },
+      "position": [
+        -240,
+        304
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "id": "rsp-read-sibling",
+      "name": "Read Sibling File",
+      "notes": "Fetches sibling Project – file content via Obsidian Local REST API",
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "sendHeaders": true,
+        "url": "={{ $json.siblingPath ? $json.obsidianBaseUrl + '/vault/' + $json.siblingPath.split('/').map(s => encodeURIComponent(s)).join('/') : 'http://localhost/null' }}"
+      },
+      "position": [
+        208,
+        176
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true
+    },
+    {
+      "id": "rsp-parse-sibling",
+      "name": "Parse Sibling Frontmatter",
+      "notes": "Extracts project slug and area from sibling file frontmatter. Falls back to slugifying the filename if project key is absent.",
+      "parameters": {
+        "jsCode": "// Parse project and area from the sibling Project – file frontmatter\n// If the HTTP fetch failed or returned no content, return empty strings.\n\nconst siblingPath = $('Find Sibling Path').item.json.siblingPath ?? '';\nconst content = $json.data ?? $json.body ?? '';\n\nlet siblingProjectSlug = '';\nlet siblingProjectArea = '';\n\nif (content) {\n  const fmMatch = content.match(/^---\\s*[\\r\\n]+([\\s\\S]*?)[\\r\\n]+---\\s*[\\r\\n]+/);\n  if (fmMatch) {\n    for (const line of fmMatch[1].split('\\n')) {\n      const colon = line.indexOf(':');\n      if (colon === -1) continue;\n      const key   = line.slice(0, colon).trim();\n      const value = line.slice(colon + 1).trim();\n      if (key === 'project' && value) siblingProjectSlug = value;\n      if (key === 'area'    && value) siblingProjectArea = value;\n    }\n  }\n\n  // If project slug absent from frontmatter, slugify the sibling filename\n  if (!siblingProjectSlug && siblingPath) {\n    const siblingFilename = siblingPath.split('/').pop().replace(/\\.md$/, '');\n    siblingProjectSlug = siblingFilename\n      .replace(/^(?:Project|Research|Wiki|Log|Meta|Area)\\s*[\\u2013\\-]\\s*/i, '')\n      .trim()\n      .toLowerCase()\n      .replace(/[^a-z0-9]+/g, '-')\n      .replace(/^-+|-+$/g, '');\n  }\n}\n\nreturn {\n  siblingPath,\n  siblingProjectSlug,\n  siblingProjectArea,\n};",
+        "mode": "runOnceForEachItem"
+      },
+      "position": [
+        432,
+        176
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "rsp-respond",
+      "name": "Respond to Workflow",
+      "notes": "Output: { siblingProjectSlug, siblingProjectArea }. Empty string means not found.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-slug",
+              "name": "siblingProjectSlug",
+              "type": "string",
+              "value": "={{ $json.siblingProjectSlug ?? '' }}"
+            },
+            {
+              "id": "out-area",
+              "name": "siblingProjectArea",
+              "type": "string",
+              "value": "={{ $json.siblingProjectArea ?? '' }}"
+            },
+            {
+              "id": "out-path",
+              "name": "siblingPath",
+              "type": "string",
+              "value": "={{ $json.siblingPath ?? '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        880,
+        304
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Find Sibling Path",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Sibling File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse Sibling Frontmatter",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Find Sibling Path": {
+      "main": [
+        [
+          {
+            "node": "Read Sibling File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Sibling Frontmatter": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "8a163bd9-5574-4ad1-a5df-05184636b741",
+  "activeVersionId": "8a163bd9-5574-4ad1-a5df-05184636b741",
+  "versionCounter": 25,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

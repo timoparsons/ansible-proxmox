@@ -1,0 +1,430 @@
+{
+  "updatedAt": "2026-04-21T21:29:08.963Z",
+  "createdAt": "2026-03-27T06:09:11.812Z",
+  "id": "ixeAwe0QH4ZqpJkV",
+  "name": "PDA Fetch Calendar",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Inputs ──────────────────────────────────────────────────────────────\nconst businessEvents = $('Google Calendar - Business').all();\nconst personalEvents = $('Google Calendar - Personal').all();\nconst holidayEvents  = $('Google Calendar - NZ Holidays').all();\n\nlet sonyaEvents = [];\ntry { sonyaEvents = $('Google Calendar - Sonya').all(); } catch (e) {}\n\nlet birthdayEvents = [];\ntry { birthdayEvents = $('Google Calendar - Birthdays').all(); } catch (e) {}\n\nlet familyEvents = [];\ntry { familyEvents = $('Google Calendar - Parsons Family').all(); } catch (e) {}\n\n// ── 2. Deduplication ──────────────────────────────────────────────────────────────────\nfunction deduplicateEvents(events) {\n  const seen = new Set();\n  return events.filter(item => {\n    const key = item.json.iCalUID || item.json.id;\n    if (seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  });\n}\n\nconst business  = deduplicateEvents(businessEvents);\nconst personal  = deduplicateEvents(personalEvents);\nconst holidays  = deduplicateEvents(holidayEvents);\nconst sonya     = deduplicateEvents(sonyaEvents);\nconst birthdays = deduplicateEvents(birthdayEvents);\nconst family    = deduplicateEvents(familyEvents);\n\n// ── 3. Timestamps stay in UTC throughout — converted to NZT only at final briefing render ──\n// No timezone conversion here. UTC ISO strings passed through as-is.\n\n// ── 4. Helpers ──────────────────────────────────────────────────────────────────\nfunction decodeEntities(str) {\n  if (!str) return '';\n  return str\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&#x27;/g, \"'\")\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))\n    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));\n}\n\nfunction isValidEvent(e) {\n  const hasId    = !!(e.id || e.iCalUID);\n  const hasStart = !!(e.start?.dateTime || e.start?.date);\n  const hasTitle = !!(e.summary && e.summary.trim());\n  return hasId && hasStart && hasTitle;\n}\n\nfunction eventToObject(item, calendar) {\n  const e = item.json;\n  const startRaw = e.start?.dateTime || e.start?.date || null;\n  const endRaw   = e.end?.dateTime   || e.end?.date   || null;\n  const isAllDay = !e.start?.dateTime;\n\n  // Keep all timed datetimes as UTC ISO (ensure Z suffix). All-day dates stay as plain date strings.\n  const toUTC = (s) => {\n    if (!s) return null;\n    if (isAllDay) return s;\n    return new Date(s).toISOString();  // parse any offset correctly, emit clean UTC Z\n  };\n\n  const startUTC = toUTC(startRaw);\n  const endUTC   = toUTC(endRaw);\n\n  let durationMinutes = null;\n  if (!isAllDay && startRaw && endRaw) {\n    durationMinutes = Math.round((new Date(endRaw) - new Date(startRaw)) / 60000);\n  }\n\n  return {\n    source:           'calendar',\n    event_id:         e.id || null,\n    timestamp:        startUTC,\n    title:            decodeEntities(e.summary || '(No title)'),\n    calendar:         calendar,\n    timezone:         'UTC',\n    all_day:          isAllDay,\n    start:            startUTC,\n    end:              endUTC,\n    duration_minutes: durationMinutes,\n    location:         decodeEntities(e.location || ''),\n    description:      decodeEntities((e.description || '').substring(0, 300)),\n    status:           e.status || null,\n    event_type:       e.eventType || null,\n    url:              e.htmlLink || null\n  };\n}\n\n// ── 5. Build unified events array, filtering nulls ─────────────────────────────────\nconst events = [\n  ...business.filter(e  => isValidEvent(e.json)).map(e  => eventToObject(e, 'work')),\n  ...personal.filter(e  => isValidEvent(e.json)).map(e  => eventToObject(e, 'personal')),\n  ...family.filter(e    => isValidEvent(e.json)).map(e  => eventToObject(e, 'family')),\n  ...sonya.filter(e     => isValidEvent(e.json)).map(e  => eventToObject(e, 'sonya')),\n  ...birthdays.filter(e => isValidEvent(e.json)).map(e  => eventToObject(e, 'birthdays')),\n  ...holidays.filter(e  => isValidEvent(e.json)).map(e  => eventToObject(e, 'holidays')),\n];\n\n// Sort ascending by start timestamp\nevents.sort((a, b) => {\n  if (!a.timestamp) return 1;\n  if (!b.timestamp) return -1;\n  return a.timestamp.localeCompare(b.timestamp);\n});\n\n// ── 6. Wrap in fenced JSON block for Obsidian ─────────────────────────────────────────\nconst fence = '```';\nconst content = `${fence}json\\n${JSON.stringify(events, null, 2)}\\n${fence}`;\n\nreturn [{ json: { content } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        0
+      ],
+      "id": "f574d202-9c33-4d04-bb5f-acedfa4b568a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-EMAIL",
+          "mode": "list",
+          "cachedResultName": "Tim Parsons / joy.inc"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "89998090-06f3-4aaa-afc8-d6c902d7fd42",
+      "name": "Google Calendar - Business",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "g8S4nRq6aXUjtENy",
+          "name": "Google Cal - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-EMAIL",
+          "mode": "list",
+          "cachedResultName": "REDACTED-EMAIL"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        0
+      ],
+      "id": "87180cad-72d3-4736-a260-2f5e66e5d550",
+      "name": "Google Calendar - Personal",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "h4rznWHaC19ee2AX",
+          "name": "Google Cal - Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/feed_calendar.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "d2e69873-8b21-4cac-9557-d6763044d867",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-CALENDAR-ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Holidays in New Zealand"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        0
+      ],
+      "id": "50ff21a1-6661-4df0-b639-f60228365628",
+      "name": "Google Calendar - NZ Holidays",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "h4rznWHaC19ee2AX",
+          "name": "Google Cal - Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "REDACTED-WEBHOOK-PATH",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        0
+      ],
+      "id": "369bb322-29d5-4f67-ace5-0add7b927cf9",
+      "name": "Webhook",
+      "webhookId": "REDACTED"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-EMAIL",
+          "mode": "list",
+          "cachedResultName": "Sonya Todd"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        688,
+        0
+      ],
+      "id": "21eecf77-7c03-4bf2-80f5-7ccfb7fe5a8d",
+      "name": "Google Calendar - Sonya",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "h4rznWHaC19ee2AX",
+          "name": "Google Cal - Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-CALENDAR-ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Birthdays"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        0
+      ],
+      "id": "f1716add-7e6a-469d-922b-b23dc47de3f0",
+      "name": "Google Calendar - Birthdays",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "h4rznWHaC19ee2AX",
+          "name": "Google Cal - Personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "REDACTED-CALENDAR-ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Family Events"
+        },
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus(14, 'days').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1008,
+        0
+      ],
+      "id": "72c655b9-ebed-449d-9c77-3fd3bc35057a",
+      "name": "Google Calendar - Parsons Family",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "h4rznWHaC19ee2AX",
+          "name": "Google Cal - Personal"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        48,
+        192
+      ],
+      "id": "af5371f9-b51a-4a66-8f4b-aa17f903e01a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        -176
+      ],
+      "id": "f341371d-ebfd-4e0e-ac84-afd563eb8f58",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "connections": {
+    "Google Calendar - Business": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Personal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Personal": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - NZ Holidays",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - NZ Holidays": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Sonya",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Sonya": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Birthdays",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Birthdays": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Parsons Family",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Parsons Family": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Business",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "versionId": "5d1e0989-2763-48ad-aa6e-151cd48932c4",
+  "activeVersionId": "5d1e0989-2763-48ad-aa6e-151cd48932c4",
+  "versionCounter": 186,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

@@ -1,0 +1,323 @@
+{
+  "updatedAt": "2026-06-17T07:30:42.943Z",
+  "createdAt": "2026-06-17T07:07:17.765Z",
+  "id": "vT48AwFY32PCIsLg",
+  "name": "Util LLM Load Model",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -600,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "manual-trigger",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        160
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "obsidianBase",
+              "type": "string",
+              "value": "https://10.1.1.200:27124"
+            },
+            {
+              "id": "c2",
+              "name": "obsidianToken",
+              "type": "string",
+              "value": "REDACTED-HEX64"
+            },
+            {
+              "id": "c3",
+              "name": "slot",
+              "type": "string",
+              "value": "={{ $json.slot || 'pda_pass1' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-config",
+      "name": "Fetch Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/config.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "resolve-slot",
+      "name": "Resolve Slot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Parse config.md and resolve the requested slot → { engine, model, endpoint, flags }\n// Dump the raw Fetch Config response so we can see exactly what shape it's in.\nconst _fc = $('Fetch Config').first().json;\nconst _keys = Object.keys(_fc);\nconst _rawStr = JSON.stringify(_fc);\n\n// The Obsidian REST API returns the note body as a plain-text HTTP response.\n// n8n's HTTP Request node JSON-encodes the body string into $json, so what we\n// receive may be a single-key object like { \"\": \"...file content...\" }, or the\n// content may be double-encoded with escaped quotes and newlines.\n// Strategy: find the longest string value anywhere in the response object,\n// then unescape it if needed.\nlet raw = '';\nfor (const val of Object.values(_fc)) {\n  const s = typeof val === 'string' ? val : JSON.stringify(val);\n  if (s.length > raw.length) raw = s;\n}\n// If it looks like a JSON-encoded string (starts with \"), unwrap it once\nif (raw.startsWith('\"') && raw.endsWith('\"')) {\n  try { raw = JSON.parse(raw); } catch(_) {}\n}\n// Unescape escaped quotes if present\nif (raw.includes('\\\\\"')) raw = raw.replace(/\\\\\"/g, '\"');\n\nif (!raw || raw.length < 10) {\n  throw new Error(`Fetch Config returned unusable content. Keys: [${_keys.join(', ')}]. Raw (400 chars): ${_rawStr.slice(0, 400)}`);\n}\n\nconst slot = $('Config').first().json.slot;\n\n// If the content arrived as a JSON-encoded string (literal \\n instead of real newlines), unescape it.\nconst unescaped = raw.includes('\\\\n') ? raw.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t').replace(/\\\\r/g, '') : raw;\n\n// Walk line-by-line to extract ```json blocks\nconst lines = unescaped.split('\\n');\nconst blocks = [];\nlet inBlock = false;\nlet current = [];\nfor (const line of lines) {\n  if (!inBlock && line.trim().startsWith('```json')) {\n    inBlock = true;\n    current = [];\n  } else if (inBlock && line.trim() === '```') {\n    blocks.push(current.join('\\n'));\n    inBlock = false;\n    current = [];\n  } else if (inBlock) {\n    current.push(line);\n  }\n}\n\nif (blocks.length === 0) {\n  const preview = unescaped.slice(0, 600).replace(/\\n/g, '↵');\n  throw new Error(`No JSON blocks found in config.md. Content preview: ${preview}`);\n}\n\nlet registry = null;\nconst parseErrors = [];\nfor (const block of blocks) {\n  try {\n    const parsed = JSON.parse(block.trim());\n    if (parsed.llm_models) { registry = parsed.llm_models; break; }\n  } catch (e) {\n    parseErrors.push(e.message);\n  }\n}\n\nif (!registry) throw new Error(`llm_models not found in config.md. Found ${blocks.length} JSON block(s). Parse errors: ${parseErrors.join('; ') || 'none — blocks parsed OK but none contained llm_models'}`);\n\nconst slotConfig = registry[slot];\nif (!slotConfig) throw new Error(`Slot '${slot}' not found in llm_models registry. Available: ${Object.keys(registry).join(', ')}`);\n\nconst { engine, model, endpoint, flags = {} } = slotConfig;\nif (!engine) throw new Error(`Slot '${slot}' missing required field: engine`);\nif (!model)  throw new Error(`Slot '${slot}' missing required field: model`);\nif (!endpoint) throw new Error(`Slot '${slot}' missing required field: endpoint`);\n\nreturn [{ json: { slot, engine, model, endpoint, flags } }];"
+      }
+    },
+    {
+      "id": "engine-switch",
+      "name": "Engine",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "leftValue": "={{ $json.engine }}",
+                    "rightValue": "lmstudio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "lmstudio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "leftValue": "={{ $json.engine }}",
+                    "rightValue": "omlx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "omlx"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "lmstudio-load",
+      "name": "LM Studio – Eject & Load",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// LM Studio: eject all models from oMLX first (cross-engine RAM cleanup),\n// then eject any wrong models from LM Studio, then load the target model.\n\n// ── 0. Eject all oMLX models ──\ntry {\n  const omlxList = await this.helpers.httpRequest({\n    method: 'GET',\n    url: 'http://10.1.1.200:8000/v1/models',\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n  if (omlxList.statusCode === 200) {\n    for (const m of omlxList.body?.data || []) {\n      await this.helpers.httpRequest({\n        method: 'POST',\n        url: `http://10.1.1.200:8000/v1/models/${encodeURIComponent(m.id)}/unload`,\n        returnFullResponse: true,\n        ignoreHttpStatusErrors: true\n      });\n    }\n  }\n} catch (_) { /* oMLX not running — fine */ }\n\n// LM Studio: eject remaining wrong models, then load the target model.\n// Uses the LM Studio proprietary API at /api/v1/models (not the OpenAI-compatible /v1/models).\n\nconst BASE = 'http://10.1.1.200:1234';\nconst { model, endpoint, flags, slot } = $('Resolve Slot').first().json;\n\n// ── 1. List all loaded instances ──\nconst listResp = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `${BASE}/api/v1/models`,\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true\n});\nif (listResp.statusCode !== 200) throw new Error(`LM Studio list failed: HTTP ${listResp.statusCode}`);\n\nconst allModels = listResp.body?.models || [];\n\n// ── 2. Eject anything that isn't the target model ──\nconst ejected = [];\nfor (const m of allModels) {\n  if (!m.loaded_instances?.length) continue;\n  if (m.key === model) continue; // already the right model — skip\n  for (const inst of m.loaded_instances) {\n    const r = await this.helpers.httpRequest({\n      method: 'POST',\n      url: `${BASE}/api/v1/models/unload`,\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ instance_id: inst.id }),\n      returnFullResponse: true,\n      ignoreHttpStatusErrors: true\n    });\n    ejected.push({ model: m.key, instance_id: inst.id, status: r.statusCode });\n  }\n}\n\n// ── 3. Check if target is already loaded ──\nconst alreadyLoaded = allModels.some(m => m.key === model && m.loaded_instances?.length > 0);\nif (alreadyLoaded) {\n  return [{ json: { engine: 'lmstudio', model, endpoint, slot, action: 'already_loaded', ejected } }];\n}\n\n// ── 4. Load the target model ──\n// LM Studio /api/v1/models/load only accepts { model } — no preset or config fields\nconst loadBody = { model };\n\nconst loadResp = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${BASE}/api/v1/models/load`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify(loadBody),\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true\n});\nif (loadResp.statusCode >= 300) throw new Error(`LM Studio load failed: HTTP ${loadResp.statusCode} — ${JSON.stringify(loadResp.body)}`);\n\nreturn [{ json: { engine: 'lmstudio', model, endpoint, slot, action: 'loaded', ejected } }];"
+      }
+    },
+    {
+      "id": "omlx-load",
+      "name": "oMLX – Eject & Load",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        120
+      ],
+      "parameters": {
+        "jsCode": "// oMLX: eject all models from LM Studio first (cross-engine RAM cleanup),\n// then eject any wrong models from oMLX, then load the target model.\n\n// ── 0. Eject all LM Studio models ──\ntry {\n  const lmslist = await this.helpers.httpRequest({\n    method: 'GET',\n    url: 'http://10.1.1.200:1234/api/v1/models',\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n  if (lmslist.statusCode === 200) {\n    for (const m of lmslist.body?.models || []) {\n      if (!m.loaded_instances?.length) continue;\n      for (const inst of m.loaded_instances) {\n        await this.helpers.httpRequest({\n          method: 'POST',\n          url: 'http://10.1.1.200:1234/api/v1/models/unload',\n          headers: { 'Content-Type': 'application/json' },\n          body: JSON.stringify({ instance_id: inst.id }),\n          returnFullResponse: true,\n          ignoreHttpStatusErrors: true\n        });\n      }\n    }\n  }\n} catch (_) { /* LM Studio not running — fine */ }\n\n// oMLX: eject remaining wrong models, then load the target model.\n// Uses oMLX REST API at /v1/models/{model_id}/unload and /v1/models/{model_id}/load.\n\nconst BASE = 'http://10.1.1.200:8000';\nconst { model, endpoint, flags, slot } = $('Resolve Slot').first().json;\n\n// ── 1. List loaded models (OpenAI-compatible /v1/models) ──\nconst listResp = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `${BASE}/v1/models`,\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true\n});\nif (listResp.statusCode !== 200) throw new Error(`oMLX list failed: HTTP ${listResp.statusCode}`);\n\nconst loadedModels = listResp.body?.data || [];\n\n// ── 2. Eject anything that isn't the target ──\nconst ejected = [];\nfor (const m of loadedModels) {\n  if (m.id === model) continue; // already the right model — skip\n  const encodedId = encodeURIComponent(m.id);\n  const r = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `${BASE}/v1/models/${encodedId}/unload`,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true\n  });\n  ejected.push({ model: m.id, status: r.statusCode });\n}\n\n// ── 3. Check if target is already loaded ──\nconst alreadyLoaded = loadedModels.some(m => m.id === model);\nif (alreadyLoaded) {\n  return [{ json: { engine: 'omlx', model, endpoint, slot, action: 'already_loaded', ejected } }];\n}\n\n// ── 4. Load the target model ──\nconst encodedModel = encodeURIComponent(model);\nconst loadResp = await this.helpers.httpRequest({\n  method: 'POST',\n  url: `${BASE}/v1/models/${encodedModel}/load`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify(flags || {}),\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true\n});\nif (loadResp.statusCode >= 300) throw new Error(`oMLX load failed: HTTP ${loadResp.statusCode} — ${JSON.stringify(loadResp.body)}`);\n\nreturn [{ json: { engine: 'omlx', model, endpoint, slot, action: 'loaded', ejected } }];"
+      }
+    },
+    {
+      "id": "health-check",
+      "name": "Health Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Poll /v1/models on the target endpoint until the model appears as loaded.\n// Retries up to 20 times with 3s between attempts (60s total timeout).\n\nconst { engine, model, endpoint, slot, action, ejected } = $input.first().json;\n\nconst maxRetries = 20;\nconst retryDelayMs = 3000;\n\n// For LM Studio, use the proprietary API endpoint which returns models[].key —\n// the same key format used in config.md and the eject/load nodes.\n// The OpenAI-compat /v1/models returns different IDs that may not match.\nconst modelsUrl = engine === 'lmstudio'\n  ? `${endpoint.replace('/v1', '')}/api/v1/models`\n  : `${endpoint}/models`;\n\nconst sleep = ms => new Promise(resolve => setTimeout(resolve, ms));\n\nlet ready = false;\nlet attempts = 0;\n\nwhile (attempts < maxRetries) {\n  await sleep(attempts === 0 && action === 'already_loaded' ? 0 : retryDelayMs);\n  attempts++;\n\n  let resp;\n  try {\n    resp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: modelsUrl,\n      returnFullResponse: true,\n      ignoreHttpStatusErrors: true\n    });\n  } catch (e) {\n    continue; // server not yet up\n  }\n\n  if (resp.statusCode !== 200) continue;\n\n  const models = resp.body?.data || resp.body?.models || [];\n  // OpenAI-compat: data[].id; LM Studio proprietary: models[].key\n  const found = models.some(m => (m.id || m.key) === model);\n  if (found) { ready = true; break; }\n}\n\nif (!ready) throw new Error(`Model '${model}' did not become ready after ${maxRetries * retryDelayMs / 1000}s (${attempts} attempts). Check engine logs on Mac Studio.`);\n\nreturn [{ json: { engine, model, endpoint, slot, ready: true, action, ejected, attempts } }];"
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Config": {
+      "main": [
+        [
+          {
+            "node": "Resolve Slot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Slot": {
+      "main": [
+        [
+          {
+            "node": "Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engine": {
+      "main": [
+        [
+          {
+            "node": "LM Studio – Eject & Load",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "oMLX – Eject & Load",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM Studio – Eject & Load": {
+      "main": [
+        [
+          {
+            "node": "Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "oMLX – Eject & Load": {
+      "main": [
+        [
+          {
+            "node": "Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "7bf3aa1b-9d03-4f22-a0b9-c960bd53dad0",
+  "activeVersionId": null,
+  "versionCounter": 21,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

@@ -1,0 +1,710 @@
+{
+  "updatedAt": "2026-10-11T19:44:41.648Z",
+  "createdAt": "2026-05-23T02:37:38.910Z",
+  "id": "4DOMjeJnhAQVDcAr",
+  "name": "Housekeeping – Master Weekly",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "1ffaa9ff-71ad-484a-952f-602eb4846127",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        304
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "b4bbd37f-e89a-43bd-af35-2869f0975ffd",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "expression": "0 6 * * 0",
+              "field": "cronExpression"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5a137850-cac0-4cf6-9bd4-dc1bf9698879",
+      "name": "Config",
+      "notes": "Central config — edit vault path, excluded paths, model name here",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        304
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-vault-path",
+              "name": "vaultPath",
+              "type": "string",
+              "value": "/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian"
+            },
+            {
+              "id": "cfg-obsidian-base-url",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "https://10.1.1.200:27124"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e2cc8a57-d935-438e-84c5-13500b240e74",
+      "name": "Read Housekeeping.md",
+      "notes": "Reads Obsidian Housekeeping.md via Local REST API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        304
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "sendHeaders": true,
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Obsidian%20Housekeeping%20Weekly.md"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "e5d06f30-4efb-467b-a81a-78c64e8048e1",
+      "name": "Find All Files (SSH)",
+      "notes": "SSH find: all .md files across all target paths — no modified-since filter. Paths read from Config targetPaths.",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        736,
+        304
+      ],
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "={{ (() => {\n  const paths = $('Parse Config').item.json.absoluteTargetPaths;\n  const finds = paths.map(p => `find \"${p}\" -name \"*.md\"`);\n  return finds.join(' ; ') + ' | sort';\n})() }}"
+      },
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "CHHENAbxE0xrNy8M",
+          "name": "SSH Mac Studio - ansible-to-systems"
+        }
+      }
+    },
+    {
+      "id": "48ded8cb-0c64-4e96-b38d-3291664c4953",
+      "name": "Split Out Files",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        304
+      ],
+      "parameters": {
+        "fieldToSplitOut": "filteredFiles",
+        "options": {}
+      }
+    },
+    {
+      "id": "bc4f86cf-2e20-46d6-b715-92b21917b896",
+      "name": "Read File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "alwaysOutputData": false,
+      "position": [
+        1344,
+        304
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "sendHeaders": true,
+        "url": "={{ $('Config').item.json.obsidianBaseUrl }}/vault/{{ $json.filteredFiles.split('/').map(s => encodeURIComponent(s)).join('/') }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "0ff9e4fc-e232-4ed9-87ac-97d7b20d199b",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// ── Normalise Read File Response ──────────────────────────────────────────\nconst splitItems = $('Split Out Files').all();\n\nreturn $input.all().map((item, i) => {\n  const rawJson = item.json;\n  const content = Array.isArray(rawJson)\n    ? (rawJson[0]?.data ?? '')\n    : (typeof rawJson === 'string' ? rawJson : (rawJson?.data ?? rawJson?.body ?? ''));\n  const filePath = splitItems[i]?.json?.filteredFiles ?? '';\n  return { json: { filePath, content } };\n});"
+      }
+    },
+    {
+      "id": "de2bc434-9f42-47b6-a132-8e00c5c99775",
+      "name": "Clean Completed Tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// ── Clean Completed Tasks ──────────────────────────────────────────────────\nconst thresholdDays = $('Parse Config').first().json.thresholdDays ?? 14;\nconst now = new Date();\nconst cutoff = new Date(now.getTime() - thresholdDays * 24 * 60 * 60 * 1000);\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const filePath = item.json.filePath ?? '';\n  const content = item.json.content ?? '';\n  const filename = filePath.split('/').pop() ?? '';\n\n  if (!content) {\n    console.log(`⚠️ Skipping file with no content: ${filePath}`);\n    results.push({ json: { filePath, content: '', tasksRemoved: [], writeStatus: 'skipped-no-content', writeNeeded: false } });\n    continue;\n  }\n\n  const isTargetType = /^(Project|Area|Research)\\s*[\\u2013-]/.test(filename);\n\n  if (!isTargetType) {\n    results.push({ json: { filePath, content, tasksRemoved: [], writeStatus: 'skipped-type', writeNeeded: false } });\n    continue;\n  }\n\n  try {\n    const lines = content.split('\\n');\n    const tasksRemoved = [];\n    const keptLines = lines.filter(line => {\n      const match = line.match(/^- \\[x\\].*\\u2705\\s*(\\d{4}-\\d{2}-\\d{2})/);\n      if (!match) return true;\n      const taskDate = new Date(match[1]);\n      if (taskDate < cutoff) {\n        tasksRemoved.push(line.trim());\n        return false;\n      }\n      return true;\n    });\n\n    const updatedContent = keptLines.join('\\n');\n    const writeNeeded = tasksRemoved.length > 0;\n\n    console.log(`${filename}: ${tasksRemoved.length} task(s) removed`);\n\n    results.push({ json: { filePath, content: updatedContent, tasksRemoved, writeStatus: writeNeeded ? 'pending' : 'skipped', writeNeeded } });\n  } catch (err) {\n    console.error(`❌ Error processing ${filename}: ${err.message}`);\n    results.push({ json: { filePath, content: '', tasksRemoved: [], writeStatus: `error-${err.message.slice(0, 30)}`, writeNeeded: false } });\n  }\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "5f5bd4b6-6f50-4285-86bc-d0fbe686f9e7",
+      "name": "Write Needed?",
+      "notes": "Gates the write — true branch (writeNeeded: true) proceeds to Write File, false branch skips directly to Aggregate Results.",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        736
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "54cc4834-1df5-488b-9d87-c2b0e77163d5",
+              "leftValue": "={{ $json.writeNeeded }}",
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6820b32e-af32-4769-baa8-6e2ca3a80883",
+      "name": "Write File",
+      "notes": "Writes cleaned content back only if tasks were removed.",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        432,
+        608
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "body": "={{ $json.writeNeeded ? $json.content : '' }}",
+        "contentType": "raw",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "method": "PUT",
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "rawContentType": "text/markdown",
+        "sendBody": true,
+        "sendHeaders": true,
+        "url": "={{ (() => { const base = $('Config').item.json.obsidianBaseUrl; const p = $('Clean Completed Tasks').item.json.filePath; const encoded = p.split('/').map(s => encodeURIComponent(s)).join('/'); return `${base}/vault/${encoded}`; })() }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Restore Result Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        608
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Clean Completed Tasks').item.json.filePath }}"
+            },
+            {
+              "id": "r2",
+              "name": "tasksRemoved",
+              "type": "array",
+              "value": "={{ $('Clean Completed Tasks').item.json.tasksRemoved }}"
+            },
+            {
+              "id": "r3",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "written"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fdccdedb-e1d7-40d3-8e98-c1b17adf40bb",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        736
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "6fbc69ad-642d-4314-8055-e879c5c9f699",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        736
+      ],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      }
+    },
+    {
+      "id": "0ece313e-fcf4-48d5-982a-2b98c8d689f9",
+      "name": "Read Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1232,
+        736
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "sendHeaders": true,
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping%20Weekly.md"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "9eeb778d-5de3-49a8-9a51-d2c23351c9f8",
+      "name": "Build Log Entry",
+      "notes": "Builds new log entry from aggregated results, prepends to existing log, trims to 10 days",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        736
+      ],
+      "parameters": {
+        "jsCode": "// ── Weekly Master: Build Outputs ─────────────────────────────────────────────\nconst now = new Date();\n// Log time in Auckland local time (NZDT/NZST handled by the timezone)\nconst nzDate = now.toLocaleString('sv-SE', { timeZone: 'Pacific/Auckland' });\nconst datestamp = nzDate.slice(0, 16).replace(' ', ' | ');\nconst runFinishedIso = new Date().toISOString();\n\nconst cutoff = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);\n\nconst controlData = $('Parse Config').first().json;\nconst lastRunRead = controlData.lastRun;\nconst controlContent = controlData.controlFileContent ?? '';\n\nconst allItems = $('Aggregate Results').first().json.data ?? [];\nconst fileCount = allItems.length;\n\nconst removedLines = [];\n\nfor (const item of allItems) {\n  const name = item.filePath?.split('/').pop() ?? item.filePath ?? 'unknown';\n  const tasksRemoved = item.tasksRemoved ?? [];\n  const writeStatus = item.writeStatus ?? 'unknown';\n\n  if (tasksRemoved.length > 0) {\n    removedLines.push(`- \\`${name}\\` — ${tasksRemoved.length} task(s) removed`);\n    for (const task of tasksRemoved) {\n      removedLines.push(`  - ${task}`);\n    }\n    if (writeStatus !== 'written' && writeStatus !== 'skipped') {\n      removedLines.push(`  ⚠️ Write status: ${writeStatus}`);\n    }\n  }\n}\n\nconst removedSection = removedLines.length > 0 ? `\\n#### Tasks Removed\\n${removedLines.join('\\n')}` : '';\nconst noActivity = removedLines.length === 0 ? '\\n*No tasks removed this run.*' : '';\n\nconst newEntry = `### ${datestamp}\\n**Last run read:** ${lastRunRead}\\n**Files scanned:** ${fileCount}${removedSection}${noActivity}`;\n\nconst existingLog = $input.item.json.body ?? $input.item.json.data ?? '';\nconst logSectionMatch = existingLog.match(/^(---[\\s\\S]*?## Log\\n)([\\s\\S]*)$/m);\nconst logHeader       = logSectionMatch ? logSectionMatch[1] : existingLog;\nconst logEntries      = logSectionMatch ? logSectionMatch[2] : '';\n\nconst entryBlocks = logEntries.split(/(?=^### \\d{4}-\\d{2}-\\d{2})/m).filter(e => e.trim());\nconst recentEntries = entryBlocks.filter(block => {\n  const dateMatch = block.match(/^### (\\d{4}-\\d{2}-\\d{2})/);\n  if (!dateMatch) return true;\n  return new Date(dateMatch[1]) >= cutoff;\n});\n\nconst updatedLog = `${logHeader}\\n${[newEntry.trimEnd(), ...recentEntries.map(e => e.trimEnd())].join('\\n\\n')}\\n`;\n\nconst updatedControl = controlContent.replace(/\\*\\*Last run:\\*\\*\\s*[^\\n]*/, `**Last run:** ${runFinishedIso}`);\n\nreturn [{\n  updatedLog,\n  updatedControl,\n  logChanged: updatedLog !== existingLog,\n  controlChanged: true\n}];"
+      }
+    },
+    {
+      "id": "8d9ddc32-f237-4fe2-94d2-fcfd65183b0c",
+      "name": "Write Log Entry",
+      "notes": "Writes full log file back via PUT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "alwaysOutputData": false,
+      "position": [
+        1632,
+        736
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "body": "={{ $json.updatedLog }}",
+        "contentType": "raw",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PUT",
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "rawContentType": "text/markdown",
+        "sendBody": true,
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping%20Weekly.md"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "3e9d3105-11b2-431b-b2b9-199792dfa852",
+      "name": "Write Control File",
+      "notes": "Writes full log file back via PUT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1824,
+        736
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "body": "={{ $('Build Log Entry').item.json.updatedControl }}",
+        "contentType": "raw",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PUT",
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "rawContentType": "text/markdown",
+        "sendBody": true,
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Obsidian%20Housekeeping%20Weekly.md"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "90299f12-5e14-4bcc-a9d4-408b1a3b6bfe",
+      "name": "Parse Config",
+      "notes": "Parses target paths, excluded paths, threshold, and last run from the weekly control file.",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// ── Parse Config ───────────────────────────────────────────────────\nconst content = $input.item.json.body ?? $input.item.json.data ?? '';\nconst vaultPath = $('Config').item.json.vaultPath.replace(/\\/$/, '');\n\nconst lastRunMatch = content.match(/\\*\\*Last run:\\*\\*\\s*([^\\n]+)/);\nconst lastRunRaw = lastRunMatch ? lastRunMatch[1].trim() : '—';\nconst oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();\nconst lastRunIso = (lastRunRaw === '—' || lastRunRaw === '-' || lastRunRaw === '')\n  ? oneYearAgo\n  : (isNaN(new Date(lastRunRaw)) ? oneYearAgo : new Date(lastRunRaw).toISOString());\n\nconst thresholdMatch = content.match(/\\*\\*Completed task threshold \\(days\\):\\*\\*\\s*`?(\\d+)`?/);\nconst thresholdDays = thresholdMatch ? parseInt(thresholdMatch[1], 10) : 14;\n\nconst targetSection = content.match(/\\*\\*Target paths?:\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|\\n---|\\n##|$)/);\nconst targetRaw = targetSection ? targetSection[1] : '';\nconst targetPaths = [...targetRaw.matchAll(/^- `?([^`\\n]+)`?/gm)]\n  .map(m => m[1].trim())\n  .filter(p => p.length > 0);\n\nconst resolvedTargetPaths = targetPaths.length > 0\n  ? targetPaths\n  : ($('Config').item.json.targetPaths ?? 'Projects').split(',').map(p => p.trim());\n\nconst absoluteTargetPaths = resolvedTargetPaths.map(p => `${vaultPath}/${p}`);\n\nconst excludedSection = content.match(/\\*\\*Excluded paths?:\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|\\n---|\\n##|$)/);\nconst excludedRaw = excludedSection ? excludedSection[1] : '';\nconst excludedPaths = [...excludedRaw.matchAll(/^- `?([^`\\n]+)`?/gm)]\n  .map(m => m[1].trim())\n  .filter(p => p.length > 0);\n\nconst resolvedExcludedPaths = excludedPaths.length > 0\n  ? excludedPaths\n  : ($('Config').item.json.excludedPaths ?? '').split(',').map(p => p.trim()).filter(Boolean);\n\nconsole.log(`Target paths: ${resolvedTargetPaths.join(', ')}`);\nconsole.log(`Excluded paths: ${resolvedExcludedPaths.join(', ')}`);\nconsole.log(`Threshold: ${thresholdDays} days`);\nconsole.log(`Last run: ${lastRunRaw}`);\n\nreturn [{\n  controlFileContent: content,\n  lastRun: lastRunRaw,\n  lastRunIso,\n  targetPaths: resolvedTargetPaths,\n  absoluteTargetPaths,\n  excludedPaths: resolvedExcludedPaths,\n  thresholdDays\n}];"
+      }
+    },
+    {
+      "id": "e7cb430d-e3fb-4981-b1e9-5fa548bf6bb9",
+      "name": "Filter & Parse File List",
+      "notes": "Strips vault prefix from SSH find output, applies exclusion filter from Config. No last-run filter — weekly scans everything.",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// ── Filter & Parse File List (Weekly) ──────────────────────────────────────\nconst vaultPath = $('Config').item.json.vaultPath;\nconst excludedPaths = $('Parse Config').item.json.excludedPaths ?? [];\nconst stdout = $input.item.json.stdout ?? '';\n\nconst absolutePaths = stdout.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nconst relativePaths = absolutePaths.map(p => {\n  const prefix = vaultPath.endsWith('/') ? vaultPath : vaultPath + '/';\n  const rel = p.startsWith(prefix) ? p.slice(prefix.length) : p;\n  return rel.replace(/^\\.\\//,  '');\n});\n\nconst filtered = relativePaths.filter(filePath =>\n  !excludedPaths.some(excluded => filePath.startsWith(excluded))\n);\n\nconsole.log(`Total .md files found: ${relativePaths.length}`);\nconsole.log(`After exclusion filter: ${filtered.length}`);\n\nreturn [{\n  allFiles: relativePaths,\n  filteredFiles: filtered,\n  excludedCount: relativePaths.length - filtered.length,\n  fileCount: filtered.length\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Log",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Log Entry": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write Log Entry",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Clean Completed Tasks": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write Needed?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Clean Completed Tasks",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Housekeeping.md",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Filter & Parse File List": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split Out Files",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Find All Files (SSH)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Filter & Parse File List",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Aggregate Results",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parse Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Find All Files (SSH)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Code in JavaScript",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Housekeeping.md": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Log": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Log Entry",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Restore Result Fields": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split Out Files": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Restore Result Fields",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Write Log Entry": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write Control File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Write Needed?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write File",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 1,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "e8788e1b-a516-4df0-b663-f4c067289171",
+  "activeVersionId": "e8788e1b-a516-4df0-b663-f4c067289171",
+  "versionCounter": 240,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

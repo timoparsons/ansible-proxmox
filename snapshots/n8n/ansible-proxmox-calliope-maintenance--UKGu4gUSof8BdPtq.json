@@ -1,0 +1,189 @@
+{
+  "updatedAt": "2026-07-12T08:12:44.543Z",
+  "createdAt": "2026-07-12T08:12:44.543Z",
+  "id": "UKGu4gUSof8BdPtq",
+  "name": "Ansible proxmox-calliope Maintenance",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "m1-manual-trigger",
+      "name": "When clicking 'Execute workflow'",
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "id": "m2-webhook",
+      "name": "Webhook",
+      "parameters": {
+        "options": {},
+        "path": "REDACTED-WEBHOOK-PATH"
+      },
+      "position": [
+        0,
+        -144
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "REDACTED"
+    },
+    {
+      "id": "m3-schedule-trigger",
+      "name": "Schedule Trigger",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtDayOfMonth": 1,
+              "triggerAtHour": 3,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        -304
+      ],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3
+    },
+    {
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "bH6RAOadkwdUsLQp",
+          "name": "SSH Ansible LXC"
+        }
+      },
+      "id": "m4-execute-command",
+      "name": "Execute a command",
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "ansible-playbook playbooks/maintenance.yml",
+        "cwd": "/opt/proxmox-calliope/ansible"
+      },
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1
+    },
+    {
+      "id": "m5-code",
+      "name": "Code in JavaScript",
+      "parameters": {
+        "jsCode": "const output = $json.stdout;\n\n// Extract PLAY RECAP section\nconst recapMatch = output.match(/PLAY RECAP[\\s\\S]*$/);\n\nif (!recapMatch) {\n  return [{ message: \"No recap found. Check Ansible output.\" }];\n}\n\nconst recap = recapMatch[0];\n\n// Extract each host line\nconst lines = recap.split(\"\\n\").filter(line => line.includes(\":\"));\n\nlet summary = [];\nlet hasFailure = false;\n\nfor (const line of lines) {\n  const match = line.match(/^(\\S+)\\s+:.*ok=(\\d+).*changed=(\\d+).*failed=(\\d+)/);\n  if (match) {\n    const [, host, ok, changed, failed] = match;\n\n    if (failed !== \"0\") hasFailure = true;\n\n    summary.push(\n      `${host}: ok=${ok}, changed=${changed}, failed=${failed}`\n    );\n  }\n}\n\nreturn [{\n  message: (hasFailure ? \"\\u274c Ansible MAINTENANCE FAILED\\n\" : \"\\u2705 Ansible MAINTENANCE OK\\n\") + summary.join(\"\\n\")\n}];"
+      },
+      "position": [
+        416,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "pushoverApi": {
+          "id": "jSTpPiEgxzoEMOCM",
+          "name": "Pushover account"
+        }
+      },
+      "id": "m6-pushover",
+      "name": "Push a message",
+      "parameters": {
+        "additionalFields": {
+          "device": "tim-iphone,mac-studio"
+        },
+        "message": "={{ $json.message }}",
+        "priority": -1,
+        "userKey": "REDACTED"
+      },
+      "position": [
+        624,
+        0
+      ],
+      "type": "n8n-nodes-base.pushover",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Push a message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Code in JavaScript",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Execute a command",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "d20bb44a-0d5d-4458-926b-8a85ebba5249",
+  "activeVersionId": "d20bb44a-0d5d-4458-926b-8a85ebba5249",
+  "versionCounter": 7,
+  "triggerCount": 2,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": "Version d20bb44a",
+    "description": ""
+  }
+}

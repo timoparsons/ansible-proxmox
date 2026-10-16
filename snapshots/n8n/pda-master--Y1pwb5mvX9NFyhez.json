@@ -1,0 +1,601 @@
+{
+  "updatedAt": "2026-06-16T23:51:08.982Z",
+  "createdAt": "2026-04-08T07:19:15.222Z",
+  "id": "Y1pwb5mvX9NFyhez",
+  "name": "PDA Master",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -48
+      ],
+      "id": "95d10999-12e9-4f72-bc74-d6c329b1c31f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ixeAwe0QH4ZqpJkV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ixeAwe0QH4ZqpJkV",
+          "cachedResultName": "PDA Fetch Calendar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -48
+      ],
+      "id": "c87a6a95-f335-479a-bf0a-a9ec2b2dff4e",
+      "name": "Call 'PDA Fetch Calendar'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "triggerAtHour": 6,
+              "triggerAtMinute": 40
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -496,
+        -192
+      ],
+      "id": "8ad8cd71-9b0e-4ff5-9586-5d0eeda833a5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "p9BBTU1qRlxKZPff",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/p9BBTU1qRlxKZPff",
+          "cachedResultName": "PDA Build Project Index"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        -48
+      ],
+      "id": "d16f1317-56b9-48bd-aa9d-96d7850ffe82",
+      "name": "Call 'PDA Build Project Index'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "sIFafe1z7T84IYVH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/sIFafe1z7T84IYVH",
+          "cachedResultName": "PDA LLM Pass 1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        -48
+      ],
+      "id": "e4bae23b-ea06-4d41-9459-7402ac29416f",
+      "name": "Call 'PDA LLM Pass 1'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "5Qo3M5bGcx42BHjl",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/5Qo3M5bGcx42BHjl",
+          "cachedResultName": "PDA Generate Briefing Skeleton"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "call-stage-d",
+      "name": "Call 'PDA Generate Briefing Skeleton'",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        976,
+        -48
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "JySEv9erlNHsJaZM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/JySEv9erlNHsJaZM",
+          "cachedResultName": "PDA LLM Pass 2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        -48
+      ],
+      "id": "22dcfce2-45a6-460f-a0bc-738ad13f2dd7",
+      "name": "Call 'PDA LLM Pass 2'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pushover.net/1/messages.json",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "REDACTED"
+            },
+            {
+              "name": "user",
+              "value": "REDACTED"
+            },
+            {
+              "name": "title",
+              "value": "=`📋 Daily Briefing — ${$now.setZone('Pacific/Auckland').toFormat('EEE d MMM')}`"
+            },
+            {
+              "name": "message",
+              "value": "=`Your briefing is ready. Tap to open in Obsidian.`"
+            },
+            {
+              "name": "url",
+              "value": "=`obsidian://open?vault=YOUR_VAULT_NAME&file=Overview%2F${$now.setZone('Pacific/Auckland').toFormat('yyyy-MM-dd')}%20-%20Daily%20Briefing`"
+            },
+            {
+              "name": "url_title",
+              "value": "Open in Obsidian"
+            },
+            {
+              "name": "priority",
+              "value": "0"
+            },
+            {
+              "name": "sound",
+              "value": "magic"
+            },
+            {
+              "name": "device",
+              "value": "tim-iphone"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "pushover-notify",
+      "name": "Pushover Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "shared-date-id-123",
+              "name": "shared_date",
+              "type": "string",
+              "value": "={{ $now.setZone('Pacific/Auckland').toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "id": "config-buffer-mins",
+              "name": "feed_buffer_mins",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "config-slack-channels",
+              "name": "slack_channels",
+              "type": "array",
+              "value": "={{ ['ijm', 'ijm-post', 'vessev', 'admin'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        -48
+      ],
+      "id": "d7eee1bc-321b-43bd-aff4-dd54edcf50bc",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Compute feedsSince (UTC Standardized) ─────────────────────────────────────────────\nconst BASE = 'https://10.1.1.200:27124';\nconst API_KEY = 'REDACTED'; // <-- PASTE YOUR API KEY HERE\n\nconst MAX_LOOKBACK_DAYS = 7;\nconst FEED_BUFFER_MINS = $input.first().json.feed_buffer_mins ?? 30;\n\n// UTC Date Helpers\nfunction formatUTC(date) {\n  return date.toISOString(); \n}\n\nfunction adjustMinutesUTC(isoStr, mins) {\n  const d = new Date(isoStr);\n  d.setUTCMinutes(d.getUTCMinutes() + mins);\n  return d.toISOString();\n}\n\nfunction adjustDaysUTC(isoStr, days) {\n  const d = new Date(isoStr);\n  d.setUTCDate(d.getUTCDate() + days);\n  return d.toISOString();\n}\n\nfunction extractGeneratedAt(content) {\n  const m = content.match(/generated_at:\\s*[\"']?([\\d\\-\\:T\\.Z]+)[\"']?/);\n  return m ? m[1] : null;\n}\n\nconst nowUTC = new Date();\nconst todayStr = $input.first().json.shared_date; // NZ-local date from Config — do not re-derive from UTC\nconst capStr = adjustDaysUTC(nowUTC.toISOString(), -MAX_LOOKBACK_DAYS);\n\nlet feedsSince = null;\nlet feedsWindowCapped = false;\nlet feedsSource = 'fallback';\nlet debugError = null; \nlet foundBriefingPath = null; \n\n// ── 1. Fetch previous briefing ───────────────────────────────────────────────────────\ntry {\n  const listResp = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${BASE}/vault/Overview/`,\n    skipSslCertificateValidation: true,\n    headers: {\n      'Authorization': `Bearer ${API_KEY}`,\n      'Accept': 'application/json'\n    }\n  });\n\n  const files = Array.isArray(listResp) ? listResp : (listResp.files || []);\n  \n  // Match both old format (YYYY-MM-DD - Daily Briefing.md)\n  // and new format (YYYY-MM-DD HH:mm - Daily Briefing.md)\n  const briefingRegex = /(?:Overview\\/)?((\\d{4}-\\d{2}-\\d{2})(?:\\s\\d{2}:\\d{2})?) - Daily Briefing\\.md$/;\n\n  const prev = files\n    .map(f => {\n      const path = typeof f === 'object' ? (f.path || f.name) : f;\n      const m = path.match(briefingRegex);\n      // m[1] = full datetime string e.g. \"2026-05-18 17:58\" or \"2026-04-11\"\n      // m[2] = date-only part e.g. \"2026-05-18\"\n      return m ? { path, datetime: m[1], date: m[2] } : null;\n    })\n    .filter(Boolean)\n    .filter(b => b.date < todayStr)\n    .sort((a, b) => b.datetime.localeCompare(a.datetime))[0];\n\n  if (prev) {\n    foundBriefingPath = prev.path;\n    \n    // Ensure the path includes 'Overview/' so we don't 404 at the root of the vault\n    let filePathToFetch = prev.path;\n    if (!filePathToFetch.startsWith('Overview/')) {\n      filePathToFetch = 'Overview/' + filePathToFetch;\n    }\n    \n    const encodedPath = filePathToFetch.split('/').map(encodeURIComponent).join('/');\n\n    const briefResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: `${BASE}/vault/${encodedPath}`,\n      skipSslCertificateValidation: true,\n      headers: {\n        'Authorization': `Bearer ${API_KEY}`,\n        'Accept': 'text/markdown'\n      }\n    });\n\n    const content = typeof briefResp === 'string' ? briefResp : (briefResp.content || '');\n    const ga = extractGeneratedAt(content);\n    \n    if (ga) {\n      feedsSince = adjustMinutesUTC(ga, -FEED_BUFFER_MINS);\n      feedsSource = 'briefing-frontmatter';\n    } else {\n      debugError = \"File fetched, but generated_at regex failed to find a match.\";\n    }\n  } else {\n      debugError = \"No files matched the regex and date filter.\";\n  }\n} catch (e) { \n  console.warn('Failed to fetch previous briefing:', e.message); \n  debugError = e.message; \n}\n\n// ── 2. Fallback: 24h ago ──────────────────────────────────────────────────────────────\nif (!feedsSince) { \n  feedsSince = adjustMinutesUTC(nowUTC.toISOString(), -1440); \n}\n\n// ── 3. Apply 7-day cap ────────────────────────────────────────────────────────────────\nif (feedsSince < capStr) {\n  feedsSince = capStr;\n  feedsWindowCapped = true;\n}\n\n// ── 4. Derived values ────────────────────────────────────────────────────────────────\nreturn [{ json: {\n  shared_date: todayStr,\n  feedsSince,\n  feedsSinceUnix: Math.floor(new Date(feedsSince).getTime() / 1000),\n  feedsSinceGmailDate: feedsSince.substring(0, 10).replace(/-/g, '/'),\n  feedsWindowCapped,\n  feedsWindowCapMessage: feedsWindowCapped ? 'Feed window capped at 7 days.' : null,\n  feedsSource,\n  feedBufferMins: FEED_BUFFER_MINS,\n  debugError,           \n  foundBriefingPath     \n} }];"
+      },
+      "id": "compute-feeds-since-id",
+      "name": "Compute feedsSince",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "OTjs9EKO0yCC1BiN",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/OTjs9EKO0yCC1BiN",
+          "cachedResultName": "PDA Fetch Gmail"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "feedsSince": "={{ $json.feedsSince }}",
+            "feedsSinceUnix": "={{ $json.feedsSinceUnix }}",
+            "feedsSinceGmailDate": "={{ $json.feedsSinceGmailDate }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        -48
+      ],
+      "id": "b84d7f7b-c203-4626-b879-183c1084e5f1",
+      "name": "Call 'PDA Fetch Gmail'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "7qGywKOSHZL60q5J",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/7qGywKOSHZL60q5J",
+          "cachedResultName": "PDA Archive Old Briefings"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -304,
+        176
+      ],
+      "id": "ebf4ec77-d663-464f-aecf-8f51738f283b",
+      "name": "Call 'PDA Archive Old Briefings'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "vrlDoNtx1l8ukybP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/vrlDoNtx1l8ukybP",
+          "cachedResultName": "PDA Delete Old Feeds"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        176
+      ],
+      "id": "5b9c35b8-16d7-48b6-b6ce-4f3dfe6b45e1",
+      "name": "Call 'PDA Delete Old Feeds'",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "SPh6nYNN6IW9prHG",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/SPh6nYNN6IW9prHG",
+          "cachedResultName": "PDA Fetch ClickUp"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        -48
+      ],
+      "id": "65fed238-0f51-4cd9-8fe0-61888fc503a5",
+      "name": "Call 'PDA Fetch ClickUp'",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Fetch Calendar'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Fetch ClickUp'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Build Project Index'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Fetch Gmail'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA LLM Pass 1'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Generate Briefing Skeleton'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Generate Briefing Skeleton'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA LLM Pass 2'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA LLM Pass 2'": {
+      "main": [
+        [
+          {
+            "node": "Pushover Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Compute feedsSince",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute feedsSince": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Build Project Index'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Fetch Gmail'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Fetch Calendar'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pushover Notification": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Archive Old Briefings'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Archive Old Briefings'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA Delete Old Feeds'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'PDA Fetch ClickUp'": {
+      "main": [
+        [
+          {
+            "node": "Call 'PDA LLM Pass 1'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "c445318b-5f8b-44b5-8a31-0fbda7f46cc3",
+  "activeVersionId": null,
+  "versionCounter": 265,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

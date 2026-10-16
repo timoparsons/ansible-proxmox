@@ -1,0 +1,409 @@
+{
+  "updatedAt": "2026-05-10T03:14:51.163Z",
+  "createdAt": "2026-05-10T02:57:38.030Z",
+  "id": "LCjE4RgelaPKaM5E",
+  "name": "Housekeeping – Resolve Decisions",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "rd-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "notes": "Input: { controlFileContent, awaitingFlags, obsidianBaseUrl, controlFilePath }"
+    },
+    {
+      "id": "rd-resolve",
+      "name": "Resolve Decisions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// ── Resolve Decisions ────────────────────────────────────────────────────\n// Processes actionable flags from the Awaiting Decision section.\n// Actionable = checked [x] AND has a decision annotation.\n//\n// Supported decision types:\n//   \"project: <slug>\"  → setFrontmatter { key: 'project', value: slug }\n//   \"type: <type>\"     → setFrontmatter { key: 'type', value: type }\n//   \"area: <area>\"     → setFrontmatter { key: 'area', value: area }\n//   \"skip\" / \"ignore\" → remove flag, no file edit\n//   anything else      → unrecognised, leave flag in place\n// ─────────────────────────────────────────────────────────────────────────\n\nconst input = $input.item.json;\nconst controlFileContent = input.controlFileContent ?? '';\nconst awaitingFlags      = Array.isArray(input.awaitingFlags) ? input.awaitingFlags : [];\nconst controlFilePath    = input.controlFilePath ?? '';\n\nconst actioned      = [];\nconst unrecognised  = [];\nconst skipped       = [];\nconst toRemovePaths = new Set(); // filePaths whose flag lines should be stripped\n\nfor (const flag of awaitingFlags) {\n  if (!flag.readyToAction) continue;\n\n  const decision = (flag.decision ?? '').trim().toLowerCase();\n\n  if (decision === 'skip' || decision === 'ignore') {\n    skipped.push({ filePath: flag.filePath, description: flag.description });\n    toRemovePaths.add(flag.filePath);\n    continue;\n  }\n\n  const fmMatch = decision.match(/^(project|type|area):\\s*(.+)$/);\n  if (fmMatch) {\n    const key   = fmMatch[1];\n    const value = fmMatch[2].trim();\n    actioned.push({\n      filePath:    flag.filePath,\n      description: flag.description,\n      decision:    flag.decision,\n      action:      { type: 'setFrontmatter', key, value }\n    });\n    toRemovePaths.add(flag.filePath);\n    continue;\n  }\n\n  // Unrecognised — leave flag in place\n  unrecognised.push({ filePath: flag.filePath, decision: flag.decision });\n}\n\n// ── Strip resolved flags from control file ────────────────────────────────\nlet updatedControlContent = controlFileContent;\n\nif (toRemovePaths.size > 0) {\n  const lines = controlFileContent.split('\\n');\n  const out   = [];\n  let skip    = false;\n\n  for (const line of lines) {\n    // Flag line format: \"- [x] `path/to/file.md` — description\"\n    const flagLineMatch = line.match(/^- \\[[ x]\\] `([^`]+)`/);\n    if (flagLineMatch) {\n      const linePath = flagLineMatch[1];\n      if (toRemovePaths.has(linePath)) {\n        skip = true; // skip this line and any immediately following indented lines\n        continue;\n      } else {\n        skip = false;\n      }\n    } else if (skip && (line.startsWith('  ') || line.trim() === '')) {\n      // Indented continuation or blank line after a removed flag — skip\n      continue;\n    } else {\n      skip = false;\n    }\n    out.push(line);\n  }\n  updatedControlContent = out.join('\\n');\n}\n\n// ── Build edit payload for file frontmatter updates ───────────────────────\nconst editPayload = actioned\n  .filter(a => a.action?.type === 'setFrontmatter')\n  .map(a => ({ filePath: a.filePath, key: a.action.key, value: a.action.value }));\n\nconst hasChanges = actioned.length > 0 || skipped.length > 0;\n\nconsole.log(`Resolve Decisions: ${actioned.length} actioned, ${skipped.length} skipped, ${unrecognised.length} unrecognised`);\n\nreturn [{ json: {\n  actioned,\n  unrecognised,\n  skipped,\n  editPayload,\n  updatedControlContent,\n  controlFilePath,\n  hasChanges,\n  obsidianBaseUrl: input.obsidianBaseUrl\n}}];"
+      },
+      "notes": "Parses actionable flags, builds edit payload, strips resolved flags from control file content"
+    },
+    {
+      "id": "rd-any-changes",
+      "name": "Any Changes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-haschanges",
+              "leftValue": "={{ $json.hasChanges }}",
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rd-apply-edits",
+      "name": "Apply File Edits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Prepare edit payload — actual HTTP calls to Obsidian REST API for each frontmatter fix\n// editPayload items: { filePath, key, value }\nconst data        = $input.item.json;\nconst editPayload = data.editPayload ?? [];\nconst baseUrl     = data.obsidianBaseUrl ?? '';\nconst results     = [];\n\nfor (const edit of editPayload) {\n  try {\n    // Read the file\n    const readRes = await $helpers.httpRequest({\n      method: 'GET',\n      url: `${baseUrl}/vault/${edit.filePath.split('/').map(encodeURIComponent).join('/')}`,\n      headers: { Accept: 'text/markdown' },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true\n    });\n    const originalContent = readRes.body ?? '';\n\n    // Set/replace the frontmatter key\n    const fmMatch = originalContent.match(/^(---\\n[\\s\\S]*?\\n---\\n)/);\n    if (!fmMatch) {\n      results.push({ filePath: edit.filePath, key: edit.key, value: edit.value, status: 'error', error: 'No frontmatter block found' });\n      continue;\n    }\n    const fmBlock = fmMatch[1];\n    const rest    = originalContent.slice(fmBlock.length);\n    let newFm;\n    const keyLineRe = new RegExp(`^${edit.key}:.*$`, 'm');\n    if (keyLineRe.test(fmBlock)) {\n      newFm = fmBlock.replace(keyLineRe, `${edit.key}: ${edit.value}`);\n    } else {\n      // Insert before closing ---\n      newFm = fmBlock.replace(/\\n---\\n$/, `\\n${edit.key}: ${edit.value}\\n---\\n`);\n    }\n    const newContent = newFm + rest;\n\n    // Write back\n    await $helpers.httpRequest({\n      method: 'PUT',\n      url: `${baseUrl}/vault/${edit.filePath.split('/').map(encodeURIComponent).join('/')}`,\n      headers: { 'Content-Type': 'text/markdown' },\n      body: newContent,\n      skipSslCertificateValidation: true\n    });\n    results.push({ filePath: edit.filePath, key: edit.key, value: edit.value, status: 'written' });\n  } catch (err) {\n    results.push({ filePath: edit.filePath, key: edit.key, value: edit.value, status: 'error', error: err.message });\n  }\n}\n\nconsole.log(`Apply File Edits: ${results.filter(r => r.status === 'written').length} written, ${results.filter(r => r.status === 'error').length} errors`);\n\nreturn [{ json: { ...data, fileEditResults: results } }];"
+      },
+      "notes": "Applies frontmatter edits directly via Obsidian REST API for each item in editPayload"
+    },
+    {
+      "id": "rd-write-control",
+      "name": "Write Control File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        880,
+        160
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.obsidianBaseUrl }}/vault/{{ $json.controlFilePath.split('/').map(p => encodeURIComponent(p)).join('/') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.updatedControlContent }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "notes": "Writes the updated Housekeeping.md (with resolved flags removed) back to Obsidian"
+    },
+    {
+      "id": "rd-mark-written",
+      "name": "Mark Written",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        160
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mw-actioned",
+              "name": "actioned",
+              "type": "array",
+              "value": "={{ $('Apply File Edits').item.json.actioned }}"
+            },
+            {
+              "id": "mw-unrec",
+              "name": "unrecognised",
+              "type": "array",
+              "value": "={{ $('Apply File Edits').item.json.unrecognised }}"
+            },
+            {
+              "id": "mw-skipped",
+              "name": "skipped",
+              "type": "array",
+              "value": "={{ $('Apply File Edits').item.json.skipped }}"
+            },
+            {
+              "id": "mw-edits",
+              "name": "fileEditResults",
+              "type": "array",
+              "value": "={{ $('Apply File Edits').item.json.fileEditResults }}"
+            },
+            {
+              "id": "mw-written",
+              "name": "controlFileWritten",
+              "type": "boolean",
+              "value": "=true"
+            },
+            {
+              "id": "mw-status",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "=written"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "rd-pass-through",
+      "name": "Pass Through",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        440
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pt-actioned",
+              "name": "actioned",
+              "type": "array",
+              "value": "={{ $json.actioned }}"
+            },
+            {
+              "id": "pt-unrec",
+              "name": "unrecognised",
+              "type": "array",
+              "value": "={{ $json.unrecognised }}"
+            },
+            {
+              "id": "pt-skipped",
+              "name": "skipped",
+              "type": "array",
+              "value": "={{ $json.skipped }}"
+            },
+            {
+              "id": "pt-edits",
+              "name": "fileEditResults",
+              "type": "array",
+              "value": "=[]"
+            },
+            {
+              "id": "pt-written",
+              "name": "controlFileWritten",
+              "type": "boolean",
+              "value": "=false"
+            },
+            {
+              "id": "pt-status",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "=skipped"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "No actionable flags — nothing to write"
+    },
+    {
+      "id": "rd-merge",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      }
+    },
+    {
+      "id": "rd-respond",
+      "name": "Respond to Workflow",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1540,
+        300
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-actioned",
+              "name": "actioned",
+              "type": "array",
+              "value": "={{ $json.actioned }}"
+            },
+            {
+              "id": "out-unrec",
+              "name": "unrecognised",
+              "type": "array",
+              "value": "={{ $json.unrecognised }}"
+            },
+            {
+              "id": "out-skipped",
+              "name": "skipped",
+              "type": "array",
+              "value": "={{ $json.skipped }}"
+            },
+            {
+              "id": "out-edits",
+              "name": "fileEditResults",
+              "type": "array",
+              "value": "={{ $json.fileEditResults }}"
+            },
+            {
+              "id": "out-written",
+              "name": "controlFileWritten",
+              "type": "boolean",
+              "value": "={{ $json.controlFileWritten }}"
+            },
+            {
+              "id": "out-status",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "={{ $json.writeStatus }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "Output: { actioned, unrecognised, skipped, fileEditResults, controlFileWritten, writeStatus }"
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Resolve Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Decisions": {
+      "main": [
+        [
+          {
+            "node": "Any Changes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Changes?": {
+      "main": [
+        [
+          {
+            "node": "Apply File Edits",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pass Through",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply File Edits": {
+      "main": [
+        [
+          {
+            "node": "Write Control File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Control File": {
+      "main": [
+        [
+          {
+            "node": "Mark Written",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Written": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Through": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "eabee3bb-9f63-40d7-8dd7-84712506e9e1",
+  "activeVersionId": "eabee3bb-9f63-40d7-8dd7-84712506e9e1",
+  "versionCounter": 15,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

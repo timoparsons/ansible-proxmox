@@ -1,0 +1,543 @@
+{
+  "updatedAt": "2026-06-29T10:27:58.088Z",
+  "createdAt": "2026-04-09T04:23:19.345Z",
+  "id": "JySEv9erlNHsJaZM",
+  "name": "PDA LLM Pass 2",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Overview/{{ encodeURIComponent($items(\"Identify Briefing Files\")[0].json.previous_briefing) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        -240
+      ],
+      "id": "466ef1ed-bacf-4a73-a75e-361fd7865642",
+      "name": "Find Previous Briefing",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Overview/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "94a04741-b346-4788-9956-50fb8406746f",
+      "name": "Fetch Previous Briefings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        16,
+        -240
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -160
+      ],
+      "id": "f9667768-45f3-4db7-bcb1-83d195e2b6a7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -688,
+        -352
+      ],
+      "id": "50530cba-8bce-4bb2-986e-586a082e50be",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('feeds-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1056,
+        -240
+      ],
+      "id": "48790f8d-d90b-48c4-9f00-e87276fa4b5f",
+      "name": "Fetch Feeds",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('projects-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        832,
+        -240
+      ],
+      "id": "abb67830-1693-4f19-b188-9f05d7689566",
+      "name": "Fetch projects_index",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('skeleton-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        608,
+        -240
+      ],
+      "id": "782217ae-5d1e-49e1-a067-93469453fc01",
+      "name": "Fetch Skeleton",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract existing files from the previous node\nconst files = items[0].json.files;\n\n// 2. Filter to briefing files (date-prefixed .md files) and sort newest first\nconst briefingPattern = /^\\d{4}-\\d{2}-\\d{2}.*\\.md$/;\nconst existingBriefings = files\n  .filter(f => briefingPattern.test(f))\n  .sort((a, b) => b.localeCompare(a));\n\n// 3. The previous briefing is simply the most recent existing one.\n// Since filenames now include a timestamp (yyyy-MM-dd HH:mm), no run ever\n// overwrites another, so we never need to skip the current run's file here —\n// it hasn't been written yet when this node executes.\nconst previousBriefing = existingBriefings[0] || null;\n\nreturn [{\n  json: {\n    all_briefings: existingBriefings,\n    previous_briefing: previousBriefing\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -240
+      ],
+      "id": "0346eb8f-7726-4cfd-8804-f9729c56a6fd",
+      "name": "Identify Briefing Files"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.1.1.200:1234/v1/chat/completions",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "timeout": 1800000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -16,
+        32
+      ],
+      "id": "67b99bc0-e497-4d42-a601-e010f12240e1",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Extract raw LLM response ────────────────────────────────────────────────────────────────────\nconst responseText = $json.choices?.[0]?.message?.content || '';\n\n// ── 2. Strip <think> blocks (Qwen3) ────────────────────────────────────────────────────────────\nlet briefingMarkdown = responseText.replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n\n// ── 3. Strip any footer line the LLM may have invented ─────────────────────────────────────────\nbriefingMarkdown = briefingMarkdown.replace(/\\n[_*]{1,2}Generated by[^\\n]*[_*]{1,2}\\s*$/m, '').trimEnd();\n\n// ── 4. SAFETY NET — strip appended source material ───────────────────────────────────────────\nbriefingMarkdown = briefingMarkdown.replace(/\\n###\\s*PROJECT INDEX[\\s\\S]*/i, '').trimEnd();\nconst housekeepingPos = briefingMarkdown.lastIndexOf('## 🔵 Housekeeping');\nif (housekeepingPos !== -1) {\n  const afterHousekeeping = briefingMarkdown.slice(housekeepingPos);\n  const jsonLeakMatch = afterHousekeeping.match(/\\n\\n(\\[|\\{)/);\n  if (jsonLeakMatch) {\n    const leakOffset = housekeepingPos + jsonLeakMatch.index;\n    briefingMarkdown = briefingMarkdown.slice(0, leakOffset).trimEnd();\n  }\n}\n\n// ── 5. Strip callouts containing NO_NEW_SIGNALS sentinel ───────────────────────────────────\n// The LLM emits NO_NEW_SIGNALS as the status bullet when nothing has changed.\n// We strip the entire [!info] callout block deterministically here rather than\n// asking the LLM to delete multi-line markdown (which risks formatting damage).\nbriefingMarkdown = briefingMarkdown.replace(\n  />\\s*\\[!info\\].*?\\n(?:>.*\\n)*?>[^\\n]*NO_NEW_SIGNALS[^\\n]*\\n(?:>.*\\n)*/g,\n  ''\n);\n\n// ── 5b. Strip empty New tasks blocks from callouts ──────────────────────────────────────────\nbriefingMarkdown = briefingMarkdown.replace(\n  /\\n?>\\s*\\n>\\s*\\*\\*New tasks\\*\\*\\s*\\n>\\s*\\*\\(none\\)\\*\\s*/gm,\n  '\\n\\n'\n);\n\n// ── 6. Strip callout + Recent Activity for no-signal projects ──────────────────────────────\nfunction stripNoSignalBlocks(markdown) {\n  const segments = markdown.split(/((?:^|\\n)### )/m);\n  const result = [];\n  result.push(segments[0]);\n  for (let i = 1; i < segments.length; i += 2) {\n    const prefix = segments[i];\n    let body = segments[i + 1] || '';\n    const hasNoSignals = /\\|\\s*No new signals[^|]*\\|\\s*[—-]\\s*\\|/i.test(body);\n    if (hasNoSignals) {\n      body = body.replace(/>\\s*\\[!info\\][^\\n]*\\n(?:>.*\\n)*/, '');\n      body = body.replace(/\\*\\*Recent Activity:\\*\\*\\n\\n\\|[^\\n]+\\|\\n\\|[-| ]+\\|\\n\\|[^\\n]*No new signals[^\\n]*\\|\\n?/, '');\n      body = body.replace(/\\n{3,}/g, '\\n\\n');\n    }\n    result.push(prefix, body);\n  }\n  return result.join('');\n}\nbriefingMarkdown = stripNoSignalBlocks(briefingMarkdown);\n\n// ── 7. Performance metadata ───────────────────────────────────────────────────────────────────────\nconst configNode   = $('Config').first()?.json || {};\nconst rawStartTime = (configNode.starttime || '').replace(/^\"|\"$/g, '');\nconst modelUsed    = configNode.manualModelName || $json.model || 'unknown';\n\nconst startTime = rawStartTime ? new Date(rawStartTime).getTime() : null;\nconst endTime   = Date.now();\n\nlet generationTimeSec = 0;\nif (startTime && !isNaN(startTime)) {\n  generationTimeSec = parseFloat(((endTime - startTime) / 1000).toFixed(2));\n}\n\nconst completionTokens = $json.usage?.completion_tokens || 0;\nconst totalTokens      = $json.usage?.total_tokens      || 0;\nconst tokensPerSecond  = generationTimeSec > 0\n  ? parseFloat((completionTokens / generationTimeSec).toFixed(2))\n  : 0;\n\nconst mins              = Math.floor(generationTimeSec / 60);\nconst secs              = (generationTimeSec % 60).toFixed(1);\nconst durationFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;\n\n// ── 8. Time strings (NZT — for subtitle display only) ──────────────────────────────────────\nconst now     = new Date();\nconst timeStr = now.toLocaleTimeString('en-NZ', {\n  hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland'\n});\n\n// ── 9. generated_at: UTC ISO — used by Master on next run for feedsSince arithmetic ─────────────\nconst generatedAt = now.toISOString(); // e.g. \"2026-04-14T19:32:00.000Z\"\n\n// ── 10. Previous briefing link ─────────────────────────────────────────────────────────────────────────\nconst buildPromptNode  = $('Code - Build Prompt').first()?.json || {};\nconst prevBriefingName = buildPromptNode.prevBriefingName || '';\nconst prevDateLink     = prevBriefingName.replace(/\\.md$/i, '');\n\n// ── 11. Subtitle line (under H1) ───────────────────────────────────────────────────────────────────────\nconst subtitleLine = prevDateLink\n  ? `*← [[${prevDateLink}|Previous Briefing]]  ·  Generated ${timeStr}*`\n  : `*Generated ${timeStr}*`;\n\n// ── 12. Inject subtitle after H1 ──────────────────────────────────────────────────────────────────────\nlet withSubtitle = briefingMarkdown.replace(\n  /^(# .+)\\n/m,\n  `$1\\n${subtitleLine}\\n\\n`\n);\n\n// ── 13. YAML frontmatter — generated_at is UTC ISO for feedsSince lookup ───────────────────────\nconst frontmatter = `---\\nmodel: \"${modelUsed}\"\\nduration: \"${durationFormatted}\"\\ntokens_per_sec: ${tokensPerSecond}\\ntokens_completion: ${completionTokens}\\ntokens_total: ${totalTokens}\\ngenerated_at: \"${generatedAt}\"\\n---`;\n\n// ── 14. Assemble final document (no footer) ──────────────────────────────────────────────────────\nconst content = `${frontmatter}\\n\\n${withSubtitle}`;\n\nreturn [{ json: { content, generatedAt, metadata: { model: modelUsed, duration: durationFormatted, generationTimeSeconds: generationTimeSec, tokensPerSecond, completionTokens, totalTokens } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        32
+      ],
+      "id": "177c313a-54bb-4a2c-8296-41beffcccced",
+      "name": "Code - Parse Response"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://10.1.1.200:27124/vault/{{ encodeURI('Overview/' + $('Config').item.json.shared_datetime + ' - Daily Briefing.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        32
+      ],
+      "id": "d6de60bf-7979-4e59-b085-3d1f5d95bfa0",
+      "name": "create obsidian feed",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "manualModelName",
+              "type": "string",
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx",
+              "id": "f6fb49f6-b87a-4b8d-9526-453bde4dec80"
+            },
+            {
+              "name": "starttime",
+              "type": "string",
+              "value": "={{ new Date() }}",
+              "id": "983f42a0-b44e-403d-ac77-0195e83c91b4"
+            },
+            {
+              "value": "REDACTED-HEX64",
+              "id": "03404e28-b658-4627-9ddc-08cccd93bf8f",
+              "name": "obsidianToken",
+              "type": "string"
+            },
+            {
+              "type": "string",
+              "value": "={{ $json.shared_date || $now.toFormat('yyyy-MM-dd') }}",
+              "id": "ef20fe2b-296d-49f0-9a9b-817fd87dc567",
+              "name": "shared_date"
+            },
+            {
+              "type": "string",
+              "name": "shared_datetime",
+              "value": "={{ $json.shared_date ? ($json.shared_date + ' ' + $now.toFormat('HH:mm')) : $now.toFormat('yyyy-MM-dd HH:mm') }}",
+              "id": "ef20fe2b-296d-49f0-9a9b-817fd87dc568"
+            },
+            {
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx",
+              "id": "11e12979-cf4b-4e61-b31e-ea06a3c58e2e",
+              "name": "unused",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        -240
+      ],
+      "id": "4935843d-41d8-4497-bb57-b4d78ca71c2d",
+      "name": "Config",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Helpers ────────────────────────────────────────────────────────────────────\nfunction parseFencedJSON(raw) {\n  const stripped = raw.replace(/^---[\\s\\S]*?---\\n?/, '').trim();\n  const fence = '\\u0060\\u0060\\u0060';\n  const fenceRegex = new RegExp(fence + 'json\\\\s*([\\\\s\\\\S]*?)\\\\s*' + fence);\n  const match = stripped.match(fenceRegex);\n  if (match) return JSON.parse(match[1]);\n  return JSON.parse(stripped);\n}\n\nfunction getContent(node) {\n  const j = node.first().json;\n  return j.content || j.data || '';\n}\n\n// Convert any ISO timestamp string to NZT 24-hour HH:MM\nfunction toNZT(isoString) {\n  if (!isoString) return '';\n  try {\n    return new Date(isoString).toLocaleTimeString('en-NZ', {\n      hour: '2-digit',\n      minute: '2-digit',\n      hour12: false,\n      timeZone: 'Pacific/Auckland'\n    });\n  } catch (e) {\n    return '';\n  }\n}\n\n// Walk a parsed feed array and stamp a time_nzt field onto every message\nfunction stampNZT(feedArray) {\n  if (!Array.isArray(feedArray)) return feedArray;\n  return feedArray.map(msg => ({\n    ...msg,\n    time_nzt: toNZT(msg.timestamp)\n  }));\n}\n\n// Compute days from today to a YYYY-MM-DD date string. Returns null if no date.\nfunction daysUntil(dateStr) {\n  if (!dateStr) return null;\n  const today = new Date();\n  today.setHours(0, 0, 0, 0);\n  const target = new Date(dateStr + 'T00:00:00');\n  return Math.round((target - today) / (1000 * 60 * 60 * 24));\n}\n\n// ── 1. Collect inputs ──────────────────────────────────────────────────────────────────\nconst skeletonRaw      = getContent($('Fetch Skeleton'));\nconst projectIndexRaw  = getContent($('Fetch projects_index'));\nconst feedsRaw         = getContent($('Fetch Feeds'));\nconst prevBriefingRaw  = getContent($('Find Previous Briefing'));\nconst prevBriefingName = $('Identify Briefing Files').first().json.previous_briefing || '';\n\n// ── 2. Parse structured data & stamp NZT times ─────────────────────────────────────────\nconst projectIndex     = parseFencedJSON(projectIndexRaw);\nconst categorizedFeeds = stampNZT(parseFencedJSON(feedsRaw));\n\n// ── 3. Annotate each project with milestone proximity ──────────────────────────────────\nconst annotatedIndex = projectIndex.map(p => {\n  const out = { ...p };\n  // Strip current_status from the JSON — it's already in the skeleton body as **Current Status:**.\n  // Sending it twice anchors the model to echo it into __proposed_current_status_bullets__.\n  // Rollback: remove this line. No other nodes affected. (added 2026-06-29)\n  delete out.current_status;\n  for (const field of ['milestone_offline', 'milestone_online', 'milestone_delivery']) {\n    if (p[field]) {\n      out[field + '_days'] = daysUntil(p[field]);\n    }\n  }\n  return out;\n});\n\n// ── 4. Get model from Config ─────────────────────────────────────────────────────────────────\nconst model = $('Config').first().json.manualModelName;\n\n// ── 5. Build prompt ──────────────────────────────────────────────────────────────────\nconst systemPrompt = `You are an executive synthesis engine generating a personal daily briefing.\n\n## THINKING MODE DISABLED\nDo not use <think> tags.\nDo not produce hidden or visible reasoning.\nOutput only final answers.\n\nYou will be given a skeleton briefing document containing placeholders in the format __PLACEHOLDER__. Replace every placeholder with the appropriate content as described below. Do not modify anything else — especially Tasks plugin code blocks (lines beginning with a backtick fence and containing task query syntax).\n\n## YOUR INPUTS\n\n### SKELETON BRIEFING\n${skeletonRaw}\n\n### PROJECT INDEX\nEach project entry includes:\n- open_tasks: tasks already captured and actively tracked — do NOT reproduce these as new tasks under any circumstances\n- completed_tasks: tasks already finished — do NOT propose these again\n- milestone_offline: date (YYYY-MM-DD) when the first offline/cut is due to the client. null if not set.\n- milestone_online: date (YYYY-MM-DD) when grade & online are due to the client. null if not set.\n- milestone_delivery: date (YYYY-MM-DD) when final masters are due. null if not set.\n- milestone_offline_days / milestone_online_days / milestone_delivery_days: integer — days from today until that milestone (negative = overdue, 0 = today). Only present when the corresponding date is set.\n\nUse milestone proximity to inform urgency. If milestone_offline_days <= 7 and not null, treat that project as high-priority in __proposed_actions__ and flag the upcoming deadline explicitly (e.g. \"First offline due in 3 days\"). Overdue milestones (negative days) should be flagged as critical.\n${JSON.stringify(annotatedIndex, null, 2)}\n\n### CATEGORISED FEEDS (today's signals)\nEach message has a \"time_nzt\" field containing the pre-converted local time in 24-hour NZT (e.g. \"14:23\"). Use this field exactly as-is whenever you display a time. Do not perform any timezone conversion yourself.\n${JSON.stringify(categorizedFeeds, null, 2)}\n\n### PREVIOUS BRIEFING\n${prevBriefingRaw}\n\n## PLACEHOLDER DEFINITIONS\n\n__signal_check__\nOne punchy sentence summarising the overall tone of today's signals. E.g. \"Quiet day — one client reply pending, no blockers.\"\n\n__proposed_actions__\n3–5 bullet points. The highest-leverage actions Tim should take today based on feeds, open tasks, and project status. Be specific and actionable. If any project has a milestone within 7 days, lead with or prominently include that deadline.\n\n__recent_updates__\nFor each relevant signal, write a table row: summary text in the Summary column, and the message's time_nzt value in the Time column. Use the time_nzt field verbatim — do not convert or reformat it. If no signals exist for this project today, write a single row: \"No new signals today; status unchanged since last briefing. | —\"\n\n__resolution_summary__\nCompare yesterday's open tasks (from the Previous Briefing) against today's signals. If any items appear closed or resolved, list them as bullet points with a ✓ prefix. If nothing is resolved, write \"Nothing resolved since last briefing.\"\n\n__starred_items__\nCollect ALL messages where source_type is \"gmail_starred\". For each one, render a single unchecked task checkbox line:\n- [ ] [subject or short description] — [sender name] ([account])\nIf there are no starred items, write exactly: *None*\n\nThis section appears after Priority Tasks and before Schedule in the briefing.\n\n__today_items__\nBullet points of personal/admin reminders or tasks due today from the feeds.\n\n__joy_inc_items__\nBullet points of Joy Inc related items from the feeds. If none, write \"Nothing new.\"\n\n__proposed_current_status_bullets__\nA synthesised snapshot of where this project stands RIGHT NOW (2–4 bullet points maximum), written to be saved verbatim back to the project file's ## Current Status section.\n\nRules:\n- Use the project's existing current_status from the Project Index as context, but do NOT carry it forward verbatim.\n- Incorporate any relevant new signals from today's feeds.\n- DISCARD any bullet that describes a completed action, a resolved question, or a state superseded by newer information. E.g. drop \"Cut sent for review\" once \"Client approved the cut\" is known.\n- Each bullet must reflect current, ongoing, or unresolved state only — not history.\n- Write in present tense, factual. Plain hyphens only, no bold or italic.\n- Ask yourself: what would you tell someone joining this project fresh today? That is what belongs here.\n- NO NEW INFORMATION: After drafting your bullets, compare them against the project's existing current_status line by line. If every bullet is substantively identical to the existing status (same facts, same state, no new information added), replace __proposed_current_status_bullets__ with the single token NO_NEW_SIGNALS and nothing else. Do not write any bullets. The post-processing step will strip the callout cleanly.\n\n__proposed_new_tasks__\nIdentify genuinely NEW actionable tasks from today's feeds that are not already tracked.\n\nCRITICAL DEDUPLICATION — before proposing any task, you MUST:\n1. Read this project's open_tasks array in the Project Index. Every item in that list is ALREADY CAPTURED. Do not propose it, do not paraphrase it, do not make it more specific. It is handled.\n2. Read this project's completed_tasks array. Do not propose anything already done.\n3. A task is a duplicate if it targets the same person, action, or deliverable as any existing open task — even if worded differently. Examples of duplicates that must NOT be proposed:\n   - open_tasks has \"Confirm Max's grade window\" → do NOT propose \"Confirm grade session with Max\" or \"Follow up with Max on grade\"\n   - open_tasks has \"Monitor IJM feedback on Indonesia offline\" → do NOT propose \"Check IJM response on Indonesia cut\"\n4. Only propose a task if a signal introduces a genuinely new action that has no equivalent in open_tasks.\n5. If nothing genuinely new exists, write exactly: > *(none)*\n\nFORMATTING: Each task line must start with exactly \"> - [ ] \" (one \">\" prefix, then \"- [ ] \"). Do NOT double the \">\".\n\nCorrect:\n> - [ ] Follow up with Morgan on animation feedback\n\nIncorrect:\n> > - [ ] Task text\n\n## OUTPUT RULES\n1. Return only the completed briefing document as plain Markdown.\n2. Do not wrap the output in a code fence.\n3. Do not add any preamble, explanation, or closing remarks.\n4. Do not modify, remove, or rewrite any Tasks plugin code blocks.\n5. Every placeholder must be replaced — do not leave any __PLACEHOLDER__ in the output.\n6. Do not append a footer, signature line, or any italicised metadata line at the end. The document ends after the last item in the ## 🔵 Housekeeping section.\n7. CRITICAL — DO NOT REPRODUCE SOURCE MATERIAL: Do not append, echo, or reproduce any of the input data you were given — this includes the PROJECT INDEX JSON, the CATEGORISED FEEDS JSON, the PREVIOUS BRIEFING content, or any other raw data from your inputs. Your output must contain ONLY the filled briefing document derived from the skeleton. If your response contains a heading like \"### PROJECT INDEX\" or a JSON array/object after the last briefing section, that is a critical error.\n8. For the [!info] callout blocks: preserve the exact callout syntax including all \">\" prefixes. The project-id:: line must be kept exactly as stamped. Only replace __proposed_current_status__ and __proposed_new_tasks__ within those callout lines.\n9. All times displayed in the briefing must come from the time_nzt field. Never derive times from the raw timestamp field yourself.\n10. If a project has no new signals AND its status is unchanged, replace __proposed_current_status_bullets__ with the single token NO_NEW_SIGNALS. Do not write status bullets, do not remove the callout block — the post-processing step will strip it cleanly and safely.\n11. The final line of your output must be the last item in the ## 🔵 Housekeeping section. Nothing may follow it — no JSON, no indexes, no source data, no commentary.\n12. STARRED ITEMS: Any message with source_type \"gmail_starred\" must appear in the __starred_items__ section as an unchecked task checkbox. Starred items should also appear in their relevant project's Recent Activity table as normal signals. The starred section count summary should read e.g. \"⭐ Starred / Action Required (3 items)\" if items exist.`;\n\n// ── 6. Build LLM request body ──────────────────────────────────────────────────────────────\n\n// Extract the first line (the Daily Briefing header) to use as a pre-fill\n// This forces the model to skip the <think> block entirely.\nconst headerLine = skeletonRaw.split('\\n')[0].trim();\n\nconst body = JSON.stringify({\n  model: model,\n  messages: [\n    { role: \"system\", content: systemPrompt },\n    { role: \"user\", content: \"Generate the completed briefing now.\" },\n    { \n      role: \"assistant\", \n      content: headerLine // Anchors the model so it can't start with <think>\n    }\n  ],\n  temperature: 0.1, // Lower temperature is better for strict formatting\n  // Stop sequence ensures it doesn't accidentally leak your index data if it hallucinates\n  stop: [\"### PROJECT INDEX\", \"### CATEGORISED FEEDS\"]\n});\n\n// ── 7. Return payload ──────────────────────────────────────────────────────────────────\nreturn [{\n  json: {\n    body,\n    prevBriefingName,\n    metadata: {\n      timestamp: new Date().toISOString(),\n      model\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -240
+      ],
+      "id": "592ea433-8326-4003-bedb-e8fba2393a71",
+      "name": "Code - Build Prompt",
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── Config ───────────────────────────────────────────────────────────────────────────\nconst BASE    = 'https://10.1.1.200:27124';\nconst INBOX   = 'Obsidian/PDA/Inbox';\nconst ARCHIVE = 'Obsidian/PDA/Inbox/Archive';\nconst today   = $now.toFormat('yyyy-MM-dd');\n\nconst token = $('Config').first().json.obsidianToken;\nconst headers = {\n  'Authorization': 'Bearer ' + token,\n  'Content-Type': 'text/plain'\n};\n\n// ── Files to archive ──────────────────────────────────────────────────────────────────\n// generated_at is written to the briefing's YAML frontmatter by Code - Parse Response.\n// The Master workflow reads it from there on the next run — no state.md needed.\nconst moves = [\n  { src: `${INBOX}/feeds-${today}.md`,    dest: `${ARCHIVE}/feeds-${today}.md` },\n  { src: `${INBOX}/gmail_feed.md`,        dest: `${ARCHIVE}/gmail_feed-${today}.md` },\n  { src: `${INBOX}/calendar_feed.md`,     dest: `${ARCHIVE}/calendar_feed-${today}.md` },\n  { src: `${INBOX}/slack_feed.md`,        dest: `${ARCHIVE}/slack_feed-${today}.md` }\n];\n\nconst results = [];\nfor (const { src, dest } of moves) {\n  try {\n    const readRes = await fetch(`${BASE}/vault/${src}`, { headers: { 'Authorization': headers.Authorization } });\n    if (!readRes.ok) throw new Error(`Read failed (${readRes.status}): ${src}`);\n    const content = await readRes.text();\n\n    const writeRes = await fetch(`${BASE}/vault/${dest}`, { method: 'PUT', headers, body: content });\n    if (!writeRes.ok) throw new Error(`Write failed (${writeRes.status}): ${dest}`);\n\n    const delRes = await fetch(`${BASE}/vault/${src}`, { method: 'DELETE', headers: { 'Authorization': headers.Authorization } });\n    if (!delRes.ok) throw new Error(`Delete failed (${delRes.status}): ${src}`);\n\n    results.push({ file: src, status: 'archived', dest });\n  } catch (e) {\n    results.push({ file: src, status: 'error', error: e.message });\n  }\n}\n\nreturn [{ json: { housekeeping: results } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        32
+      ],
+      "id": "03ae5876-bcf6-45a1-8341-75f138ae1073",
+      "name": "Code - Housekeeping"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9u9lYZyviZunbye1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9u9lYZyviZunbye1",
+          "cachedResultName": "Util LM Studio Unload Model"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "desired_model": "={{ $('Config').item.json.manualModelName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "key": "desired_model",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -240
+      ],
+      "id": "51adbe1f-5453-435b-8b96-370c6f4ab001",
+      "name": "Call 'Util LM Studio Unload Model'",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Fetch Previous Briefings": {
+      "main": [
+        [
+          {
+            "node": "Identify Briefing Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Previous Briefing": {
+      "main": [
+        [
+          {
+            "node": "Fetch Skeleton",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Skeleton": {
+      "main": [
+        [
+          {
+            "node": "Fetch projects_index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch projects_index": {
+      "main": [
+        [
+          {
+            "node": "Fetch Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify Briefing Files": {
+      "main": [
+        [
+          {
+            "node": "Find Previous Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Feeds": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Response": {
+      "main": [
+        [
+          {
+            "node": "create obsidian feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Call 'Util LM Studio Unload Model'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create obsidian feed": {
+      "main": [
+        [
+          {
+            "node": "Code - Housekeeping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Util LM Studio Unload Model'": {
+      "main": [
+        [
+          {
+            "node": "Fetch Previous Briefings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "49eb53b3-c78f-4f9b-a1d8-f2c2c068f934",
+  "activeVersionId": "49eb53b3-c78f-4f9b-a1d8-f2c2c068f934",
+  "versionCounter": 403,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

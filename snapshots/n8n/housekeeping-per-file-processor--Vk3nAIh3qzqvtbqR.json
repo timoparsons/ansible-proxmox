@@ -1,0 +1,962 @@
+{
+  "updatedAt": "2026-10-11T09:25:07.094Z",
+  "createdAt": "2026-05-10T02:48:40.675Z",
+  "id": "Vk3nAIh3qzqvtbqR",
+  "name": "Housekeeping – Per-File Processor",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "pfp-trigger",
+      "name": "Execute Workflow Trigger",
+      "notes": "Input: { filePath, obsidianBaseUrl, modelName, allKnownFiles }. allKnownFiles is the vault-relative file list from SSH find — passed from Master so Mechanical Checks can resolve sibling Project files.",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        288
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "filePath"
+            },
+            {
+              "name": "obsidianBaseUrl"
+            },
+            {
+              "name": "modelName"
+            },
+            {
+              "name": "allKnownFiles",
+              "type": "array"
+            },
+            {
+              "name": "areaMap",
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pfp-read-file",
+      "name": "Read File",
+      "notes": "Reads file content via Obsidian Local REST API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -416,
+        288
+      ],
+      "parameters": {
+        "url": "={{ $json.obsidianBaseUrl }}/vault/{{ $json.filePath.split('/').map(s => encodeURIComponent(s)).join('/') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "pfp-changed",
+      "name": "Changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        752
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-changed",
+              "leftValue": "={{ $json.changed }}",
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pfp-write-file",
+      "name": "Write File",
+      "notes": "Writes mechanically-fixed content back to Obsidian",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -16,
+        608
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Execute Workflow Trigger').first().json.obsidianBaseUrl }}/vault/{{ $('Finalize Content').item.json.filePath.split('/').map(s => encodeURIComponent(s)).join('/') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $('Finalize Content').item.json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "pfp-merge-write-result",
+      "name": "Merge Write Result",
+      "notes": "Normalises output shape after a successful mechanical write",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        608
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mwr-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Finalize Content').item.json.filePath }}"
+            },
+            {
+              "id": "mwr-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $('Finalize Content').item.json.filename }}"
+            },
+            {
+              "id": "mwr-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $('Finalize Content').item.json.fileType }}"
+            },
+            {
+              "id": "mwr-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $('Finalize Content').item.json.content }}"
+            },
+            {
+              "id": "mwr-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $('Finalize Content').item.json.fixes }}"
+            },
+            {
+              "id": "mwr-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $('Finalize Content').item.json.flags }}"
+            },
+            {
+              "id": "mwr-obsidianbaseurl",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "={{ $('Execute Workflow Trigger').item.json.obsidianBaseUrl }}"
+            },
+            {
+              "id": "mwr-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "written"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pfp-pass-through",
+      "name": "Pass Through",
+      "notes": "Passes unchanged files through with writeStatus: skipped",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        832
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pt-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "pt-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "pt-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "pt-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "pt-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes }}"
+            },
+            {
+              "id": "pt-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags }}"
+            },
+            {
+              "id": "pt-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "skipped"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pfp-merge-branches",
+      "name": "Merge Branches",
+      "notes": "Reunites written and skipped branches before calling LLM sub-workflow",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        432,
+        752
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "pfp-respond",
+      "name": "Respond to Workflow",
+      "notes": "Final output: { filePath, filename, fileType, content, fixes, flags, writeStatus, llmChanged, llmSkipped, llmError }",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        752
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "out-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "out-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "out-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "out-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes }}"
+            },
+            {
+              "id": "out-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags }}"
+            },
+            {
+              "id": "out-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "={{ $json.writeStatus }}"
+            },
+            {
+              "id": "out-llmchanged",
+              "name": "llmChanged",
+              "type": "boolean",
+              "value": "={{ $json.llmChanged ?? false }}"
+            },
+            {
+              "id": "out-llmskipped",
+              "name": "llmSkipped",
+              "type": "boolean",
+              "value": "={{ $json.llmSkipped ?? true }}"
+            },
+            {
+              "id": "out-llmerror",
+              "name": "llmError",
+              "type": "string",
+              "value": "={{ $json.llmError ?? null }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "pfp-merge-file-data",
+      "name": "Merge File Data",
+      "notes": "Merges file content from Read File with filePath and metadata from the trigger item, so downstream nodes receive a complete per-item payload.",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        288
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mfd-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Execute Workflow Trigger').item.json.filePath }}"
+            },
+            {
+              "id": "mfd-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.data }}"
+            },
+            {
+              "id": "mfd-obsidianbaseurl",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "={{ $('Execute Workflow Trigger').item.json.obsidianBaseUrl }}"
+            },
+            {
+              "id": "mfd-modelname",
+              "name": "modelName",
+              "type": "string",
+              "value": "={{ $('Execute Workflow Trigger').item.json.modelName }}"
+            },
+            {
+              "id": "mfd-allknownfiles",
+              "name": "allKnownFiles",
+              "type": "array",
+              "value": "={{ $('Execute Workflow Trigger').item.json.allKnownFiles }}"
+            },
+            {
+              "id": "mfd-areamap",
+              "name": "areaMap",
+              "type": "object",
+              "value": "={{ $('Execute Workflow Trigger').item.json.areaMap }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "192991f1-95e7-4080-b43a-fcda357a670b",
+      "name": "Finalize Content",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        752
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8e004237-b0e4-43bd-988c-4c0863f0471d",
+              "name": "filePath",
+              "value": "={{ $json.filePath }}",
+              "type": "string"
+            },
+            {
+              "id": "def07107-45da-469d-a110-3e3af29d5bbe",
+              "name": "filename",
+              "value": "={{ $json.filename }}",
+              "type": "string"
+            },
+            {
+              "id": "ad242d17-343d-4cfc-abe8-5e7a7ececfbf",
+              "name": "fileType",
+              "value": "={{ $json.fileType }}",
+              "type": "string"
+            },
+            {
+              "id": "79044bdb-496c-425c-9503-1a3960208ade",
+              "name": "content",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "5eac1b39-11c4-40c6-9031-1c838e5c3cd4",
+              "name": "fixes",
+              "value": "={{ $json.fixes }}",
+              "type": "array"
+            },
+            {
+              "id": "86331668-bfbd-49ad-9cd7-ccdd20c01814",
+              "name": "flags",
+              "value": "={{ $json.flags }}",
+              "type": "array"
+            },
+            {
+              "id": "c9cc3948-ba54-4436-afa6-5852924230a5",
+              "name": "changed",
+              "value": "={{ $json.changed }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "08dc9472-d4bc-44ee-8755-c6b383750010",
+      "name": "Section Dividers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Section Dividers ─────────────────────────────────────────────────────\n// Rules:\n//   1. --- appears between every H2 section (but not before the first)\n//   2. No --- between H3 sub-sections within the same H2\n\nconst raw     = $json.content ?? '';\nconst fixes   = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags   = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet   changed = $json.changed ?? false;\n\nif (!raw) return { ...$json, fixes, flags, changed };\n\n// 1. Separate Frontmatter from Body\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nconst bodyIn  = raw.slice(fmEnd);\n\nconst lines = bodyIn.split('\\n');\nconst out = [];\nlet h2Seen = false;\n\nfor (let i = 0; i < lines.length; i++) {\n  const line = lines[i];\n  const isH2 = /^## (?!#)/.test(line);\n  const isH3 = /^### (?!#)/.test(line);\n\n  if (isH2) {\n    // Strip any trailing blanks and --- lines in any combination\n    let stripping = true;\n    while (stripping) {\n      stripping = false;\n      while (out.length > 0 && out[out.length - 1].trim() === '') { out.pop(); stripping = true; }\n      while (out.length > 0 && /^(---|___|\\*\\*\\*)$/.test(out[out.length - 1].trim())) { out.pop(); stripping = true; }\n    }\n    if (h2Seen) {\n      out.push('');\n      out.push('---');\n      out.push('');\n    } else {\n      out.push('');\n    }\n    out.push(line);\n    h2Seen = true;\n  } else if (isH3) {\n    let lookback = out.length - 1;\n    while (lookback >= 0 && out[lookback].trim() === '') lookback--;\n    if (lookback >= 0 && /^(---|___|\\*\\*\\*)$/.test(out[lookback].trim())) {\n      out.splice(lookback, out.length - lookback);\n      out.push('');\n    }\n    out.push(line);\n  } else {\n    out.push(line);\n  }\n}\n\nconst bodyOut = out.join('\\n');\nif (bodyOut !== bodyIn) {\n  changed = true;\n  fixes.push('Fixed H2 section dividers (--- between H2s; removed --- before H3s)');\n}\n\nreturn {\n  ...$json,\n  content: fm + bodyOut,\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "4d188503-bc19-4701-ab0b-fbdf40965102",
+      "name": "H1 Heading",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        288
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── H1 Heading ───────────────────────────────────────────────────────────\n// Rules:\n//   1. No H1 → insert `# Filename` at top of body\n//   2. Exactly one H1, correct text, already at top → no change\n//   3. Exactly one H1, wrong text → correct text, ensure at top\n//   4. Exactly one H1, correct text, not at top → move to top\n//   5. Multiple H1s → correct first to match filename, move to top,\n//                      downgrade all remaining H1s to H2\n//\n// \"Top\" = first non-blank line of the body (after frontmatter).\n// Whitespace normalisation is deferred to a later step — this node\n// does not touch blank lines except when inserting a missing H1.\n\nconst filePath = $json.filePath ?? '';\nconst filename  = $json.filename ?? filePath.split('/').pop().replace(/\\.md$/, '');\nconst raw       = $json.content ?? '';\nconst fixes     = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags     = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet   changed   = $json.changed ?? false;\n\nif (!raw) return { ...$json, fixes, flags, changed };\n\n// ── Split frontmatter from body ───────────────────────────────────────────\n// FM is the opening --- block; never scan it for H1s.\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nconst rawBody = raw.slice(fmEnd);\n\n// ── Work line-by-line on the body ────────────────────────────────────────\nconst lines      = rawBody.split('\\n');\nconst expectedH1 = `# ${filename}`;\n\n// All line indices that are H1s (lines starting with exactly '# ')\nconst h1Indices = lines.reduce((acc, line, i) => {\n  if (/^# /.test(line)) acc.push(i);\n  return acc;\n}, []);\n\n// First non-blank line index\nconst firstContentIdx = lines.findIndex(l => l.trim() !== '');\n\nlet newLines = [...lines];\n\nif (h1Indices.length === 0) {\n  // Rule 1: No H1 — insert at top of body\n  newLines.unshift(expectedH1);\n  fixes.push(`Inserted missing H1: ${expectedH1}`);\n  changed = true;\n\n} else if (h1Indices.length === 1) {\n  const idx    = h1Indices[0];\n  const atTop  = idx === firstContentIdx;\n  const textOk = lines[idx] === expectedH1;\n\n  if (atTop && textOk) {\n    // Rule 2: Already perfect — nothing to do\n\n  } else {\n    const originalText = lines[idx].replace(/^# /, '');\n    newLines.splice(idx, 1);\n    newLines.unshift(expectedH1);\n\n    if (!atTop && textOk) {\n      fixes.push(`Moved H1 to top of body`);\n    } else if (atTop && !textOk) {\n      fixes.push(`Corrected H1 text: \"${originalText}\" → \"${filename}\"`);\n    } else {\n      fixes.push(`Corrected H1 text and moved to top: \"${originalText}\" → \"${filename}\"`);\n    }\n    changed = true;\n  }\n\n} else {\n  // Rule 5: Multiple H1s — downgrade all but first to H2, correct first, move to top\n  const [first, ...rest] = h1Indices;\n\n  for (const idx of [...rest].reverse()) {\n    const text = newLines[idx].replace(/^# /, '');\n    newLines[idx] = `## ${text}`;\n    fixes.push(`Downgraded duplicate H1 to H2: \"${text}\"`);\n  }\n\n  const originalText = newLines[first].replace(/^# /, '');\n  if (newLines[first] !== expectedH1) {\n    fixes.push(`Corrected H1 text: \"${originalText}\" → \"${filename}\"`);\n    newLines[first] = expectedH1;\n  }\n\n  const currentFirstContent = newLines.findIndex(l => l.trim() !== '');\n  if (first !== currentFirstContent) {\n    newLines.splice(first, 1);\n    newLines.unshift(expectedH1);\n    fixes.push(`Moved H1 to top of body`);\n  }\n\n  changed = true;\n}\n\nreturn {\n  ...$json,\n  filePath,\n  filename,\n  fileType: $json.fileType,\n  content:  fm + newLines.join('\\n'),\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "step1-frontmatter",
+      "name": "Frontmatter",
+      "notes": "Surgical frontmatter-only pass. Derives type from filename prefix, inserts missing keys, reorders to schema. Never touches the body.",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        288
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Step 1: Frontmatter ──────────────────────────────────────────────────\nconst SCHEMA_ORDER = {\n  project:  ['type', 'project', 'area', 'status'],\n  research: ['type', 'project', 'area', 'status'],\n  log:      ['type', 'project', 'area'],\n  wiki:     ['type', 'project', 'area'],\n  meta:     ['type', 'project', 'area'],\n};\n\nconst FLAG_IF_MISSING = ['project'];\nconst LINTER_KEYS = ['date created', 'date modified'];\nconst PREFIX_TO_TYPE = {\n  Project:    'project',\n  Research:   'research',\n  Wiki:       'wiki',\n  Log:        'log',\n  Meta:       'meta',\n  Area:       'area',\n  Prompt:     'meta',\n  Cheatsheet: 'wiki',\n};\nconst PREFIX_RE = /^([A-Za-z]+)\\s*[\\u2013\\-]/;\n\nfunction parseFM(content) {\n  const match = content.match(/^---\\s*[\\r\\n]+([\\s\\S]*?)---\\s*[\\r\\n]+/);\n  if (!match) return null;\n  const raw   = match[0];\n  const pairs = [];\n  for (const line of match[1].split('\\n')) {\n    if (!line.trim()) continue;\n    const colon = line.indexOf(':');\n    if (colon === -1) continue;\n    const key   = line.slice(0, colon).trim();\n    const value = line.slice(colon + 1).trim();\n    if (key) pairs.push({ key, value });\n  }\n  return { raw, pairs, end: raw.length };\n}\n\nfunction buildFM(pairs) {\n  const lines = pairs.map(p => `${p.key}: ${p.value}`);\n  return `---\\n${lines.join('\\n')}\\n---\\n`;\n}\n\nconst filePath = $json.filePath ?? '';\nconst filename = filePath.split('/').pop().replace(/\\.md$/, '');\nconst fixes    = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags    = Array.isArray($json.flags) ? [...$json.flags] : [];\n\nif (!filePath) return { ...$json, fixes, flags, changed: false };\n\n// ── Bootstrap missing frontmatter block ──────────────────────────────────\n// If the file has no frontmatter at all, insert an empty stub so the rest\n// of this node can populate it. Linter will add date created / date modified\n// on the next file open in Obsidian.\nlet workingContent = $json.content ?? '';\nif (!workingContent) return { ...$json, fixes, flags, changed: false };\n\nlet fm = parseFM(workingContent);\nif (!fm) {\n  workingContent = '---\\n---\\n' + workingContent;\n  fm = parseFM(workingContent);\n  if (!fm) return { ...$json, fixes, flags, changed: false }; // shouldn't happen\n  fixes.push('Inserted missing frontmatter block');\n}\n\nconst pairs = fm.pairs.map(p => ({ ...p }));\nconst getPairsByKey = () => Object.fromEntries(pairs.map(p => [p.key, p]));\n\nlet fmDirty = fixes.some(f => f === 'Inserted missing frontmatter block');\nconst prefixMatch = filename.match(PREFIX_RE);\nconst prefixKey   = prefixMatch ? (Object.keys(PREFIX_TO_TYPE).find(k => k.toLowerCase() === prefixMatch[1].toLowerCase()) ?? null) : null;\nconst prefixType  = prefixKey ? PREFIX_TO_TYPE[prefixKey] : null;\n\nlet pairsByKey = getPairsByKey();\nconst fmType   = pairsByKey['type']?.value ?? null;\n\nlet fileType;\nif (prefixType) {\n  if (!fmType) {\n    pairs.unshift({ key: 'type', value: prefixType });\n    fixes.push(`Inserted missing frontmatter key: type: ${prefixType}`);\n    fmDirty = true;\n  } else if (fmType !== prefixType) {\n    const p = pairs.find(p => p.key === 'type');\n    if (p) p.value = prefixType;\n    fixes.push(`Corrected type: ${fmType} -> ${prefixType}`);\n    fmDirty = true;\n  }\n  fileType = prefixType;\n} else {\n  fileType = fmType;\n}\n\npairsByKey = getPairsByKey();\n\nfunction slugify(str) {\n  return str\n    .replace(/^(?:Project|Research|Wiki|Log|Meta|Area|Cheatsheet)\\s*[\\u2013\\-]\\s*/i, '')\n    .trim()\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n\nfunction deriveProjectSlug(filePath, allKnownFiles, areaMap) {\n  const parts  = filePath.split('/');\n  const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : null;\n  const ownFilename = parts[parts.length - 1].replace(/\\.md$/, '');\n\n  // Collect area/category folder names to exclude from slug derivation\n  const categoryFolderNames = new Set(\n    Object.keys(areaMap ?? {}).map(k => k.toLowerCase())\n  );\n\n  if (folder && Array.isArray(allKnownFiles)) {\n    // Only assign sibling slug if exactly one Project – file exists in the folder\n    const siblings = allKnownFiles.filter(f => {\n      const fParts  = f.split('/');\n      const fFolder = fParts.length > 1 ? fParts.slice(0, -1).join('/') : null;\n      const fName   = fParts[fParts.length - 1];\n      return fFolder === folder && /^Project\\s*[\\u2013\\-]/i.test(fName);\n    });\n    if (siblings.length === 1) return slugify(siblings[0].split('/').pop().replace(/\\.md$/, ''));\n    // Multiple siblings — ambiguous, don't assign\n  }\n\n  if (folder) {\n    const folderName = folder.split('/').pop();\n    const folderLower = (folderName ?? '').toLowerCase();\n    // Exclude known top-level structural folders and area/category names\n    const isStructural = /^(projects|library|archive|overview|scratchpad)$/i.test(folderName);\n    const isCategory   = categoryFolderNames.has(folderLower);\n    if (folderName && !isStructural && !isCategory) {\n      return slugify(folderName);\n    }\n  }\n\n  if (folder && /^Projects$/i.test(folder)) return slugify(ownFilename);\n  return null;\n}\n\nconst allKnownFiles = $json.allKnownFiles ?? [];\nconst schemaKeys = fileType ? (SCHEMA_ORDER[fileType] ?? []) : [];\n\n// ── Archive status normalisation ─────────────────────────────────────────\n// Files under Archive/:\n//   - project/research: ensure status: archive (insert if missing, correct if wrong)\n//   - other types: correct status to archive if the key is already present\nif (filePath.startsWith('Archive/')) {\n  const statusPair = pairs.find(p => p.key === 'status');\n  const schemaHasStatus = schemaKeys.includes('status');\n  if (statusPair) {\n    if (statusPair.value !== 'archive') {\n      statusPair.value = 'archive';\n      fixes.push(`Set status: archive (file is in Archive/)`);\n      fmDirty = true;\n    }\n  } else if (schemaHasStatus) {\n    pairs.push({ key: 'status', value: 'archive' });\n    fixes.push(`Inserted status: archive (file is in Archive/)`);\n    fmDirty = true;\n  }\n}\n\nfor (const key of schemaKeys) {\n  if (pairsByKey[key]) continue;\n  if (key === 'status') {\n    pairs.push({ key: 'status', value: 'active' });\n    fixes.push('Inserted missing frontmatter key: status: active');\n    fmDirty = true;\n  } else if (key === 'project') {\n    let derived = null;\n    let derivedSource = '';\n    if (fileType === 'project') {\n      // Project files are their own slug — derive from own filename\n      derived = slugify(filename);\n      derivedSource = 'own filename';\n    } else if ($json.siblingProjectSlug) {\n      derived = $json.siblingProjectSlug;\n      derivedSource = 'sibling project file';\n    } else {\n      derived = deriveProjectSlug(filePath, allKnownFiles, $json.areaMap ?? {});\n      derivedSource = 'hierarchy';\n    }\n    if (derived) {\n      pairs.push({ key: 'project', value: derived });\n      fixes.push(`Inserted missing frontmatter key: project: ${derived} (derived from ${derivedSource})`);\n      fmDirty = true;\n    } else if (!filePath.startsWith('Archive/')) {\n      flags.push('Missing frontmatter key: project — could not derive, manual review needed');\n    }\n    // Archive files: silently skip if derivation fails\n  } else if (key === 'area') {\n    if ($json.siblingProjectArea) {\n      pairs.push({ key: 'area', value: $json.siblingProjectArea });\n      fixes.push(`Inserted missing frontmatter key: area: ${$json.siblingProjectArea} (from sibling project file)`);\n      fmDirty = true;\n    } else {\n      // Try to derive area from folder name using areaMap\n      const areaMap = $json.areaMap ?? {};\n      const pathParts = filePath.split('/');\n      // Second segment is the area folder (e.g. Library/HomeLab/... → HomeLab)\n      const areaFolder = pathParts.length >= 2 ? pathParts[1] : null;\n      const areaEntry = areaFolder ? areaMap[areaFolder] : null;\n      if (areaEntry) {\n        pairs.push({ key: 'area', value: areaEntry.slug });\n        fixes.push(`Inserted missing frontmatter key: area: ${areaEntry.slug} (derived from folder path)`);\n        fmDirty = true;\n      } else if (!filePath.startsWith('Archive/')) {\n        flags.push('Missing frontmatter key: area');\n      }\n      // Archive files: silently skip missing area\n    }\n  } else if (FLAG_IF_MISSING.includes(key)) {\n    flags.push(`Missing frontmatter key: ${key}`);\n  }\n  pairsByKey = getPairsByKey();\n}\n\nlet newContent = workingContent;\nif (fmDirty) {\n  const linterPairs = pairs.filter(p => LINTER_KEYS.includes(p.key));\n  const schemaPairs = schemaKeys.filter(k => pairsByKey[k]).map(k => pairsByKey[k]);\n  const extraPairs  = pairs.filter(p => !schemaKeys.includes(p.key) && !LINTER_KEYS.includes(p.key));\n  newContent = buildFM([...schemaPairs, ...extraPairs, ...linterPairs]) + workingContent.slice(fm.end);\n}\n\nreturn {\n  ...$json,\n  fileType,\n  content:  newContent,\n  fixes,\n  flags,\n  changed:  fmDirty || ($json.changed ?? false),\n};"
+      }
+    },
+    {
+      "id": "9fe7cda9-ee6e-4416-90d5-d5465077ee4b",
+      "name": "Intro Heading",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Intro Heading ────────────────────────────────────────────────────────\n// Rules:\n//   project → Brief\n//   research/wiki → Overview\n//   log → Summary\n//   meta → null (skip)\n//   If ANY heading (H2-H4) matches a synonym (Description, About, etc.) → elevate to H2 and rename to canonical.\n//   Else if no H2s exist → flag.\n\nconst INTRO_HEADING = {\n  project: 'Brief', research: 'Overview', wiki: 'Overview', log: 'Summary', meta: null,\n};\n\nconst BAD_INTROS = ['Description', 'About', 'Introduction', 'Background', 'Summary', 'Brief', 'Overview'];\n\nconst raw      = $json.content ?? '';\nconst fileType = $json.fileType ?? null;\nconst fixes    = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags    = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet   changed  = $json.changed ?? false;\n\nconst expected = fileType ? (INTRO_HEADING[fileType] ?? null) : null;\n\nif (!raw || !expected) return { ...$json, fixes, flags, changed };\n\n// 1. Separate FM from Body\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nconst body    = raw.slice(fmEnd);\n\n// 2. Search for ANY heading (H2-H4) that looks like an intro synonym\nconst introRegex = new RegExp(`^#{2,4} (${BAD_INTROS.join('|')})\\\\s*$`, 'mi');\nconst introMatch = body.match(introRegex);\n\nif (introMatch) {\n    const foundHeading = introMatch[0].trim();\n    const canonical    = `## ${expected}`;\n    \n    if (foundHeading !== canonical) {\n        const newBody = body.replace(introRegex, canonical);\n        fixes.push(`Standardised intro heading: \"${foundHeading}\" → \"${canonical}\"`);\n        return {\n            ...$json,\n            content: fm + newBody,\n            fixes, flags, changed: true\n        };\n    }\n} else {\n    // 3. No synonym found. Scan for the canonical heading explicitly.\n    const lines = body.split('\\n');\n    const canonicalH2 = `## ${expected}`;\n\n    // Find index of canonical H2 anywhere in the body\n    const canonicalIdx = lines.findIndex(l => l.trim() === canonicalH2);\n\n    // Find the first meaningful line after the H1 + Related block\n    // Skip: H1 lines, **Related** header, [[wikilink]] lines, blanks\n    const relatedHeaderRe = /^\\*\\*Related(?::|)\\*\\*/i;\n    let scanIdx = 0;\n    while (scanIdx < lines.length && (/^# /.test(lines[scanIdx]) || lines[scanIdx].trim() === '')) scanIdx++;\n    let inRelated = false;\n    while (scanIdx < lines.length) {\n      const l = lines[scanIdx].trim();\n      if (relatedHeaderRe.test(l)) { inRelated = true; scanIdx++; continue; }\n      if (inRelated && (l === '' || (l.startsWith('[[') && l.endsWith(']]')))) { scanIdx++; continue; }\n      break;\n    }\n    const firstMeaningfulLine = lines[scanIdx]?.trim() ?? '';\n    const firstMeaningfulIsH2 = /^## /.test(firstMeaningfulLine);\n\n    if (canonicalIdx !== -1) {\n      // Canonical heading exists somewhere in the body\n      if (lines[scanIdx]?.trim() === canonicalH2) {\n        // Already in the correct position — no action needed\n      } else {\n        // Exists but is buried — flag for manual review\n        flags.push(`Intro heading \"${canonicalH2}\" exists but is not in intro position — manual review needed`);\n      }\n    } else if (!firstMeaningfulIsH2 && firstMeaningfulLine !== '') {\n      // No canonical heading, orphaned paragraph before first H2 — insert heading\n      lines.splice(scanIdx, 0, canonicalH2);\n      fixes.push(`Inserted missing intro heading \"${canonicalH2}\" before orphaned intro paragraph`);\n      return {\n        ...$json,\n        content: fm + lines.join('\\n'),\n        fixes, flags, changed: true,\n      };\n    } else if (firstMeaningfulIsH2) {\n      // First H2 exists but isn't canonical and wasn't a synonym\n      const firstH2Text = firstMeaningfulLine.replace(/^## /, '').trim();\n      flags.push(`Intro heading is \"## ${firstH2Text}\" — expected \"${canonicalH2}\" for type:${fileType}. Manual review needed.`);\n    } else {\n      flags.push(`No intro section found (searched for ${BAD_INTROS.join('/')}) — cannot verify`);\n    }\n}\n\nreturn { ...$json, fixes, flags, changed };"
+      }
+    },
+    {
+      "id": "2d559870-1373-4738-a974-755f1949b52c",
+      "name": "Task Backlinks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Task Backlinks\n// project/research: any ## Tasks heading must be formatted as:\n//   ## Tasks - Doc Name [[Doc Name|up-arrow]]\n// Auto-fix bare ## Tasks, ## Tasks - Name (no backlink), or wrong name.\n// log/wiki: flag if any task list items are present.\n// area/meta: skip.\n\nconst raw      = $json.content ?? '';\nconst filePath = $json.filePath ?? '';\nconst filename = $json.filename ?? filePath.split('/').pop().replace(/\\.md$/, '');\nconst fileType = $json.fileType ?? null;\nconst fixes    = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags    = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet   changed  = $json.changed ?? false;\n\nif (!raw || fileType === 'area' || fileType === 'meta') {\n  return { ...$json, fixes, flags, changed };\n}\n\nif (fileType === 'log' || fileType === 'wiki') {\n  if (/^- \\[[ x]\\]/m.test(raw)) {\n    flags.push('Tasks found in type:' + fileType + ' file -- log/wiki files should not contain tasks');\n  }\n  return { ...$json, fixes, flags, changed };\n}\n\n// project / research\nconst EN_DASH  = String.fromCharCode(0x2013);\nconst UP_ARROW = String.fromCharCode(0x2197) + String.fromCharCode(0xFE0F);\nconst correctHeading = '## Tasks ' + EN_DASH + ' ' + filename + ' [[' + filename + '|' + UP_ARROW + ']]';\n\n// Match any ## Tasks line\nconst taskHeadingRe = /^## Tasks(?:[^\\n]*)?$/gm;\n\nlet taskHeadingFound = false;\nconst newContent = raw.replace(taskHeadingRe, function(match) {\n  taskHeadingFound = true;\n  if (match.trim() === correctHeading) return match;\n  fixes.push('Fixed Tasks heading: \"' + match.trim() + '\" -> \"' + correctHeading + '\"');\n  changed = true;\n  return correctHeading;\n});\n\nreturn {\n  ...$json,\n  content: taskHeadingFound ? newContent : raw,\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "31565d6d-ae19-40d4-944a-3c80eccaaac4",
+      "name": "Task Position",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Task Position ─────────────────────────────────────────────────────────\n// Project and research files: Tasks section must appear immediately after\n// the intro section (Brief / Overview). If found elsewhere, extract and\n// reinsert. Section dividers are stripped here — the Section Dividers node\n// runs after this and rebuilds them cleanly.\n// All other types: skip.\n\nconst INTRO_HEADING = {\n  project: 'Brief', research: 'Overview', wiki: 'Overview', log: 'Summary', meta: null,\n};\n\nconst raw      = $json.content ?? '';\nconst fileType = $json.fileType ?? null;\nconst fixes    = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags    = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet   changed  = $json.changed ?? false;\n\nif (!raw || !['project', 'research'].includes(fileType)) {\n  return { ...$json, fixes, flags, changed };\n}\n\n// Split FM from body\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nconst body    = raw.slice(fmEnd);\n\nconst introName = INTRO_HEADING[fileType];\nif (!introName) return { ...$json, fixes, flags, changed };\n\n// Find all H2 headings in the body\nconst h2Re      = /^## .+$/gm;\nconst h2Matches = [...body.matchAll(h2Re)];\nif (h2Matches.length < 2) return { ...$json, fixes, flags, changed };\n\nconst tasksIdx = h2Matches.findIndex(m => /^## Tasks/.test(m[0]));\nconst introIdx = h2Matches.findIndex(m => m[0].includes(`## ${introName}`));\n\n// Nothing to do if Tasks is missing, intro is missing, or already in position\nif (tasksIdx === -1 || introIdx === -1 || tasksIdx === introIdx + 1) {\n  return { ...$json, fixes, flags, changed };\n}\n\n// Slice body into per-section chunks starting at each H2\nconst preamble = body.slice(0, h2Matches[0].index);\nconst sections = h2Matches.map((m, i) => {\n  const start = m.index;\n  const end   = i + 1 < h2Matches.length ? h2Matches[i + 1].index : body.length;\n  return body.slice(start, end);\n});\n\n// Strip leading dividers and blank lines from each section\n// Section Dividers node will rebuild these correctly afterwards\nconst cleanSections = sections.map(s =>\n  s.replace(/^(?:\\n*---\\n+)+/, '').replace(/^\\n+/, '')\n);\n\n// Extract Tasks block and reinsert immediately after intro\nconst tasksBlock = cleanSections.splice(tasksIdx, 1)[0];\nconst adjustedIntroIdx = tasksIdx < introIdx ? introIdx - 1 : introIdx;\ncleanSections.splice(adjustedIntroIdx + 1, 0, tasksBlock);\n\nconst rebuiltBody = preamble + cleanSections.join('\\n');\nconst newContent  = fm + rebuiltBody;\n\nif (newContent !== raw) {\n  fixes.push(`Moved Tasks section to immediately after ## ${introName}`);\n  changed = true;\n}\n\nreturn {\n  ...$json,\n  content: newContent,\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "729d11ef-f9d4-40b6-9704-d1bc8ee93366",
+      "name": "Related Section",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Related Section ──────────────────────────────────────────────────────\n// Rules:\n//   1. Related section missing → insert header immediately after H1\n//      then apply rule 2.\n//   2. Related section present but empty:\n//      a. If project: frontmatter exists, auto-insert [[Project – Name]] link.\n//         Derive project index filename from allKnownFiles (sibling Project – file)\n//         or fall back to constructing from project slug.\n//      b. If still empty after (a) → flag: Related section is empty.\n//   3. Related section present with at least one link → no action.\n//\n// Applies to: project, research, wiki, log, meta.\n// Related section format:\n//   **Related**\n//   [[Link 1]]\n//   [[Link 2]]\n// Sits immediately after H1, before any H2.\n\nconst raw          = $json.content ?? '';\nconst filePath     = $json.filePath ?? '';\nconst fileType     = $json.fileType ?? null;\nconst fixes        = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags        = Array.isArray($json.flags) ? [...$json.flags] : [];\nconst allKnownFiles = Array.isArray($json.allKnownFiles) ? $json.allKnownFiles : [];\nlet   changed      = $json.changed ?? false;\n\n// Skip area files — they don't use Related\nif (!raw || fileType === 'area') return { ...$json, fixes, flags, changed };\n\n// ── Split FM from body ────────────────────────────────────────────────────\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nconst body    = raw.slice(fmEnd);\nconst lines   = body.split('\\n');\n\n// ── Find project index link if possible ──────────────────────────────────\nfunction findProjectIndexName(filePath, allKnownFiles) {\n  const parts  = filePath.split('/');\n  const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : null;\n  if (!folder) return null;\n\n  // Only assign if exactly one Project – file exists in the folder\n  const siblings = allKnownFiles.filter(f => {\n    const fParts  = f.split('/');\n    const fFolder = fParts.length > 1 ? fParts.slice(0, -1).join('/') : null;\n    const fName   = fParts[fParts.length - 1];\n    return fFolder === folder && /^Project\\s*[\\u2013\\-]/i.test(fName);\n  });\n  if (siblings.length === 1) return siblings[0].split('/').pop().replace(/\\.md$/, '');\n  return null;\n}\n\n// Extract project slug from frontmatter\nconst projectSlugMatch = fm.match(/^project:\\s*(.+)$/m);\nconst projectSlug = projectSlugMatch ? projectSlugMatch[1].trim() : null;\n\n// Best project index name: siblingPath (already resolved) > allKnownFiles search\nconst siblingPath = $json.siblingPath ?? null;\nconst projectIndexName = siblingPath\n  ? siblingPath.split('/').pop().replace(/\\.md$/, '')\n  : findProjectIndexName(filePath, allKnownFiles);\n\n// ── Parse existing Related section ───────────────────────────────────────\n// Related section: a line \"**Related**\" or \"**Related:**\" followed by\n// zero or more [[link]] lines, before any blank line or H2.\nconst relatedHeaderRe = /^\\*\\*Related(?::|)\\*\\*/i;\nconst relatedHeaderIdx = lines.findIndex(l => relatedHeaderRe.test(l.trim()));\n\n// Fix colon after Related header and split comma-separated inline links\nif (relatedHeaderIdx !== -1) {\n  const headerLine = lines[relatedHeaderIdx];\n  // Strip colon from header\n  const fixedHeader = headerLine.replace(/^\\*\\*Related:\\*\\*/, '**Related**');\n  if (fixedHeader !== headerLine) {\n    lines[relatedHeaderIdx] = fixedHeader;\n    fixes.push('Removed colon from Related header');\n    changed = true;\n  }\n  // Split comma-separated inline links onto separate lines\n  // Pattern: **Related** [[A]], [[B]], [[C]] all on one line\n  const inlineLinks = lines[relatedHeaderIdx].match(/\\[\\[[^\\]]+\\]\\]/g);\n  if (inlineLinks && inlineLinks.length > 0) {\n    // Remove links from header line, insert as individual lines below\n    lines[relatedHeaderIdx] = '**Related**';\n    lines.splice(relatedHeaderIdx + 1, 0, ...inlineLinks);\n    fixes.push('Split inline Related links onto separate lines');\n    changed = true;\n  }\n}\n\nif (relatedHeaderIdx === -1) {\n  // ── Case 1: No Related section — insert after H1 ─────────────────────\n  const h1Idx = lines.findIndex(l => /^# /.test(l));\n  const insertAfter = h1Idx !== -1 ? h1Idx : -1;\n\n  // Build section content\n  const sectionLines = ['', '**Related**'];\n  if (projectIndexName) {\n    sectionLines.push(`[[${projectIndexName}]]`);\n  }\n\n  const insertAt = insertAfter + 1;\n  lines.splice(insertAt, 0, ...sectionLines);\n\n  if (projectIndexName) {\n    fixes.push(`Inserted Related section with project index link: [[${projectIndexName}]]`);\n  } else {\n    // Try area file fallback before flagging (same logic as Case 2)\n    const areaMapFb = $json.areaMap ?? {};\n    const areaSlugFbMatch = fm.match(/^area:\\s*(.+)$/m);\n    const areaSlugFb = areaSlugFbMatch ? areaSlugFbMatch[1].trim() : null;\n    const areaEntryFb = areaSlugFb\n      ? Object.values(areaMapFb).find(e => e.slug === areaSlugFb)\n      : null;\n    if (areaEntryFb) {\n      const areaLink = `[[Area \\u2013 ${areaEntryFb.displayName}]]`;\n      sectionLines.push(areaLink);\n      fixes.push(`Inserted Related section with area file link: ${areaLink}`);\n    } else {\n      fixes.push('Inserted missing Related section header');\n      flags.push('Related section is empty — suggest related documents');\n    }\n  }\n  changed = true;\n\n} else {\n  // ── Case 2/3: Related section exists — check if it has links ─────────\n  // Collect lines that are wikilinks immediately after the header\n  let linkCount = 0;\n  let insertIdx = relatedHeaderIdx + 1;\n\n  // Skip past any existing link lines to find where the section ends\n  while (insertIdx < lines.length) {\n    const l = lines[insertIdx].trim();\n    if (l.startsWith('[[') && l.endsWith(']]')) {\n      linkCount++;\n      insertIdx++;\n    } else if (l === '') {\n      insertIdx++; // allow blank lines within section\n    } else {\n      break; // hit a heading or content — section is over\n    }\n  }\n\n  if (linkCount === 0) {\n    // Empty section — try to auto-insert project index first\n    if (projectIndexName) {\n      const link = `[[${projectIndexName}]]`;\n      lines.splice(relatedHeaderIdx + 1, 0, link);\n      fixes.push(`Added project index link to empty Related section: ${link}`);\n      changed = true;\n    } else {\n      // No project index — try Area file fallback using areaMap\n      const areaMap = $json.areaMap ?? {};\n      const areaSlugMatch = fm.match(/^area:\\s*(.+)$/m);\n      const areaSlug = areaSlugMatch ? areaSlugMatch[1].trim() : null;\n      // Find matching area entry by slug\n      const areaEntry = areaSlug\n        ? Object.values(areaMap).find(e => e.slug === areaSlug)\n        : null;\n      if (areaEntry) {\n        const link = `[[Area \\u2013 ${areaEntry.displayName}]]`;\n        lines.splice(relatedHeaderIdx + 1, 0, link);\n        fixes.push(`Added area file link to empty Related section: ${link}`);\n        changed = true;\n      } else {\n        flags.push('Related section is empty — suggest related documents');\n      }\n    }\n  }\n  // Case 3: linkCount > 0 — section has links, no action needed\n}\n\nreturn {\n  ...$json,\n  content: fm + lines.join('\\n'),\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "fa25f570-6e76-44a6-8c4d-3945629900fd",
+      "name": "Whitespace",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        304
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ── Whitespace ───────────────────────────────────────────────────────────\n// Rules:\n//   1. Remove trailing whitespace from all lines\n//   2. Ensure H1 is directly after frontmatter with no blank line\n//   3. Ensure exactly one blank line between sections (before each H2)\n//   4. Ensure exactly one newline at end of file\n\nconst raw   = $json.content ?? '';\nconst fixes = Array.isArray($json.fixes) ? [...$json.fixes] : [];\nconst flags = Array.isArray($json.flags) ? [...$json.flags] : [];\nlet changed = $json.changed ?? false;\n\nif (!raw) return { ...$json, fixes, flags, changed };\n\n// Split FM from body\nconst fmMatch = raw.match(/^---[\\r\\n][\\s\\S]*?[\\r\\n]---[\\r\\n]/);\nconst fmEnd   = fmMatch ? fmMatch[0].length : 0;\nconst fm      = raw.slice(0, fmEnd);\nlet   body    = raw.slice(fmEnd);\n\n// Rule 1: Strip trailing whitespace from every line in body\nconst stripped = body.split('\\n').map(l => l.trimEnd()).join('\\n');\nif (stripped !== body) body = stripped;\n\n// Rule 2: H1 must be directly after frontmatter — no leading blank lines\nbody = body.replace(/^\\n+/, '');\n\n// Rule 3: Exactly one blank line immediately before each H2\n// Strategy: split into lines, rebuild ensuring one blank line before H2s\n// but not stripping blank lines elsewhere (content may need them).\nconst lines = body.split('\\n');\nconst out   = [];\nfor (let i = 0; i < lines.length; i++) {\n  const line  = lines[i];\n  const isH2  = /^## /.test(line);\n  if (isH2 && out.length > 0) {\n    // Strip any existing blank lines immediately before this H2\n    while (out.length > 0 && out[out.length - 1].trim() === '') out.pop();\n    // Insert exactly one blank line\n    out.push('');\n  }\n  out.push(line);\n  // Rule 3b: Exactly one blank line after H2\n  if (isH2) {\n    // Skip any blank lines that follow in the source\n    while (i + 1 < lines.length && lines[i + 1].trim() === '') i++;\n    out.push('');\n  }\n}\nbody = out.join('\\n');\n\n// Rule 4: Exactly one trailing newline\nbody = body.replace(/\\n*$/, '\\n');\n\nconst newContent = fm + body;\nif (newContent !== raw) {\n  changed = true;\n  fixes.push('Normalised whitespace (trailing spaces, H1 spacing, H2 blank lines, trailing newline)');\n}\n\nreturn {\n  ...$json,\n  content: newContent,\n  fixes,\n  flags,\n  changed,\n};"
+      }
+    },
+    {
+      "id": "pfp-read-sibling",
+      "name": "Read Sibling Project File",
+      "notes": "Calls Housekeeping – Resolve Sibling Project to find and read the sibling Project – file, returning siblingProjectSlug and siblingProjectArea.",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "onError": "continueRegularOutput",
+      "position": [
+        -128,
+        288
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "cachedResultName": "Housekeeping – Resolve Sibling Project",
+          "cachedResultUrl": "/workflow/NlcBQ4uWSZW9vlB9",
+          "mode": "list",
+          "value": "NlcBQ4uWSZW9vlB9"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [
+            {
+              "key": "filePath",
+              "type": "string"
+            },
+            {
+              "key": "obsidianBaseUrl",
+              "type": "string"
+            },
+            {
+              "key": "allKnownFiles",
+              "type": "array"
+            }
+          ],
+          "value": {
+            "allKnownFiles": "={{ $json.allKnownFiles }}",
+            "filePath": "={{ $json.filePath }}",
+            "obsidianBaseUrl": "={{ $json.obsidianBaseUrl }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "85719ab2-a72f-4632-8f2c-e6011f84b1f7",
+      "name": "Merge Sibling Data",
+      "notes": "Merges sibling project data (siblingProjectSlug, siblingProjectArea) back with the pre-sibling payload from Merge File Data, which was clobbered by the Execute Workflow node output.",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        304
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msd-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Merge File Data').item.json.filePath }}"
+            },
+            {
+              "id": "msd-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $('Merge File Data').item.json.content }}"
+            },
+            {
+              "id": "msd-obsidianbaseurl",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "={{ $('Merge File Data').item.json.obsidianBaseUrl }}"
+            },
+            {
+              "id": "msd-modelname",
+              "name": "modelName",
+              "type": "string",
+              "value": "={{ $('Merge File Data').item.json.modelName }}"
+            },
+            {
+              "id": "msd-allknownfiles",
+              "name": "allKnownFiles",
+              "type": "array",
+              "value": "={{ $('Merge File Data').item.json.allKnownFiles }}"
+            },
+            {
+              "id": "msd-areamap",
+              "name": "areaMap",
+              "type": "object",
+              "value": "={{ $('Merge File Data').item.json.areaMap }}"
+            },
+            {
+              "id": "msd-siblingslug",
+              "name": "siblingProjectSlug",
+              "type": "string",
+              "value": "={{ $json.siblingProjectSlug ?? null }}"
+            },
+            {
+              "id": "msd-siblingarea",
+              "name": "siblingProjectArea",
+              "type": "string",
+              "value": "={{ $json.siblingProjectArea ?? null }}"
+            },
+            {
+              "id": "msd-siblingpath",
+              "name": "siblingPath",
+              "type": "string",
+              "value": "={{ $json.siblingPath ?? null }}"
+            },
+            {
+              "id": "msd-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ [] }}"
+            },
+            {
+              "id": "msd-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ [] }}"
+            },
+            {
+              "id": "msd-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ false }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Changed?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write File",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Pass Through",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Branches": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Write Result": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge Branches",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Pass Through": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Branches",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "node": "Merge File Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge Write Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Finalize Content": {
+      "main": [
+        [
+          {
+            "node": "Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Section Dividers": {
+      "main": [
+        [
+          {
+            "node": "Whitespace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "H1 Heading": {
+      "main": [
+        [
+          {
+            "node": "Intro Heading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Frontmatter": {
+      "main": [
+        [
+          {
+            "node": "H1 Heading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intro Heading": {
+      "main": [
+        [
+          {
+            "node": "Task Backlinks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Backlinks": {
+      "main": [
+        [
+          {
+            "node": "Task Position",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Position": {
+      "main": [
+        [
+          {
+            "node": "Related Section",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Related Section": {
+      "main": [
+        [
+          {
+            "node": "Section Dividers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whitespace": {
+      "main": [
+        [
+          {
+            "node": "Finalize Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge File Data": {
+      "main": [
+        [
+          {
+            "node": "Read Sibling Project File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sibling Project File": {
+      "main": [
+        [
+          {
+            "node": "Merge Sibling Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Sibling Data": {
+      "main": [
+        [
+          {
+            "node": "Frontmatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "d7c787e9-409f-4467-9bc7-c32d944f502b",
+  "activeVersionId": "d7c787e9-409f-4467-9bc7-c32d944f502b",
+  "versionCounter": 438,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

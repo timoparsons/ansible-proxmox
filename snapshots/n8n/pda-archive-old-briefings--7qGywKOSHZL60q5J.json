@@ -1,0 +1,167 @@
+{
+  "updatedAt": "2026-04-23T20:10:34.502Z",
+  "createdAt": "2026-04-21T09:41:19.637Z",
+  "id": "7qGywKOSHZL60q5J",
+  "name": "PDA Archive Old Briefings",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "typeVersion": 4.4,
+      "position": [
+        -400,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "url": "https://10.1.1.200:27124/vault/Overview/",
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "Fetch files in Overview",
+      "id": "812463f0-4597-4e86-8539-2a282e5d0f0e",
+      "executeOnce": true
+    },
+    {
+      "name": "Filter Briefings to Archive",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const files = $input.first().json.files;\n\nconst briefings = files\n  .map(f => f.replace(/\\.md$/, ''))\n  .filter(f => f.match(/^\\d{4}-\\d{2}-\\d{2}( \\d{2}:\\d{2})? - Daily Briefing$/))\n  .sort();\n\nconst toArchive = briefings.slice(0, -1);\n\nreturn toArchive.map(filename => ({ json: { filename } }));"
+      },
+      "position": [
+        -192,
+        0
+      ],
+      "typeVersion": 2,
+      "id": "9ef3c37e-cf78-4fdb-be83-93a1e9046aab"
+    },
+    {
+      "position": [
+        16,
+        0
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "CHHENAbxE0xrNy8M",
+          "name": "SSH Private Key - ansible-to-systems"
+        }
+      },
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.ssh",
+      "name": "Move to Archive",
+      "id": "a1b2c3d4-1111-4e86-8539-aaaaaaaaaaaa",
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "={{ 'mv \"/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Overview/' + $json.filename + '.md\" \"/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Obsidian/PDA/Briefings Archive/' + $json.filename + '.md\"' }}"
+      }
+    },
+    {
+      "id": "b7333ba6-ee93-4429-9abc-7cd0f53f7725",
+      "type": "n8n-nodes-base.manualTrigger",
+      "name": "When clicking 'Execute workflow'",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        -592,
+        112
+      ]
+    },
+    {
+      "executeOnce": true,
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "alwaysOutputData": true,
+      "name": "When Executed by Another Workflow",
+      "position": [
+        -608,
+        -128
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c1a08237-1c00-4db8-9dbc-08e49db8d2f8"
+    }
+  ],
+  "connections": {
+    "Fetch files in Overview": {
+      "main": [
+        [
+          {
+            "type": "main",
+            "index": 0,
+            "node": "Filter Briefings to Archive"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Fetch files in Overview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "type": "main",
+            "node": "Fetch files in Overview"
+          }
+        ]
+      ]
+    },
+    "Filter Briefings to Archive": {
+      "main": [
+        [
+          {
+            "node": "Move to Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "8ab83543-8fb9-4904-9a53-df9acb904ce9",
+  "activeVersionId": "8ab83543-8fb9-4904-9a53-df9acb904ce9",
+  "versionCounter": 48,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

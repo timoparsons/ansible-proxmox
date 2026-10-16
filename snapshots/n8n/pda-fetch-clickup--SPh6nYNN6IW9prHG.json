@@ -1,0 +1,376 @@
+{
+  "updatedAt": "2026-06-15T20:30:23.462Z",
+  "createdAt": "2026-06-14T23:40:07.800Z",
+  "id": "SPh6nYNN6IW9prHG",
+  "name": "PDA Fetch ClickUp",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger-subworkflow",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -816,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "shared-date",
+              "name": "shared_date",
+              "type": "string",
+              "value": "={{ $json.shared_date || $now.toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "id": "feeds-since",
+              "name": "feedsSince",
+              "type": "string",
+              "value": "={{ $json.feedsSince || $now.minus({days:1}).toISO() }}"
+            },
+            {
+              "id": "team-id",
+              "name": "team_id",
+              "type": "string",
+              "value": "90161445406"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config-node",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -512,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v3/workspaces/{{ $('Config').first().json.team_id }}/chat/channels/{{ $json.channel_id }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "channels-get-messages",
+      "name": "Channels - Get Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        288
+      ],
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "attach-channel-id",
+              "name": "channel_id",
+              "type": "string",
+              "value": "={{ $('Extract Channel IDs').item.json.channel_id }}"
+            },
+            {
+              "id": "attach-messages",
+              "name": "messages",
+              "type": "array",
+              "value": "={{ $json.data || $json.messages || [] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "channels-merge-id",
+      "name": "Channels - Attach channel_id",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "channels-aggregate",
+      "name": "Channels - Aggregate",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        688,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Inputs ───────────────────────────────────────────────────────────────────\nconst feedsSince = $('Config').first().json.feedsSince;\nconst feedsSinceDate = new Date(feedsSince);\n\n// Channels - Aggregate output: { data: [ { channel_id, messages: [...] }, ... ] }\nlet channelGroups = [];\ntry {\n  channelGroups = $('Channels - Aggregate').first().json.data || [];\n} catch (e) { channelGroups = []; }\n\n// PDA Config: { data: \"```json\\n{ clickup_users: {...} }\\n```\" }\nlet clickupUsers = {};\ntry {\n  const raw = $('Fetch PDA Config').first().json.data || '';\n  const fenceMatch = raw.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  const jsonText = fenceMatch ? fenceMatch[1] : raw;\n  const parsed = JSON.parse(jsonText);\n  clickupUsers = parsed.clickup_users || {};\n} catch (e) { clickupUsers = {}; }\n\n// ── 2. Helpers ─────────────────────────────────────────────────────────────────\nfunction toUTCISO(ts) {\n  if (!ts) return null;\n  if (typeof ts === 'string' && /^\\d+$/.test(ts)) {\n    return new Date(parseInt(ts, 10)).toISOString();\n  }\n  if (typeof ts === 'number') {\n    return new Date(ts).toISOString();\n  }\n  const d = new Date(ts);\n  return isNaN(d.getTime()) ? null : d.toISOString();\n}\n\nfunction resolveAuthor(msg) {\n  // Nested user/author object (legacy shape)\n  const userObj = msg.user || msg.author;\n  if (userObj) {\n    return userObj.username || userObj.name || userObj.email || 'unknown';\n  }\n  // ClickUp v3 chat messages: user_id only\n  if (msg.user_id) {\n    return clickupUsers[String(msg.user_id)] || `user_${msg.user_id}`;\n  }\n  return 'unknown';\n}\n\nfunction cleanMentions(text) {\n  // Replace [@Name](#user_mention#id) with plain @Name\n  return text.replace(/\\[@([^\\]]+)\\]\\(#user_mention#\\d+\\)/g, '@$1');\n}\n\nfunction truncate(text, max) {\n  if (!text) return '';\n  return text.substring(0, max);\n}\n\n// ── 3. Build message objects from Channel messages ──────────────────────────────\nconst messages = [];\n\nfor (const group of channelGroups) {\n  const channelId = group.channel_id;\n  const msgs = group.messages || [];\n\n  for (const msg of msgs) {\n    const rawTs = msg.date || msg.created_at || msg.date_created || msg.timestamp;\n    const timestamp = toUTCISO(rawTs);\n    if (!timestamp) continue;\n    if (new Date(timestamp) < feedsSinceDate) continue;\n\n    let text = truncate(msg.text || msg.content || '', 1500);\n    if (!text) continue;\n    text = cleanMentions(text);\n\n    messages.push({\n      source_type: 'clickup_chat',\n      comment_id: msg.id || null,\n      channel_id: channelId,\n      author: resolveAuthor(msg),\n      text: text,\n      timestamp: timestamp\n    });\n  }\n}\n\n// ── 4. Sort ascending by timestamp (oldest first) ────────────────────────────────\nmessages.sort((a, b) => {\n  if (!a.timestamp) return 1;\n  if (!b.timestamp) return -1;\n  return a.timestamp.localeCompare(b.timestamp);\n});\n\n// ── 5. Wrap in fenced JSON block for Obsidian ─────────────────────────────────────\nconst fence = '```';\nconst content = `${fence}json\\n${JSON.stringify(messages, null, 2)}\\n${fence}`;\n\nreturn [{ json: { content } }];"
+      },
+      "id": "format-markdown",
+      "name": "ClickUp – Format Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/feed_clickup_chat.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "obsidian-write-feed",
+      "name": "Obsidian – Write ClickUp Chat Feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1072,
+        288
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('projects-' + $json.shared_date + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "fetch-projects-index",
+      "name": "Fetch Projects Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -272,
+        288
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the projects index JSON (fenced code block) and flatten/dedupe\n// clickup_channel_ids across all active projects into one item per channel.\n\nconst raw = $('Fetch Projects Index').first().json.data;\nlet content = typeof raw === 'string' ? raw : JSON.stringify(raw);\n\n// Strip markdown fence if present\nconst fenceMatch = content.match(/```json\\s*([\\s\\S]*?)\\s*```/);\nconst jsonText = fenceMatch ? fenceMatch[1] : content;\n\nconst projects = JSON.parse(jsonText);\n\nconst channelIds = new Set();\nfor (const project of projects) {\n  const ids = project.clickup_channel_ids || [];\n  for (const id of ids) {\n    if (id) channelIds.add(id);\n  }\n}\n\nif (channelIds.size === 0) {\n  throw new Error('No clickup_channel_ids found across any project in projects index — refusing to proceed with an empty channel set.');\n}\n\nreturn Array.from(channelIds).map(channel_id => ({ json: { channel_id } }));\n"
+      },
+      "id": "extract-channel-ids",
+      "name": "Extract Channel IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/config.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "fetch-pda-config",
+      "name": "Fetch PDA Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -80,
+        288
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch Projects Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels - Get Messages": {
+      "main": [
+        [
+          {
+            "node": "Channels - Attach channel_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels - Attach channel_id": {
+      "main": [
+        [
+          {
+            "node": "Channels - Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp – Format Markdown": {
+      "main": [
+        [
+          {
+            "node": "Obsidian – Write ClickUp Chat Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Projects Index": {
+      "main": [
+        [
+          {
+            "node": "Fetch PDA Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Channel IDs": {
+      "main": [
+        [
+          {
+            "node": "Channels - Get Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels - Aggregate": {
+      "main": [
+        [
+          {
+            "node": "ClickUp – Format Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PDA Config": {
+      "main": [
+        [
+          {
+            "node": "Extract Channel IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "143ddfe2-0ab2-451e-bb29-dd84017948b6",
+  "activeVersionId": "f294e9e8-603d-41af-acc0-730ef8b2859c",
+  "versionCounter": 44,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

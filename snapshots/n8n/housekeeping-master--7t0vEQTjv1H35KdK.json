@@ -1,0 +1,588 @@
+{
+  "updatedAt": "2026-10-11T19:44:37.706Z",
+  "createdAt": "2026-05-10T02:43:09.941Z",
+  "id": "7t0vEQTjv1H35KdK",
+  "name": "Housekeeping – Master",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "master-manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        304
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "master-schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "master-config",
+      "name": "Config",
+      "notes": "Central config — edit vault path, excluded paths, model name here",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        304
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-vault-path",
+              "name": "vaultPath",
+              "type": "string",
+              "value": "/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian"
+            },
+            {
+              "id": "cfg-excluded-paths",
+              "name": "excludedPaths",
+              "type": "string",
+              "value": "Overview/,Obsidian/,Projects - Work/,Scratchpad/,Library/External Docs"
+            },
+            {
+              "id": "cfg-obsidian-base-url",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "https://10.1.1.200:27124"
+            },
+            {
+              "id": "cfg-model-name",
+              "name": "manualModelName",
+              "type": "string",
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx"
+            },
+            {
+              "id": "3b1e16de-0598-4f78-9638-b3220b60c69b",
+              "name": "lmStudioUrl",
+              "type": "string",
+              "value": "http://10.1.1.200:1234/v1/chat/completions"
+            },
+            {
+              "id": "cfg-target-path",
+              "name": "targetPath",
+              "type": "string",
+              "value": "/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Projects"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "master-unload-llm",
+      "name": "Call 'Util LLM Unload Model'",
+      "disabled": true,
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [
+        448,
+        304
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9u9lYZyviZunbye1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9u9lYZyviZunbye1",
+          "cachedResultName": "Util LLM Unload Model"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "manualModelName": "={{ $('Config').item.json.manualModelName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "key": "manualModelName",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "master-read-control",
+      "name": "Read Housekeeping.md",
+      "notes": "Reads Obsidian Housekeeping.md via Local REST API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        304
+      ],
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "master-parse-control",
+      "name": "Parse Timestamp & Flags",
+      "notes": "Parses last-run ISO timestamp and Awaiting Decision flag list from control file. Also passes raw controlFileContent to Resolve Decisions sub-workflow.",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// Parse last-run timestamp, target folder, modified-only flag, and Awaiting Decision flags\n// from Obsidian Housekeeping.md\nconst content = $input.item.json.body ?? $input.item.json.data ?? '';\n\n// --- Parse last-run timestamp ---\nconst oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();\nconst timestampMatch = content.match(/\\*\\*Last run:\\*\\*\\s*([^\\n]+)/);\nlet lastRun = null;\nlet lastRunIso = null;\n\nif (timestampMatch) {\n  const raw = timestampMatch[1].trim();\n  if (raw === '—' || raw === '-' || raw === '') {\n    lastRunIso = oneYearAgo;\n    lastRun = 'NOT SET – fell back to 1 year ago';\n  } else {\n    const parsed = new Date(raw);\n    if (!isNaN(parsed.getTime())) {\n      lastRunIso = parsed.toISOString();\n      lastRun = raw;\n    } else {\n      lastRunIso = oneYearAgo;\n      lastRun = `INVALID (\"${raw}\") – fell back to 1 year ago`;\n    }\n  }\n} else {\n  lastRunIso = oneYearAgo;\n  lastRun = 'NOT FOUND – fell back to 1 year ago';\n}\n\n// --- Parse Awaiting Decision flags ---\nconst awaitingSection = content.match(/## Awaiting Decision\\n([\\s\\S]*?)(?=\\n## |$)/);\nconst awaitingRaw = awaitingSection ? awaitingSection[1].trim() : '';\n\nconst flags = [];\nlet match;\n\n// New callout format: > [!question] `path`\\n> description\nconst calloutPattern = /^> \\[!question\\] ([^\\n]+)\\n> (.+?)$/gm;\nwhile ((match = calloutPattern.exec(awaitingRaw)) !== null) {\n  flags.push({ filePath: match[1], description: match[2].trim() });\n}\n\n// Legacy format: - `path` — description (fallback for existing items)\nconst flagPattern = /^- `([^`]+)` — (.+?)$/gm;\nwhile ((match = flagPattern.exec(awaitingRaw)) !== null) {\n  const filePath = match[1];\n  const description = match[2].trim();\n  // Only add if not already captured by callout pattern\n  if (!flags.some(f => f.filePath === filePath && f.description === description)) {\n    flags.push({ filePath, description });\n  }\n}\n\n// --- Parse Ignored flags ---\nconst ignoredSection = content.match(/## Ignored\\n([\\s\\S]*?)(?=\\n## |$)/);\nconst ignoredRaw = ignoredSection ? ignoredSection[1].trim() : '';\n\nconst ignoredFlags = [];\nconst ignoredPattern = /^- `([^`]+)` — (.+?)$/gm;\nlet ignoredMatch;\nwhile ((ignoredMatch = ignoredPattern.exec(ignoredRaw)) !== null) {\n  ignoredFlags.push({ filePath: ignoredMatch[1], description: ignoredMatch[2].trim() });\n}\n// Also match callout format in Ignored section\nconst ignoredCalloutPattern = /^> \\[!question\\] ([^\\n]+)\\n> (.+?)$/gm;\nlet ignoredCalloutMatch;\nwhile ((ignoredCalloutMatch = ignoredCalloutPattern.exec(ignoredRaw)) !== null) {\n  const fp = ignoredCalloutMatch[1];\n  const desc = ignoredCalloutMatch[2].trim();\n  if (!ignoredFlags.some(f => f.filePath === fp && f.description === desc)) {\n    ignoredFlags.push({ filePath: fp, description: desc });\n  }\n}\n\nconst pendingCount = flags.length;\nconst actionableCount = 0;\n\n// --- Parse target folder (under ## Config) ---\nconst targetFolderMatch = content.match(/\\*\\*Target folder:\\*\\*\\s*`([^`]+)`/);\nconst targetFolder = targetFolderMatch ? targetFolderMatch[1].trim() : null;\n\n// --- Parse process-modified-only checkbox (under ## Config) ---\nconst modifiedOnlyMatch = content.match(/- \\[([ x])\\] Process modified files only/);\nconst processModifiedOnly = modifiedOnlyMatch ? modifiedOnlyMatch[1] === 'x' : true;\n\n// --- Parse Area Map (under ## Config > ### Area Map) ---\n// Format: - Folder Name | area-slug | Display Name\nconst areaMapSection = content.match(/### Area Map\\n[\\s\\S]*?(?=\\n---\\n|\\n## )/);\nconst areaMapRaw = areaMapSection ? areaMapSection[0] : '';\nconst areaMap = {}; // folderName -> { slug, displayName }\nconst areaMapPattern = /^- (.+?) \\| (.+?) \\| (.+?)$/gm;\nlet areaMapMatch;\nwhile ((areaMapMatch = areaMapPattern.exec(areaMapRaw)) !== null) {\n  areaMap[areaMapMatch[1].trim()] = {\n    slug: areaMapMatch[2].trim(),\n    displayName: areaMapMatch[3].trim()\n  };\n}\n\nconsole.log(`Last run: ${lastRun}`);\nconsole.log(`Target folder from control file: ${targetFolder ?? '(not set – will use Config fallback)'}`);\nconsole.log(`Process modified only: ${processModifiedOnly}`);\nconsole.log(`Awaiting Decision flags: ${flags.length} total, ${pendingCount} pending`);\n\nreturn [{\n  controlFileContent: content,\n  lastRun,\n  lastRunIso,\n  targetFolder,\n  processModifiedOnly,\n  areaMap,\n  awaitingFlags: flags,\n  ignoredFlags,\n  flagSummary: { total: flags.length, actionable: 0, pending: pendingCount },\n  runStarted: new Date().toISOString()\n}];"
+      }
+    },
+    {
+      "id": "master-ssh",
+      "name": "Find Modified Files (SSH)",
+      "notes": "SSH find: all .md files in Projects/ modified since last run. Extend path or add more find commands when other managed folders are in scope.",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        304
+      ],
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "={{ (() => {\n  const tf = $('Parse Timestamp & Flags').item.json.targetFolder;\n  const vp = $('Config').item.json.vaultPath.replace(/\\/$/, '');\n  const fallback = $('Config').item.json.targetPath;\n  const folder = tf ? `${vp}/${tf}` : fallback;\n  const modOnly = $('Parse Timestamp & Flags').item.json.processModifiedOnly;\n  const ts = new Date($('Parse Timestamp & Flags').item.json.lastRunIso)\n    .toISOString().replace('T', ' ').replace(/\\.\\d{3}Z$/, '');\n  return modOnly\n    ? `find \"${folder}\" -name \"*.md\" -newermt \"${ts}\" | sort`\n    : `find \"${folder}\" -name \"*.md\" | sort`;\n})() }}"
+      },
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "CHHENAbxE0xrNy8M",
+          "name": "SSH Mac Studio - ansible-to-systems"
+        }
+      }
+    },
+    {
+      "id": "master-filter-files",
+      "name": "Filter & Parse File List",
+      "notes": "Parses SSH find output, strips vault prefix, applies exclusion filter from Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        304
+      ],
+      "parameters": {
+        "jsCode": "const vaultPath = $('Config').item.json.vaultPath;\nconst excludedRaw = $('Config').item.json.excludedPaths ?? '';\nconst excludedPaths = typeof excludedRaw === 'string'\n  ? excludedRaw.split(',').map(p => p.trim()).filter(p => p.length > 0)\n  : excludedRaw;\n\nconst lastRunIso = $('Parse Timestamp & Flags').item.json.lastRunIso;\nconst stdout = $input.item.json.stdout ?? '';\n\nconst absolutePaths = stdout.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nconst relativePaths = absolutePaths.map(p => {\n  const prefix = vaultPath.endsWith('/') ? vaultPath : vaultPath + '/';\n  const rel = p.startsWith(prefix) ? p.slice(prefix.length) : p;\n  return rel.replace(/^\\.\\//,  '');\n});\n\nconst filtered = relativePaths.filter(filePath =>\n  !excludedPaths.some(excluded => filePath.startsWith(excluded))\n);\n\nconsole.log(`Files modified since ${lastRunIso}: ${relativePaths.length}`);\nconsole.log(`After exclusion filter: ${filtered.length}`);\n\nreturn [{\n  allFiles: relativePaths,\n  filteredFiles: filtered,\n  excludedCount: relativePaths.length - filtered.length,\n  fileCount: filtered.length,\n  lastRunIso\n}];"
+      }
+    },
+    {
+      "id": "master-split-out",
+      "name": "Split Out Files",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        304
+      ],
+      "parameters": {
+        "fieldToSplitOut": "filteredFiles",
+        "options": {}
+      }
+    },
+    {
+      "id": "master-per-file",
+      "name": "Call 'Per-File Processor'",
+      "notes": "Calls Housekeeping – Per-File Processor (Vk3nAIh3qzqvtbqR) once per file. Passes filePath, obsidianBaseUrl, modelName, allKnownFiles.",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1744,
+        304
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Vk3nAIh3qzqvtbqR",
+          "mode": "list",
+          "cachedResultName": "Housekeeping – Per-File Processor",
+          "cachedResultUrl": "/workflow/Vk3nAIh3qzqvtbqR"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false,
+          "schema": [
+            {
+              "key": "filePath",
+              "type": "string"
+            },
+            {
+              "key": "obsidianBaseUrl",
+              "type": "string"
+            },
+            {
+              "key": "modelName",
+              "type": "string"
+            },
+            {
+              "key": "allKnownFiles",
+              "type": "array"
+            },
+            {
+              "key": "areaMap",
+              "type": "object"
+            }
+          ],
+          "value": {
+            "filePath": "={{ $json.filteredFiles }}",
+            "obsidianBaseUrl": "={{ $('Config').item.json.obsidianBaseUrl }}",
+            "modelName": "={{ $('Config').item.json.manualModelName }}",
+            "allKnownFiles": "={{ $('Filter & Parse File List').item.json.filteredFiles }}",
+            "areaMap": "={{ $('Parse Timestamp & Flags').item.json.areaMap }}"
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "master-aggregate",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        304
+      ],
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      }
+    },
+    {
+      "id": "master-build-log",
+      "name": "Build Log Entry",
+      "notes": "Builds new log entry from aggregated results, prepends to existing log, trims to 10 days",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2352,
+        304
+      ],
+      "parameters": {
+        "jsCode": "   // ── Master: Build Outputs ────────────────────────────────────────────────\n   const now = new Date();\n   // Log time in Auckland local time (NZDT/NZST handled by the timezone)\n   const nzDate = now.toLocaleString('sv-SE', { timeZone: 'Pacific/Auckland' });\n   const datestamp = nzDate.slice(0, 16).replace(' ', ' | ');\n   const runFinishedIso = new Date().toISOString();\n\n   const cutoff = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);\n\n   const controlData = $('Parse Timestamp & Flags').first().json;\n   const lastRunRead = controlData.lastRun;\n   const flagSummary = controlData.flagSummary;\n   const existingFlags = controlData.awaitingFlags ?? [];\n   const ignoredFlags = controlData.ignoredFlags ?? [];\n   const controlContent = controlData.controlFileContent ?? '';\n\n   const allItems = $('Aggregate Results').first().json.data ?? [];\n   const fileCount = allItems.length;\n\n   const fixedLines = [];\n   const flaggedLines = [];\n   const newAwaitingDecisions = [];\n\n   for (const item of allItems) {\n     const name = item.filename ?? item.filePath ?? 'unknown';\n     const path = item.filePath ?? 'unknown';\n     const fixes = item.fixes ?? [];\n     const flags = item.flags ?? [];\n     const writeStatus = item.writeStatus ?? 'unknown';\n\n     if (fixes.length > 0) {\n       for (const fix of fixes) fixedLines.push(`- \\`${name}\\` — ${fix}`);\n       if (writeStatus !== 'written' && writeStatus !== 'skipped') {\n         fixedLines.push(`  ⚠️ Write status: ${writeStatus}`);\n       }\n     }\n     \n     if (flags.length > 0) {\n       for (const flag of flags) {\n         flaggedLines.push(`- \\`${name}\\` — ${flag}`);\n         \n         // Check if this specific file+flag combo is already in Awaiting Decision or Ignored\n         const isDuplicate = existingFlags.some(f => f.filePath === path && f.description === flag)\n           || ignoredFlags.some(f => f.filePath === path && f.description === flag);\n         if (!isDuplicate) {\n           newAwaitingDecisions.push(`> [!question] ${path}\\n> ${flag}\\n\\n**Decision:**`);\n         }\n       }\n     }\n   }\n\n   // 1. BUILD LOG CONTENT\n   const fixedSection   = fixedLines.length  > 0 ? `\\n#### Fixed\\n${fixedLines.join('\\n')}`   : '';\n   const flaggedSection = flaggedLines.length > 0 ? `\\n#### Flagged\\n${flaggedLines.join('\\n')}` : '';\n   const noActivity     = fixedLines.length === 0 && flaggedLines.length === 0 ? '\\n*No fixes or flags this run.*' : '';\n\n   const newEntry = `### ${datestamp}\\n**Last run read:** ${lastRunRead}\\n**Files processed:** ${fileCount}\\n**Awaiting\n   Decision flags:** ${flagSummary.total} total (${flagSummary.actionable} actionable, ${flagSummary.pending}\n   pending)${fixedSection}${flaggedSection}${noActivity}`;\n\n   const existingLog = $input.item.json.body ?? $input.item.json.data ?? '';\n   const logSectionMatch = existingLog.match(/^(---[\\s\\S]*?## Log\\n)([\\s\\S]*)$/m);\n   const logHeader       = logSectionMatch ? logSectionMatch[1] : existingLog;\n   const logEntries      = logSectionMatch ? logSectionMatch[2] : '';\n\n   const entryBlocks = logEntries.split(/(?=^### \\d{4}-\\d{2}-\\d{2})/m).filter(e => e.trim());\n   const recentEntries = entryBlocks.filter(block => {\n     const dateMatch = block.match(/^### (\\d{4}-\\d{2}-\\d{2})/);\n     if (!dateMatch) return true;\n     return new Date(dateMatch[1]) >= cutoff;\n   });\n\n   const updatedLog = `${logHeader}\\n${[newEntry.trimEnd(), ...recentEntries.map(e => e.trimEnd())].join('\\n\\n')}\\n`;\n\n   // 2. BUILD CONTROL FILE CONTENT\n   // Update the **Last run:** timestamp\n   let updatedControl = controlContent.replace(/\\*\\*Last run:\\*\\*\\s*[^\\n]*/, `**Last run:** ${runFinishedIso}`);\n\n   // Append new flags to the Awaiting Decision section\n   if (newAwaitingDecisions.length > 0) {\n       const awaitingHeader = '## Awaiting Decision';\n       const splitIndex = updatedControl.indexOf(awaitingHeader);\n       \n       if (splitIndex !== -1) {\n           const headerEnd = splitIndex + awaitingHeader.length;\n           const preamble  = updatedControl.slice(0, headerEnd);\n           const rest      = updatedControl.slice(headerEnd).trim();\n           // Insert new flags immediately after the header\n           updatedControl = `${preamble}\\n${newAwaitingDecisions.join('\\n\\n')}\\n\\n${rest}`;\n       } else {\n           // Fallback: append at end if header not found\n           updatedControl += `\\n\\n${awaitingHeader}\\n${newAwaitingDecisions.join('\\n')}\\n`;\n       }\n   }\n\n   return [{ \n       updatedLog, \n       updatedControl,\n       logChanged: updatedLog !== existingLog,\n       controlChanged: true \n   }];\n\n"
+      }
+    },
+    {
+      "id": "7b7d94bc-b968-4cc1-9a2d-9912b56783b3",
+      "name": "Read Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2160,
+        304
+      ],
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "7d14d099-3654-4943-8c5b-e85e75cbb50f",
+      "name": "Write Log Entry",
+      "notes": "Writes full log file back via PUT — content is pre-built by Build Log Entry including header, new entry prepended, trimmed to 10 days",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "alwaysOutputData": false,
+      "position": [
+        2560,
+        304
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.updatedLog }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "id": "bdcedaf0-1f83-42df-8f61-7a48b1652d45",
+      "name": "Write Control File",
+      "notes": "Writes full log file back via PUT — content is pre-built by Build Log Entry including header, new entry prepended, trimmed to 10 days",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2752,
+        304
+      ],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $('Build Log Entry').item.json.updatedControl }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Call 'Util LLM Unload Model'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Util LLM Unload Model'": {
+      "main": [
+        [
+          {
+            "node": "Read Housekeeping.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Housekeeping.md": {
+      "main": [
+        [
+          {
+            "node": "Parse Timestamp & Flags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Timestamp & Flags": {
+      "main": [
+        [
+          {
+            "node": "Find Modified Files (SSH)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Modified Files (SSH)": {
+      "main": [
+        [
+          {
+            "node": "Filter & Parse File List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Parse File List": {
+      "main": [
+        [
+          {
+            "node": "Split Out Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Files": {
+      "main": [
+        [
+          {
+            "node": "Call 'Per-File Processor'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Per-File Processor'": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Read Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Write Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Log": {
+      "main": [
+        [
+          {
+            "node": "Build Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Write Control File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "cee6f1be-c215-467c-97de-10e6243a4da7",
+  "activeVersionId": "cee6f1be-c215-467c-97de-10e6243a4da7",
+  "versionCounter": 195,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

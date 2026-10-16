@@ -1,0 +1,374 @@
+{
+  "updatedAt": "2026-06-15T05:54:29.424Z",
+  "createdAt": "2026-06-14T22:58:00.224Z",
+  "id": "ZvVd6jAZazGZSagA",
+  "name": "PDA - ClickUp Explorer",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-1",
+      "name": "Manual Trigger",
+      "position": [
+        -800,
+        304
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.clickup.com/api/v2/team",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "options": {}
+      },
+      "id": "get-team-1",
+      "name": "Get Team",
+      "position": [
+        -560,
+        304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/team/{{ $json.teams[0].id }}/space",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-spaces-1",
+      "name": "Get Spaces",
+      "position": [
+        -320,
+        208
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "spaces",
+        "options": {}
+      },
+      "id": "split-spaces-1",
+      "name": "Split Out Spaces",
+      "position": [
+        -80,
+        208
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/space/{{ $json.id }}/folder",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-folders-1",
+      "name": "Get Folders for Space",
+      "position": [
+        160,
+        112
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/space/{{ $json.id }}/list",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-folderless-lists-1",
+      "name": "Get Folderless Lists for Space",
+      "position": [
+        160,
+        304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "merge-1",
+      "name": "Merge Space Branches",
+      "position": [
+        400,
+        208
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Each input item corresponds to one Space, with:\n//   item.json (from first input)  -> { folders: [...] }  (from Get Folders for Space)\n//   item.json (from second input) -> { id, name, lists: [...] } (space + folderless lists)\n// merge node with combineByPosition outputs items containing both branches' fields merged\n\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n\n  const spaceId = data.id;\n  const spaceName = data.name;\n\n  // Folderless lists (from the space's `list` field, if present)\n  const folderlessLists = data.lists || [];\n  for (const list of folderlessLists) {\n    results.push({\n      space_id: spaceId,\n      space_name: spaceName,\n      folder_id: null,\n      folder_name: null,\n      list_id: list.id,\n      list_name: list.name\n    });\n  }\n\n  // Folders -> fetch lists within each folder\n  const folders = data.folders || [];\n  for (const folder of folders) {\n    // folder.lists is often included directly in the folder object from the ClickUp API\n    const folderLists = folder.lists || [];\n    if (folderLists.length > 0) {\n      for (const list of folderLists) {\n        results.push({\n          space_id: spaceId,\n          space_name: spaceName,\n          folder_id: folder.id,\n          folder_name: folder.name,\n          list_id: list.id,\n          list_name: list.name\n        });\n      }\n    } else {\n      // Fallback: fetch lists for this folder via API if not embedded\n      const response = await this.helpers.httpRequestWithAuthentication.call(\n        this,\n        'clickUpApi',\n        {\n          method: 'GET',\n          url: `https://api.clickup.com/api/v2/folder/${folder.id}/list`,\n          qs: { archived: 'false' },\n          json: true\n        }\n      );\n      const lists = response.lists || [];\n      for (const list of lists) {\n        results.push({\n          space_id: spaceId,\n          space_name: spaceName,\n          folder_id: folder.id,\n          folder_name: folder.name,\n          list_id: list.id,\n          list_name: list.name\n        });\n      }\n      // If folder has no lists at all, still record the folder so it's visible\n      if (lists.length === 0) {\n        results.push({\n          space_id: spaceId,\n          space_name: spaceName,\n          folder_id: folder.id,\n          folder_name: folder.name,\n          list_id: null,\n          list_name: null\n        });\n      }\n    }\n  }\n\n  // If a space has neither folders nor folderless lists, still record it\n  if (folders.length === 0 && folderlessLists.length === 0) {\n    results.push({\n      space_id: spaceId,\n      space_name: spaceName,\n      folder_id: null,\n      folder_name: null,\n      list_id: null,\n      list_name: null\n    });\n  }\n}\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "code-flatten-1",
+      "name": "Code - Fetch Lists in Folders & Flatten",
+      "position": [
+        640,
+        208
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sort for readability: space, then folder, then list\nconst sorted = [...items.map(i => i.json)].sort((a, b) => {\n  if (a.space_name !== b.space_name) return (a.space_name || '').localeCompare(b.space_name || '');\n  if ((a.folder_name || '') !== (b.folder_name || '')) return (a.folder_name || '').localeCompare(b.folder_name || '');\n  return (a.list_name || '').localeCompare(b.list_name || '');\n});\n\nreturn sorted.map(r => ({ json: r }));"
+      },
+      "id": "code-format-output-1",
+      "name": "Code - Format as Table",
+      "position": [
+        880,
+        208
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v3/workspaces/{{ $json.teams[0].id }}/chat/channels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpApi",
+        "options": {}
+      },
+      "id": "get-chat-channels-1",
+      "name": "Get Chat Channels",
+      "position": [
+        -320,
+        464
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "clickUpApi": {
+          "id": "mYgJDbztPHwPSOVk",
+          "name": "ClickUp - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-channels-1",
+      "name": "Split Out Channels",
+      "position": [
+        -80,
+        464
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter ClickUp v3 chat channels down to real project channels, and join\n// against the Lists/Folders table (Code - Format as Table) to attach\n// human-readable names and resolve folder-level channels to their member lists.\n//\n// parent.type codes observed: 5 = Folder, 6 = List, 7 = Space, 12 = Workspace-level (DM/group DM/non-project)\n\nlet listsTable = [];\ntry {\n  listsTable = $('Code - Format as Table').all().map(i => i.json);\n} catch (e) {\n  listsTable = [];\n}\n\nconst results = [];\n\nfor (const item of items) {\n  const ch = item.json;\n\n  // Only real, current project channels\n  if (ch.type !== 'CHANNEL') continue;\n  if (ch.is_canonical_channel !== true) continue;\n  if (!ch.parent || ![5, 6].includes(ch.parent.type)) continue;\n\n  const parentId = ch.parent.id;\n\n  if (ch.parent.type === 6) {\n    // Channel attached to a single List\n    const row = listsTable.find(r => r.list_id === parentId);\n    results.push({\n      channel_id: ch.id,\n      channel_name: ch.name,\n      attached_to: 'list',\n      list_id: parentId,\n      list_name: row ? row.list_name : null,\n      folder_id: row ? row.folder_id : null,\n      folder_name: row ? row.folder_name : null,\n      latest_comment_at: ch.latest_comment_at || null\n    });\n  } else if (ch.parent.type === 5) {\n    // Channel attached to a Folder - covers every list within that folder\n    const rows = listsTable.filter(r => r.folder_id === parentId);\n    if (rows.length > 0) {\n      for (const row of rows) {\n        results.push({\n          channel_id: ch.id,\n          channel_name: ch.name,\n          attached_to: 'folder',\n          list_id: row.list_id,\n          list_name: row.list_name,\n          folder_id: parentId,\n          folder_name: row.folder_name,\n          latest_comment_at: ch.latest_comment_at || null\n        });\n      }\n    } else {\n      // Folder with no lists found in the table - still record the channel\n      results.push({\n        channel_id: ch.id,\n        channel_name: ch.name,\n        attached_to: 'folder',\n        list_id: null,\n        list_name: null,\n        folder_id: parentId,\n        folder_name: null,\n        latest_comment_at: ch.latest_comment_at || null\n      });\n    }\n  }\n}\n\n// Sort for readability: folder, then list, then channel name\nresults.sort((a, b) => {\n  if ((a.folder_name || '') !== (b.folder_name || '')) return (a.folder_name || '').localeCompare(b.folder_name || '');\n  if ((a.list_name || '') !== (b.list_name || '')) return (a.list_name || '').localeCompare(b.list_name || '');\n  return (a.channel_name || '').localeCompare(b.channel_name || '');\n});\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "code-format-channels-1",
+      "name": "Code - Format Channels",
+      "position": [
+        176,
+        528
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Code - Fetch Lists in Folders & Flatten": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Code - Format as Table",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Chat Channels": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split Out Channels",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Folderless Lists for Space": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Space Branches",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Folders for Space": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge Space Branches",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Spaces": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split Out Spaces",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Team": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Spaces",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Get Chat Channels",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Team",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge Space Branches": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Code - Fetch Lists in Folders & Flatten",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split Out Channels": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Code - Format Channels",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split Out Spaces": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Folders for Space",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Get Folderless Lists for Space",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "0e718445-02bc-4a21-82bc-4da810e132ba",
+  "activeVersionId": null,
+  "versionCounter": 4,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

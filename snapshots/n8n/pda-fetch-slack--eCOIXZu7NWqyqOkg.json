@@ -1,0 +1,532 @@
+{
+  "updatedAt": "2026-04-19T05:40:22.126Z",
+  "createdAt": "2026-03-27T06:48:18.142Z",
+  "id": "eCOIXZu7NWqyqOkg",
+  "name": "PDA Fetch Slack",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "channel",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "types": [
+            "public_channel",
+            "private_channel"
+          ]
+        }
+      },
+      "id": "3597966c-ef4e-4863-8607-46d498feca59",
+      "name": "Slack - Get All Channels",
+      "position": [
+        -272,
+        288
+      ],
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "webhookId": "REDACTED",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "czH3AoWUXQ3XPtIH",
+          "name": "Slack - Tim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read slack_channels from Config (sourced from PDA Master passthrough, or stub defaults for standalone runs)\nconst channelNames = $('Config').first().json.slack_channels || ['ijm', 'ijm-post', 'vessev', 'admin'];\nconst allChannels = $('Slack - Get All Channels').all();\n\n// Build name → ID lookup\nconst channelMap = {};\nallChannels.forEach(item => {\n  channelMap[item.json.name.toLowerCase()] = item.json.id;\n});\n\nconst channels = [];\nfor (const name of channelNames) {\n  const lower = name.toLowerCase();\n  const id = channelMap[lower];\n  if (id) {\n    channels.push({ json: { channelName: lower, channelId: id } });\n  } else {\n    channels.push({ json: { channelName: lower, channelId: null, error: 'NOT FOUND' } });\n  }\n}\n\nreturn channels;"
+      },
+      "id": "19f7a978-0a01-46b7-afc5-4b4610ee8280",
+      "name": "Channels - Define Targets",
+      "position": [
+        -80,
+        288
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/conversations.history",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.channelId }}"
+            },
+            {
+              "name": "oldest",
+              "value": "={{ $('Config').first().json.feedsSinceUnix }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "985c7906-9fa0-46a7-86e8-f1b2bc1fd5f7",
+      "name": "Channels - Get History",
+      "position": [
+        112,
+        288
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "czH3AoWUXQ3XPtIH",
+          "name": "Slack - Tim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/feed_slack.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "6df60217-ae2e-4259-8517-81310dfb3f7f",
+      "name": "Obsidian – Write Slack Feed",
+      "position": [
+        496,
+        528
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/conversations.list",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "types",
+              "value": "im"
+            },
+            {
+              "name": "exclude_archived",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "eb4185cf-ec8f-4340-a66f-0fb6fdef61eb",
+      "name": "DMs – Get Conversations",
+      "position": [
+        496,
+        288
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "czH3AoWUXQ3XPtIH",
+          "name": "Slack - Tim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "4c30892d-3d36-46c0-878c-560b6d52ff42",
+              "leftValue": "={{ $json.user }}",
+              "operator": {
+                "operation": "notEquals",
+                "type": "string"
+              },
+              "rightValue": "USLACKBOT"
+            },
+            {
+              "id": "1743c7a9-05fa-470b-8881-19c1cea8691c",
+              "leftValue": "={{ $json.is_user_deleted }}",
+              "operator": {
+                "operation": "false",
+                "singleValue": true,
+                "type": "boolean"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "5b402357-338d-4777-8fa9-75248f6706a1",
+      "name": "DMs – Filter",
+      "position": [
+        -256,
+        528
+      ],
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "channels",
+        "options": {}
+      },
+      "id": "58ecfc2b-ae04-474a-9db1-ff18dc9fe74c",
+      "name": "DMs – Split Out",
+      "position": [
+        688,
+        288
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/conversations.history",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "oldest",
+              "value": "={{ $('Config').first().json.feedsSinceUnix }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "03e139f9-544c-47c5-9a81-6a28e27ac163",
+      "name": "DMs – Get History",
+      "position": [
+        -80,
+        528
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "H2eccl2Fb1Bh8wep",
+          "name": "User OAuth Token"
+        },
+        "slackOAuth2Api": {
+          "id": "czH3AoWUXQ3XPtIH",
+          "name": "Slack - Tim"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "24345163-046e-4a7a-8e46-7ae6b7d940cb",
+      "name": "DMs – Aggregate",
+      "position": [
+        112,
+        528
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. User ID lookup ──────────────────────────────────────────────────────────────────────\nconst USERS = {\n  'U01LXU0K3DG': 'Tim',\n  'U01MAH5A6N5': 'Jess',\n  'U03QQ1H8M5E': 'Joe',\n};\n\nconst TIM_USER_ID = 'U01LXU0K3DG';\n\nfunction resolveUser(id) {\n  return USERS[id] || id || 'unknown';\n}\n\n// ── 2. Timestamp conversion — Slack Unix ts → UTC ISO ────────────────────────────────────\nfunction slackTsToUTC(ts) {\n  if (!ts) return null;\n  return new Date(Math.floor(parseFloat(ts) * 1000)).toISOString();\n}\n\n// ── 3. Helpers ────────────────────────────────────────────────────────────────────────\nfunction decodeEntities(str) {\n  if (!str) return '';\n  return str\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&apos;/g, \"'\");\n}\n\nfunction cleanSlackText(text) {\n  if (!text) return '';\n  let clean = text\n    .replace(/<@([A-Z0-9]+)>/g, (_, id) => `@${resolveUser(id)}`)\n    .replace(/<!here>/g, '@here')\n    .replace(/<!channel>/g, '@channel')\n    .replace(/<!everyone>/g, '@everyone')\n    .replace(/<#[A-Z0-9]+\\|([^>]+)>/g, '#$1')\n    .replace(/<([^|>]+)\\|([^>]+)>/g, '$2')\n    .replace(/<(https?:\\/\\/[^>]+)>/g, '$1')\n    .replace(/\\s+/g, ' ')\n    .trim();\n  return decodeEntities(clean).substring(0, 1500);\n}\n\n// ── 4. Read inputs — channel names from Config ─────────────────────────────────────\nconst channelNames = $('Config').first().json.slack_channels || ['ijm', 'ijm-post', 'vessev', 'admin'];\nconst channelsData = $('Channels – Aggregate').first().json.data || [];\nconst dmsData = $input.first().json.data || [];\n\n// ── 5. Build message objects ───────────────────────────────────────────────────────────────────\nconst messages = [];\n\n// Channel messages\nchannelsData.forEach((historyResponse, i) => {\n  const channelName = channelNames[i] || `channel_${i}`;\n  const msgs = historyResponse.messages || [];\n\n  for (const msg of msgs) {\n    if (!msg.ts) continue;\n    if (!msg.type === 'message') continue;\n    const text = cleanSlackText(msg.text || '');\n    if (!text) continue;\n\n    messages.push({\n      source:     'slack',\n      message_id: `${channelName}_${msg.ts}`,\n      thread_id:  msg.thread_ts && msg.thread_ts !== msg.ts ? `${channelName}_${msg.thread_ts}` : null,\n      timestamp:  slackTsToUTC(msg.ts),\n      timezone:   'UTC',\n      channel:    `#${channelName}`,\n      sender:     resolveUser(msg.user || msg.username || ''),\n      body:       text,\n      reactions:  (msg.reactions || []).map(r => `${r.name}(${r.count})`),\n      is_reply:   !!(msg.thread_ts && msg.thread_ts !== msg.ts),\n      url:        null\n    });\n  }\n});\n\n// DM messages\ndmsData.forEach((historyResponse) => {\n  const msgs = (historyResponse.messages || [])\n    .filter(m => m.type === 'message' && !m.subtype);\n\n  if (msgs.length === 0) return;\n\n  const partner = msgs.find(m => m.user && m.user !== TIM_USER_ID);\n  const partnerName = partner ? resolveUser(partner.user) : 'Unknown';\n\n  for (const msg of msgs) {\n    if (!msg.ts) continue;\n    const text = cleanSlackText(msg.text || '');\n    if (!text) continue;\n\n    messages.push({\n      source:     'slack',\n      message_id: `dm_${partnerName}_${msg.ts}`,\n      thread_id:  msg.thread_ts && msg.thread_ts !== msg.ts ? `dm_${partnerName}_${msg.thread_ts}` : null,\n      timestamp:  slackTsToUTC(msg.ts),\n      timezone:   'UTC',\n      channel:    `DM:${partnerName}`,\n      sender:     resolveUser(msg.user || ''),\n      body:       text,\n      reactions:  (msg.reactions || []).map(r => `${r.name}(${r.count})`),\n      is_reply:   !!(msg.thread_ts && msg.thread_ts !== msg.ts),\n      url:        null\n    });\n  }\n});\n\n// Sort ascending by timestamp (oldest first)\nmessages.sort((a, b) => {\n  if (!a.timestamp) return 1;\n  if (!b.timestamp) return -1;\n  return a.timestamp.localeCompare(b.timestamp);\n});\n\n// ── 6. Wrap in fenced JSON block for Obsidian ─────────────────────────────────────────\nconst fence = '```';\nconst content = `${fence}json\\n${JSON.stringify(messages, null, 2)}\\n${fence}`;\n\nreturn [{ json: { content } }];"
+      },
+      "id": "ee2c9150-e66a-428b-bdcc-7592e77d883c",
+      "name": "Slack – Format Markdown",
+      "position": [
+        304,
+        528
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "57ba5eda-eafe-4a08-b28c-fe976198d221",
+      "name": "Channels – Aggregate",
+      "position": [
+        304,
+        288
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "a79b6d4e-797a-470b-bae8-adbb91d22778",
+      "name": "When clicking 'Execute workflow'",
+      "position": [
+        -816,
+        320
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "313fcb3a-be64-4872-853a-4b8beb66f736",
+      "name": "When Executed by Another Workflow",
+      "position": [
+        -816,
+        160
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "slack-stub-channels",
+              "name": "slack_channels",
+              "type": "array",
+              "value": "={{ $json.slack_channels || ['ijm', 'ijm-post', 'vessev', 'admin'] }}"
+            },
+            {
+              "id": "9a7f83b0-9dc7-4464-965b-c9ba43ed6753",
+              "name": "=feedsSinceUnix",
+              "value": "={{ $json.feedsSinceUnix || $now.minus({days:1}).toUnixInteger() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "slack-config-node-id",
+      "name": "Config",
+      "position": [
+        -512,
+        288
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    }
+  ],
+  "connections": {
+    "Channels - Define Targets": {
+      "main": [
+        [
+          {
+            "node": "Channels - Get History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels - Get History": {
+      "main": [
+        [
+          {
+            "node": "Channels – Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels – Aggregate": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DMs – Get Conversations",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Slack - Get All Channels",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DMs – Aggregate": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Slack – Format Markdown",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DMs – Filter": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DMs – Get History",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DMs – Get Conversations": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DMs – Split Out",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DMs – Get History": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DMs – Aggregate",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DMs – Split Out": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DMs – Filter",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Slack - Get All Channels": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Channels - Define Targets",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Slack – Format Markdown": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Obsidian – Write Slack Feed",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Config",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "versionId": "1d4e2870-59bd-4ff7-913b-cda0309d7c6c",
+  "activeVersionId": "1d4e2870-59bd-4ff7-913b-cda0309d7c6c",
+  "versionCounter": 596,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 1d4e2870",
+    "description": ""
+  }
+}

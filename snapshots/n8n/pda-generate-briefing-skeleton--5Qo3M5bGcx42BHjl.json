@@ -1,0 +1,323 @@
+{
+  "updatedAt": "2026-05-19T21:14:32.743Z",
+  "createdAt": "2026-04-09T03:50:08.479Z",
+  "id": "5Qo3M5bGcx42BHjl",
+  "name": "PDA Generate Briefing Skeleton",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger-workflow",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('projects-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "fetch-projects-index",
+      "name": "Fetch Project Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('skeleton-' +  $('Config').item.json.shared_date  + '.md') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.skeleton_file }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "write-skeleton",
+      "name": "Write Skeleton to Vault",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/Templates/daily_briefing_template.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "5092c2e8-0331-4c5d-89a3-0f041ad9c427",
+      "name": "Fetch Skeleton Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -48,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Fetch data from previous nodes\nconst projectIndexRaw = $items(\"Fetch Project Index\")[0].json.data;\nconst skeletonTemplateRaw = $items(\"Fetch Skeleton Template\")[0].json.data;\nconst calendarRaw = $items(\"Fetch Calendar Feed\")[0].json.data;\nconst feedsRaw = $items(\"Fetch Feeds File\")[0].json.data || '';\n\n// 2. Clean and parse JSON strings (removing markdown wrappers)\nconst cleanProjectJson = projectIndexRaw.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\nconst projects = JSON.parse(cleanProjectJson);\n\nconst cleanCalendarJson = calendarRaw.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\nconst events = JSON.parse(cleanCalendarJson);\n\n// 2b. Build set of project IDs that have real feed signals\n// Exclude meta-buckets that don't map to a specific project\nconst META_BUCKETS = new Set(['PERSONAL', 'PERSONAL_ADMIN', 'MISC', 'NOISE']);\nlet projectsWithSignals = new Set();\ntry {\n  const cleanFeedsJson = feedsRaw.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const feeds = JSON.parse(cleanFeedsJson);\n  for (const signal of feeds) {\n    if (signal.project_id && !META_BUCKETS.has(signal.project_id)) {\n      projectsWithSignals.add(signal.project_id);\n    }\n  }\n} catch (e) {\n  // If feeds file is missing or malformed, fail open — stamp callouts for all projects\n  projectsWithSignals = null;\n}\n\n// 3. Split into housekeeping vs active projects\nconst housekeepingProjects = projects.filter(p => p.priority === '\\uD83D\\uDD35 HOUSEKEEPING');\nconst activeProjects = projects.filter(p => p.priority !== '\\uD83D\\uDD35 HOUSEKEEPING');\n\n// 4. Sort active projects by priority: URGENT first, then IMPORTANT, then ON THE RADAR\nactiveProjects.sort((a, b) => {\n  const rank = p => p.priority.includes('URGENT') ? 0 : p.priority.includes('IMPORTANT') ? 1 : 2;\n  return rank(a) - rank(b);\n});\n\n// 5. Build formatted day string\nconst now = new Date();\nconst dayFormatted = now.toLocaleDateString('en-NZ', {\n  weekday: 'long',\n  day: 'numeric',\n  month: 'long',\n  year: 'numeric',\n  timeZone: 'Pacific/Auckland'\n});\n\n// 6. Process Calendar Table Rows\nconst seenEvents = new Set();\n\nconst calendarRows = events\n  .filter(event => event.title && event.title !== \"(No title)\" && event.start)\n  .filter(event => {\n    const nztDate = new Date(event.start).toLocaleDateString('en-NZ', { timeZone: 'Pacific/Auckland', year: 'numeric', month: '2-digit', day: '2-digit' });\n    const cleanTitle = event.title.trim().toLowerCase().replace(/[\\u2018\\u2019]/g, \"'\");\n    const uniqueKey = `${cleanTitle}|${nztDate}`;\n    if (seenEvents.has(uniqueKey)) return false;\n    seenEvents.add(uniqueKey);\n    return true;\n  })\n  .map(event => {\n    const dateObj = new Date(event.start);\n    const dayStr = dateObj.toLocaleDateString('en-NZ', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'Pacific/Auckland' });\n    const timeStr = event.all_day ? \"All Day\" : dateObj.toLocaleTimeString('en-NZ', { hour: '2-digit', minute: '2-digit', timeZone: 'Pacific/Auckland' });\n    const emoji = event.calendar === 'work' ? '\\uD83D\\uDCBC' : event.calendar === 'family' ? '\\uD83C\\uDFE0' : '\\uD83D\\uDCC5';\n    const sanitizedLocation = event.location ? event.location.replace(/\\n/g, ', ') : '';\n    const location = sanitizedLocation ? ` @ ${sanitizedLocation}` : '';\n    return `| ${dayStr} | ${emoji} ${event.title.trim()} | ${timeStr}${location} |`;\n  })\n  .join('\\n');\n\n// 7. Isolate the repeatable project template block\nconst activeProjectsSplit = skeletonTemplateRaw.split('## \\uD83D\\uDCD0 Active Projects');\nlet topPart = activeProjectsSplit[0] + '## \\uD83D\\uDCD0 Active Projects\\n\\n';\n\nconst resolvedSplit = activeProjectsSplit[1].split('## \\u2705 Resolved Since Last Briefing');\nconst projectSectionRaw = resolvedSplit[0];\n\nconst projectBlockMatch = projectSectionRaw.match(/###[\\s\\S]*?(?=###|$)/);\nlet projectTemplate = projectBlockMatch ? projectBlockMatch[0].trim() : projectSectionRaw.replace(/---\\s*$/, '').trim();\n\n// Strip any trailing --- from the project template\nprojectTemplate = projectTemplate.replace(/\\n+---\\s*$/, '').trim();\n\nconst bottomPart = '\\n\\n---\\n\\n## \\u2705 Resolved Since Last Briefing' + resolvedSplit[1];\n\n// 8. Build active project sections\nlet generatedProjectSections = [];\nfor (const project of activeProjects) {\n  let section = projectTemplate;\n  section = section.replace(/__project_name__/g, project.job_name);\n  section = section.replace(/__file_name__/g, project.file_name);\n  section = section.replace(/__current_status_property__/g, project.status.toUpperCase());\n  section = section.replace(/__priority__/g, project.priority || '\\uD83D\\uDFE2 ON THE RADAR');\n  section = section.replace(/__project_id__/g, project.id);\n  // Stamp project ID as HTML comment on its own line below the Priority line\n  section = section.replace(\n    /(\\*\\*Priority:\\*\\* .+)/m,\n    `$1\\n<!-- project-id: ${project.id} -->`\n  );\n  // Inject current_status directly — no LLM token\n  const currentStatus = (project.current_status || '').trim();\n  section = section.replace(/__status_prose__/g, currentStatus);\n\n  // Conditionally strip the callout block if this project has no feed signals\n  const hasSignals = projectsWithSignals === null || projectsWithSignals.has(project.id);\n  if (!hasSignals) {\n    section = section.replace(\n      /\\n> \\[!info\\] Proposed project file update[\\s\\S]*?(?=\\n+\\*\\*Current Status)/,\n      '\\n'\n    );\n  }\n\n  // Strip the entire Recent Activity block if there are no real signals\n  // (i.e. the table still contains only the placeholder row)\n  section = section.replace(\n    /\\n\\*\\*Recent Activity:\\*\\*\\n\\n\\| Summary \\| Time \\|\\n\\|------\\|-*------\\|\\n\\| __recent_updates__ \\| __time__ \\|\\n?/,\n    '\\n'\n  );\n\n  generatedProjectSections.push(section);\n}\n\n// 9. Build housekeeping section\nlet housekeepingSection = '';\nif (housekeepingProjects.length > 0) {\n  const hkList = housekeepingProjects\n    .map(p => `- [[${p.file_name}|${p.job_name}]] _(${p.status})_`)\n    .join('\\n');\n  housekeepingSection = `\\n\\n---\\n\\n## \\uD83D\\uDD35 Housekeeping\\n\\n${hkList}`;\n}\n\n// 10. Fill __day__ and strip Generated __time__ line\nlet filledTop = topPart\n  .replace(/__day__/g, dayFormatted)\n  .replace(/^Generated __time__\\s*\\n?/m, '');\n\n// 11. Final Stitching\nconst finalSkeletonFile = filledTop.replace(/\\|__day_date__\\|__event__\\|__context__\\|/, calendarRows)\n  + generatedProjectSections.join('\\n\\n---\\n\\n')\n  + bottomPart\n  + housekeepingSection;\n\nreturn [\n  {\n    json: {\n      skeleton_file: finalSkeletonFile,\n      project_count: activeProjects.length,\n      housekeeping_count: housekeepingProjects.length\n    }\n  }\n];"
+      },
+      "id": "a085973d-8966-4b28-87a6-f64a2c36f976",
+      "name": "Generate Skeleton",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/feed_calendar.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "55c19a84-a037-49cd-9f43-d4e3be1fb895",
+      "name": "Fetch Calendar Feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        144,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6fb49f6-b87a-4b8d-9526-453bde4dec80",
+              "name": "shared_date",
+              "value": "={{ $json.shared_date || $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        0
+      ],
+      "id": "cc85375c-3e91-42f7-96e9-a73e19b1841b",
+      "name": "Config"
+    },
+    {
+      "id": "fetch-feeds-file",
+      "name": "Fetch Feeds File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        144,
+        -160
+      ],
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "url": "=https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/{{ encodeURI('feeds-' + $('Config').item.json.shared_date + '.md') }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Project Index": {
+      "main": [
+        [
+          {
+            "node": "Fetch Skeleton Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Skeleton Template": {
+      "main": [
+        [
+          {
+            "node": "Fetch Calendar Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Skeleton": {
+      "main": [
+        [
+          {
+            "node": "Write Skeleton to Vault",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Calendar Feed": {
+      "main": [
+        [
+          {
+            "node": "Fetch Feeds File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch Project Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Feeds File": {
+      "main": [
+        [
+          {
+            "node": "Generate Skeleton",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "3bf0bf76-f043-434b-8007-70b7783b7917",
+  "activeVersionId": "3bf0bf76-f043-434b-8007-70b7783b7917",
+  "versionCounter": 208,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

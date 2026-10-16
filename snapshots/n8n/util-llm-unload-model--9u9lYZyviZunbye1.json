@@ -1,0 +1,177 @@
+{
+  "updatedAt": "2026-04-17T22:54:21.601Z",
+  "createdAt": "2026-04-09T03:30:51.001Z",
+  "id": "9u9lYZyviZunbye1",
+  "name": "Util LLM Unload Model",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.1.1.200:1234/api/v1/models/unload",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "instance_id",
+              "value": "={{ $json.instance_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        176,
+        -32
+      ],
+      "id": "fc69549f-3dbb-4342-9086-e5c6a1c676ae",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "url": "http://10.1.1.200:1234/api/v1/models",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        -32
+      ],
+      "id": "5a48ba57-30b8-4499-92b0-3742f6fcb8a0",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allModels = items[0].json.models;\nconst desiredModel = $('When Executed by Another Workflow').first().json.manualModelName || null;\n\nlet instancesToUnload = [];\n\nfor (const model of allModels) {\n  if (model.loaded_instances && model.loaded_instances.length > 0) {\n    if (desiredModel && model.key === desiredModel) {\n      continue;\n    }\n    for (const instance of model.loaded_instances) {\n      instancesToUnload.push({ instance_id: instance.id });\n    }\n  }\n}\n\nif (instancesToUnload.length === 0) {\n  return [{ json: { action: 'skipped', reason: desiredModel ? 'correct model already loaded' : 'no models loaded', hasWork: false } }];\n}\n\nreturn instancesToUnload.map(i => ({ json: { ...i, hasWork: true } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -32
+      ],
+      "id": "0ac267ac-b904-4eea-ba45-79a538878494",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        -32
+      ],
+      "id": "e3050b27-69e0-4624-97a8-ee4ce212c539",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "id": "if-has-work",
+      "name": "Has Instances To Unload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -32
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.hasWork }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Has Instances To Unload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Instances To Unload": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "d0cdfed3-81ab-42d6-afb8-c70e62b47fd7",
+  "activeVersionId": "d0cdfed3-81ab-42d6-afb8-c70e62b47fd7",
+  "versionCounter": 36,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T03:00:20.033Z",
+      "createdAt": "2026-04-13T03:00:20.033Z",
+      "id": "CDLbxAF4Rn7G0yLx",
+      "name": "util"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

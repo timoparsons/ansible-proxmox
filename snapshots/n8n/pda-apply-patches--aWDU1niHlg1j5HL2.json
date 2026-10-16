@@ -1,0 +1,283 @@
+{
+  "updatedAt": "2026-06-17T06:51:24.908Z",
+  "createdAt": "2026-04-11T02:01:14.328Z",
+  "id": "aWDU1niHlg1j5HL2",
+  "name": "PDA Apply Patches",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "REDACTED-WEBHOOK-PATH",
+        "options": {}
+      },
+      "id": "trigger-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -768,
+        -96
+      ],
+      "webhookId": "REDACTED",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "shared_date",
+              "type": "string",
+              "value": "={{ $json.query?.date || $now.toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/{{ encodeURI($('Resolve Briefing Filename').item.json.briefingPath) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "fetch-briefing",
+      "name": "Fetch Briefing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -112,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/{{ encodeURI($('Resolve Briefing Filename').item.json.projectIndexPath) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "fetch-project-index",
+      "name": "Fetch Project Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        48,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ───────────────────────────────────────────────────────────────\n// APPLY PATCHES (WITH DIAGNOSTICS)\n// ───────────────────────────────────────────────────────────────\n\nconst OBSIDIAN_BASE = 'https://10.1.1.200:27124';\nconst token = $('Config - Paths').first().json.obsidianToken;\n\nconst briefingRaw = $('Fetch Briefing').first().json.data;\nconst projectIndexRaw = $('Fetch Project Index').first().json.data;\n\n// Helper: GET a file from Obsidian\nasync function obsidianGet(path) {\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: `${OBSIDIAN_BASE}/vault/${path}`,\n    headers: { 'Authorization': 'Bearer ' + token },\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true,\n    skipSslCertificateValidation: true\n  });\n  if (response.statusCode !== 200) throw new Error(`HTTP ${response.statusCode}`);\n  return response.body;\n}\n\n// Helper: PUT a file to Obsidian\nasync function obsidianPut(path, content) {\n  const response = await this.helpers.httpRequest({\n    method: 'PUT',\n    url: `${OBSIDIAN_BASE}/vault/${path}`,\n    headers: {\n      'Authorization': 'Bearer ' + token,\n      'Content-Type': 'text/markdown'\n    },\n    body: content,\n    returnFullResponse: true,\n    ignoreHttpStatusErrors: true,\n    skipSslCertificateValidation: true\n  });\n  if (response.statusCode >= 300) throw new Error(`HTTP ${response.statusCode}`);\n}\n\n// 1. Parse project index\nconst cleanJson = projectIndexRaw.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\nconst projects = JSON.parse(cleanJson);\nconst projectMap = {};\nfor (const p of projects) {\n  projectMap[p.id] = p.file_name;\n}\n\n// 2. Parse briefing for all callouts\nconst lines = briefingRaw.split('\\n');\nconst calloutBlocks = [];\nlet currentBlock = null;\n\nfor (let i = 0; i < lines.length; i++) {\n  const line = lines[i];\n  if (/^>\\s*\\[!info\\]\\s*Proposed project file update/i.test(line)) {\n    if (currentBlock) {\n      currentBlock.endIdx = i - 1;\n      calloutBlocks.push(currentBlock);\n    }\n    currentBlock = { startIdx: i, lines: [line] };\n  } else if (currentBlock) {\n    if (line.startsWith('>')) {\n      currentBlock.lines.push(line);\n    } else {\n      currentBlock.endIdx = i - 1;\n      calloutBlocks.push(currentBlock);\n      currentBlock = null;\n    }\n  }\n}\nif (currentBlock) {\n  currentBlock.endIdx = lines.length - 1;\n  calloutBlocks.push(currentBlock);\n}\n\n// 3. STRICT CHECKBOX FILTER\nconst approvedBlocks = calloutBlocks.filter(block => {\n  const blockText = block.lines.join('\\n');\n  return /^>\\s*-\\s*\\[[xX]\\]\\s*Apply this update/m.test(blockText);\n});\n\n// DIAGNOSTIC OUTPUT: If it stops here, it truly saw 0 checked boxes.\nif (approvedBlocks.length === 0) {\n  return [{ \n    json: { \n      status: 'no_approved_patches', \n      message: 'Workflow stopped correctly. No [x] checkboxes were found in the parsed data.',\n      patches_applied: 0, \n      total_callouts_found: calloutBlocks.length,\n      debug_raw_input_preview: briefingRaw.substring(0, 500) + '...', // Check if n8n has stale data\n      debug_blocks_seen: calloutBlocks.map(b => b.lines.join('\\n')) // Look at what n8n actually read\n    } \n  }];\n}\n\n// 4. Extract data from approved blocks\nconst patches = [];\nfor (const block of approvedBlocks) {\n  const blockText = block.lines.join('\\n');\n  const idMatch = blockText.match(/^>\\s*project-id::\\s*(.+)$/m);\n  if (!idMatch) continue;\n  const projectId = idMatch[1].trim();\n\n  let proposedStatus = '';\n  const statusMatch = blockText.match(/^>\\s*(?:\\*\\*)?Updated Status(?:\\*\\*)?[:\\s]*\\n((?:>.*\\n?)*?)(?=>\\s*\\n|>\\s*(?:\\*\\*)?New tasks(?:\\*\\*)?|$)/m);\n  if (statusMatch) {\n    proposedStatus = statusMatch[1]\n      .split('\\n')\n      .map(l => l.replace(/^>\\s?/, '').trim())\n      .filter(l => l.length > 0)\n      .join('\\n');\n  }\n\n  const newTasks = [];\n  let inNewTasks = false;\n  for (const line of block.lines) {\n    if (/(?:\\*\\*)?New tasks(?:\\*\\*)?/.test(line)) { inNewTasks = true; continue; }\n    if (inNewTasks) {\n      const normLine = line.replace(/^>\\s*>\\s*/, '> ');\n      if (/^>\\s*-\\s*\\[\\s*\\]\\s*.+/.test(normLine)) {\n        newTasks.push(normLine.replace(/^>\\s*/, '').trim());\n      }\n    }\n  }\n  patches.push({ projectId, proposedStatus, newTasks, block });\n}\n\n// 5. Update individual project files\nlet appliedCount = 0;\nconst errors = [];\n\nfor (const patch of patches) {\n  const fileName = projectMap[patch.projectId];\n  if (!fileName) {\n    errors.push(`No file found for project-id: ${patch.projectId}`);\n    continue;\n  }\n\n  const projectPath = `Projects - Work/${fileName}.md`;\n  let projectRaw;\n  try {\n    projectRaw = await obsidianGet.call(this, projectPath);\n  } catch (e) {\n    errors.push(`Failed to fetch ${fileName}: ${e.message}`);\n    continue;\n  }\n\n  let updatedProject = projectRaw;\n\n  if (patch.proposedStatus) {\n    const safeStatus = patch.proposedStatus.trim().replace(/\\$/g, '$$');\n    updatedProject = updatedProject.replace(\n      /(## Current Status\\s*\\n)([\\s\\S]*?)(?=\\n## |$)/,\n      `$1${safeStatus}\\n`\n    );\n  }\n\n  if (patch.newTasks.length > 0) {\n    const newTaskLines = patch.newTasks.join('\\n');\n    // Use a function-form replace to avoid $ interpretation in newTaskLines\n    updatedProject = updatedProject.replace(\n      /(## Tasks[^\\n]*\\n[\\s\\S]*?)(?=\\n## |$)/,\n      (tasksBlock) => {\n        const trailingHr = /\\n+---\\s*$/.test(tasksBlock);\n        const stripped = tasksBlock.replace(/\\n+---\\s*$/, '').trimEnd();\n        return stripped + '\\n' + newTaskLines + '\\n' + (trailingHr ? '\\n---\\n' : '');\n      }\n    );\n  }\n\n  try {\n    await obsidianPut.call(this, projectPath, updatedProject);\n    appliedCount++;\n  } catch (e) {\n    errors.push(`Failed to write ${fileName}: ${e.message}`);\n  }\n}\n\n// 6. Remove approved callout blocks from briefing\nconst approvedRanges = new Set();\nfor (const patch of patches) {\n  for (let i = patch.block.startIdx; i <= patch.block.endIdx; i++) {\n    approvedRanges.add(i);\n  }\n  const prevIdx = patch.block.startIdx - 1;\n  if (prevIdx >= 0 && lines[prevIdx].trim() === '') approvedRanges.add(prevIdx);\n}\n\nlet cleanedBriefing = lines.filter((_, i) => !approvedRanges.has(i)).join('\\n');\n\n// 6.5 Update Briefing Overviews for approved projects only\nfor (const patch of patches) {\n  const escapedId = patch.projectId.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n  \n  const overviewRegex = new RegExp(\n    `(${escapedId}[\\\\s\\\\S]*?)(?:\\\\*\\\\*)?Current Status(?:\\\\*\\\\*)?[:\\\\s-]*([\\\\s\\\\S]*?)(?=\\\\n\\\\n|\\\\n#|$)`,\n    'g'\n  );\n\n  if (patch.proposedStatus) {\n    cleanedBriefing = cleanedBriefing.replace(overviewRegex, (match, metadata) => {\n      return `${metadata.trim()}\\n**Current Status**:\\n\\n${patch.proposedStatus.trim()}`;\n    });\n  }\n}\n\n// 7. Write briefing back\nconst briefingPath = $('Resolve Briefing Filename').first().json.briefingPath;\ntry {\n  await obsidianPut.call(this, briefingPath.replace(/^vault\\//, ''), cleanedBriefing);\n} catch (e) {\n  errors.push(`Failed to write briefing: ${e.message}`);\n}\n\nreturn [{\n  json: {\n    status: errors.length === 0 ? 'success' : 'partial',\n    message: 'Workflow bypassed the safety check because it detected checked boxes.',\n    patches_applied: appliedCount,\n    errors,\n    // DIAGNOSTIC OUTPUT: See exactly what n8n thought was checked\n    debug_checked_blocks_found: patches.map(p => ({\n      projectId: p.projectId,\n      raw_text_read: p.block.lines.join('\\n')\n    }))\n  }\n}];"
+      },
+      "id": "apply-patches",
+      "name": "Apply Patches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "shared_date",
+              "type": "string",
+              "value": "={{ $json.shared_date || $now.toFormat('yyyy-MM-dd') }}"
+            },
+            {
+              "id": "b4",
+              "name": "obsidianToken",
+              "type": "string",
+              "value": "REDACTED-HEX64"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "config-paths",
+      "name": "Config - Paths",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// List the Overview folder and find the most recent Daily Briefing.\n// Strategy: prefer today's date (sharedDate), fall back to the most recent overall.\nconst OBSIDIAN_BASE = 'https://10.1.1.200:27124';\nconst token = $('Config - Paths').first().json.obsidianToken;\nconst sharedDate = $('Config - Paths').first().json.shared_date;\n\n// ── 1. Resolve briefing ──\nconst overviewResponse = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `${OBSIDIAN_BASE}/vault/Overview/`,\n  headers: { 'Authorization': 'Bearer ' + token },\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true,\n  skipSslCertificateValidation: true\n});\n\nif (overviewResponse.statusCode !== 200) {\n  throw new Error(`Failed to list Overview folder: HTTP ${overviewResponse.statusCode}`);\n}\n\nconst overviewFiles = overviewResponse.body.files || [];\n\nconst allBriefings = overviewFiles\n  .filter(f => /Daily Briefing\\.md$/.test(f))\n  .sort((a, b) => b.localeCompare(a));\n\nif (allBriefings.length === 0) {\n  throw new Error('No Daily Briefing files found in Overview folder');\n}\n\nconst todayBriefings = allBriefings.filter(f => f.startsWith(sharedDate));\nconst briefingFilename = todayBriefings.length > 0 ? todayBriefings[0] : allBriefings[0];\nconst resolvedDate = briefingFilename.substring(0, 10);\nconst usedFallback = todayBriefings.length === 0;\nconst briefingPath = `vault/Overview/${briefingFilename}`;\n\n// ── 2. Resolve project index ──\nconst inboxResponse = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `${OBSIDIAN_BASE}/vault/Obsidian/PDA/Inbox/`,\n  headers: { 'Authorization': 'Bearer ' + token },\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true,\n  skipSslCertificateValidation: true\n});\n\nif (inboxResponse.statusCode !== 200) {\n  throw new Error(`Failed to list Inbox folder: HTTP ${inboxResponse.statusCode}`);\n}\n\nconst inboxFiles = inboxResponse.body.files || [];\n\nconst allProjectIndexes = inboxFiles\n  .filter(f => /^projects-\\d{4}-\\d{2}-\\d{2}\\.md$/.test(f))\n  .sort((a, b) => b.localeCompare(a));\n\nif (allProjectIndexes.length === 0) {\n  throw new Error('No project index files found in Obsidian/PDA/Inbox/');\n}\n\nconst todayProjectIndexes = allProjectIndexes.filter(f => f.startsWith(`projects-${sharedDate}`));\nconst projectIndexFilename = todayProjectIndexes.length > 0 ? todayProjectIndexes[0] : allProjectIndexes[0];\nconst projectIndexPath = `vault/Obsidian/PDA/Inbox/${projectIndexFilename}`;\nconst projectIndexUsedFallback = todayProjectIndexes.length === 0;\n\nreturn [{ json: { briefingPath, briefingFilename, resolvedDate, usedFallback, projectIndexPath, projectIndexFilename, projectIndexUsedFallback } }];"
+      },
+      "id": "resolve-briefing",
+      "name": "Resolve Briefing Filename",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        80
+      ],
+      "id": "a50d0342-8e2f-4645-b2f2-bc70f352bef5",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Briefing": {
+      "main": [
+        [
+          {
+            "node": "Fetch Project Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Project Index": {
+      "main": [
+        [
+          {
+            "node": "Apply Patches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Patches": {
+      "main": [
+        []
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Config - Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config - Paths": {
+      "main": [
+        [
+          {
+            "node": "Resolve Briefing Filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Briefing Filename": {
+      "main": [
+        [
+          {
+            "node": "Fetch Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "3cd849fc-7939-41a9-90fc-b58ea6937a99",
+  "activeVersionId": "3cd849fc-7939-41a9-90fc-b58ea6937a99",
+  "versionCounter": 116,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

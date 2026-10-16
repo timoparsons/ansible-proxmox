@@ -1,0 +1,860 @@
+{
+  "updatedAt": "2026-05-08T22:50:16.416Z",
+  "createdAt": "2026-05-06T05:45:56.892Z",
+  "id": "xXByKRFBuo7amikH",
+  "name": "Obsidian Daily Housekeeping",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-vault-path",
+              "name": "vaultPath",
+              "type": "string",
+              "value": "/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian"
+            },
+            {
+              "id": "cfg-control-file",
+              "name": "controlFilePath",
+              "type": "string",
+              "value": "Obsidian/Housekeeping/Obsidian Housekeeping.md"
+            },
+            {
+              "id": "cfg-log-file",
+              "name": "logFilePath",
+              "type": "string",
+              "value": "Obsidian/Housekeeping/Log – Obsidian Housekeeping.md"
+            },
+            {
+              "id": "cfg-readme-file",
+              "name": "readmeFilePath",
+              "type": "string",
+              "value": "Obsidian/Housekeeping/README – Obsidian Housekeeping.md"
+            },
+            {
+              "id": "cfg-excluded-paths",
+              "name": "excludedPaths",
+              "type": "string",
+              "value": "Overview/,Obsidian/,Archive/,Projects - Work/,Library/,Scratchpad/"
+            },
+            {
+              "id": "cfg-obsidian-base-url",
+              "name": "obsidianBaseUrl",
+              "type": "string",
+              "value": "https://10.1.1.200:27124"
+            },
+            {
+              "id": "8a8784c7-1cd6-4465-a442-855d9bd7e4e9",
+              "name": "manualModelName",
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        304
+      ],
+      "notes": "Central config — edit vault path and excluded paths here if structure changes"
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/{{ $('Config').item.json.controlFilePath }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-read-control",
+      "name": "Read Housekeeping.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "notes": "Reads Obsidian Housekeeping.md via Local REST API. Requires Obsidian Local REST API plugin + credential."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse last-run timestamp and Awaiting Decision flags from Obsidian Housekeeping.md\nconst content = $input.item.json.body ?? $input.item.json.data ?? '';\n\n// --- Parse last-run timestamp ---\n// Looks for: **Last run:** 2026-05-06T06:00:00+12:00\n// Treats missing, '—', or invalid values as 'not yet run' → falls back to 1 year ago\nconst oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();\nconst timestampMatch = content.match(/\\*\\*Last run:\\*\\*\\s*([^\\n]+)/);\nlet lastRun = null;\nlet lastRunIso = null;\n\nif (timestampMatch) {\n  const raw = timestampMatch[1].trim();\n  if (raw === '—' || raw === '-' || raw === '') {\n    // Explicit 'not yet run' sentinel\n    lastRunIso = oneYearAgo;\n    lastRun = 'NOT SET – fell back to 1 year ago';\n  } else {\n    const parsed = new Date(raw);\n    if (!isNaN(parsed.getTime())) {\n      lastRunIso = parsed.toISOString();\n      lastRun = raw;\n    } else {\n      // Unrecognisable value — safe fallback\n      lastRunIso = oneYearAgo;\n      lastRun = `INVALID (\"${raw}\") – fell back to 1 year ago`;\n    }\n  }\n} else {\n  // No Last run line found at all\n  lastRunIso = oneYearAgo;\n  lastRun = 'NOT FOUND – fell back to 1 year ago';\n}\n\n// --- Parse Awaiting Decision flags ---\n// Section sits between ## Awaiting Decision and the next ## heading\nconst awaitingSection = content.match(/## Awaiting Decision\\n([\\s\\S]*?)(?=\\n## |$)/);\nconst awaitingRaw = awaitingSection ? awaitingSection[1].trim() : '';\n\n// Find all flag items — lines starting with - [ ] or - [x]\nconst flagPattern = /^- (\\[[ x]\\]) `([^`]+)` — (.+?)(?:\\n(?:  .*)?)*$/gm;\nconst flags = [];\nlet match;\n\nwhile ((match = flagPattern.exec(awaitingRaw)) !== null) {\n  const checked = match[1] === '[x]';\n  const filePath = match[2];\n  const description = match[3];\n  \n  // Try to extract a decision note (lines indented under the flag)\n  const flagStart = match.index;\n  const flagEnd = flagStart + match[0].length;\n  const afterFlag = awaitingRaw.slice(flagEnd);\n  const decisionMatch = afterFlag.match(/^\\n(?:  >\\s*Decision:\\s*([^\\n]+)|  Decision:\\s*([^\\n]+))/);\n  const decision = decisionMatch ? (decisionMatch[1] || decisionMatch[2] || '').trim() : null;\n  \n  flags.push({\n    checked,\n    filePath,\n    description,\n    decision,\n    readyToAction: checked && decision !== null\n  });\n}\n\n// Summary\nconst pendingCount = flags.filter(f => !f.checked).length;\nconst actionableCount = flags.filter(f => f.readyToAction).length;\n\nconsole.log(`Last run: ${lastRun}`);\nconsole.log(`Awaiting Decision flags: ${flags.length} total, ${actionableCount} actionable, ${pendingCount} pending`);\n\nreturn [{\n  lastRun,\n  lastRunIso,\n  awaitingFlags: flags,\n  flagSummary: {\n    total: flags.length,\n    actionable: actionableCount,\n    pending: pendingCount\n  },\n  runStarted: new Date().toISOString()\n}];"
+      },
+      "id": "node-parse-control",
+      "name": "Parse Timestamp & Flags",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        304
+      ],
+      "notes": "Parses last-run ISO timestamp and Awaiting Decision flag list from control file"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "=find \"/Users/tim/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Projects/Housekeeping Test\" -name \"*.md\" -newermt \"{{ new Date($('Parse Timestamp & Flags').item.json.lastRunIso).toISOString().replace('T', ' ').replace(/\\.\\d{3}Z$/, '') }}\" | sort"
+      },
+      "id": "node-dataview-query",
+      "name": "Find Modified Files (SSH)",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        304
+      ],
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "CHHENAbxE0xrNy8M",
+          "name": "SSH Mac Studio - ansible-to-systems"
+        }
+      },
+      "notes": "Dataview query: all typed files modified since last run, excluding area files"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse SSH find output — one absolute path per line\n// Strip vault prefix to get vault-relative paths, apply exclusion filter\n\nconst vaultPath = $('Config').item.json.vaultPath;\nconst excludedRaw = $('Config').item.json.excludedPaths ?? '';\nconst excludedPaths = typeof excludedRaw === 'string'\n  ? excludedRaw.split(',').map(p => p.trim()).filter(p => p.length > 0)\n  : excludedRaw;\n\nconst lastRunIso = $('Parse Timestamp & Flags').item.json.lastRunIso;\n\nconst stdout = $input.item.json.stdout ?? '';\n\n// Split on newlines, drop empty lines\nconst absolutePaths = stdout.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\n// Convert to vault-relative paths\nconst relativePaths = absolutePaths.map(p => {\n  const prefix = vaultPath.endsWith('/') ? vaultPath : vaultPath + '/';\n  return p.startsWith(prefix) ? p.slice(prefix.length) : p;\n});\n\n// Apply exclusion filter\nconst filtered = relativePaths.filter(filePath =>\n  !excludedPaths.some(excluded => filePath.startsWith(excluded))\n);\n\nconsole.log(`Files modified since ${lastRunIso}: ${relativePaths.length}`);\nconsole.log(`After exclusion filter: ${filtered.length}`);\n\nreturn [{\n  allFiles: relativePaths,\n  filteredFiles: filtered,\n  excludedCount: relativePaths.length - filtered.length,\n  fileCount: filtered.length,\n  lastRunIso\n}];"
+      },
+      "id": "node-filter-files",
+      "name": "Filter & Parse File List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        304
+      ],
+      "notes": "Parses Dataview response, strips excluded paths (Overview/, Templates/, Archive/, etc.)"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.updatedContent }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-write-test-log",
+      "name": "Write Test Log Entry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2496,
+        896
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      },
+      "notes": "Writes full log file back via PUT — content is pre-built by Build Log Entry including header, new entry prepended, trimmed to 10 days"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Log Entry\n// Reads existing log, builds new entry, prepends it, trims to 10 days\n\nconst now = new Date();\nconst nzOffset = 12 * 60;\nconst nzDate = new Date(now.getTime() + nzOffset * 60 * 1000);\nconst datestamp = nzDate.toISOString().slice(0, 16).replace('T', ' | ');\n\n// 10-day cutoff\nconst cutoff = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);\n\nconst lastRun = $('Parse Timestamp & Flags').first().json.lastRun;\nconst flagSummary = $('Parse Timestamp & Flags').first().json.flagSummary;\n\n// Aggregated file results\nconst allItems = $('Aggregate Results').first().json.data ?? [];\nconst fileCount = allItems.length;\n\nconst fixedLines = [];\nconst flaggedLines = [];\n\nfor (const item of allItems) {\n  const name = item.filename ?? item.filePath ?? 'unknown';\n  const fixes = item.fixes ?? [];\n  const flags = item.flags ?? [];\n  const writeStatus = item.writeStatus ?? 'unknown';\n\n  if (fixes.length > 0) {\n    for (const fix of fixes) {\n      fixedLines.push(`- \\`${name}\\` — ${fix}`);\n    }\n    if (writeStatus !== 'written' && writeStatus !== 'skipped') {\n      fixedLines.push(`  ⚠️ Write status: ${writeStatus}`);\n    }\n  }\n\n  if (flags.length > 0) {\n    for (const flag of flags) {\n      flaggedLines.push(`- \\`${name}\\` — ${flag}`);\n    }\n  }\n\n  // Unchanged files not logged\n}\n\nconst fixedSection = fixedLines.length > 0\n  ? `\\n#### Fixed\\n${fixedLines.join('\\n')}`\n  : '';\n\nconst flaggedSection = flaggedLines.length > 0\n  ? `\\n#### Flagged\\n${flaggedLines.join('\\n')}`\n  : '';\n\nconst noActivity = fixedLines.length === 0 && flaggedLines.length === 0\n  ? '\\n*No fixes or flags this run.*'\n  : '';\n\nconst newEntry = `### ${datestamp}\\n**Last run read:** ${lastRun}\\n**Files processed:** ${fileCount}\\n**Awaiting Decision flags:** ${flagSummary.total} total (${flagSummary.actionable} actionable, ${flagSummary.pending} pending)${fixedSection}${flaggedSection}${noActivity}`;\n\n// Read existing log\nconst existingLog = $input.item.json.body ?? $input.item.json.data ?? '';\n\n// Split on the file header (frontmatter + title + related + summary + divider)\n// Everything before '## Log' is the static header, everything after is entries\nconst logSectionMatch = existingLog.match(/^(---[\\s\\S]*?## Log\\n)([\\s\\S]*)$/m);\nconst staticHeader = logSectionMatch ? logSectionMatch[1] : existingLog;\nconst existingEntries = logSectionMatch ? logSectionMatch[2] : '';\n\n// Split existing entries by '### ' heading — each entry starts with ### YYYY-MM-DD\nconst entryBlocks = existingEntries.split(/(?=^### \\d{4}-\\d{2}-\\d{2})/m).filter(e => e.trim());\n\n// Filter to entries within 10 days\nconst recentEntries = entryBlocks.filter(block => {\n  const dateMatch = block.match(/^### (\\d{4}-\\d{2}-\\d{2})/);\n  if (!dateMatch) return true; // keep non-standard entries (e.g. Manual session)\n  const entryDate = new Date(dateMatch[1]);\n  return entryDate >= cutoff;\n});\n\n// Normalise each entry: trim trailing whitespace/newlines, then join with exactly one blank line\nconst trimmedNew = newEntry.trimEnd();\nconst trimmedRecent = recentEntries.map(e => e.trimEnd());\nconst allEntries = [trimmedNew, ...trimmedRecent].join('\\n\\n');\nconst updatedLog = `${staticHeader}\\n${allEntries}\\n`;\n\nconsole.log(`Log: prepended entry, kept ${recentEntries.length} existing entries, trimmed ${entryBlocks.length - recentEntries.length}`);\n\nreturn [{ updatedContent: updatedLog }];"
+      },
+      "id": "node-build-log",
+      "name": "Build Log Entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "filteredFiles",
+        "options": {}
+      },
+      "id": "node-split-out",
+      "name": "Split Out Files",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://10.1.1.200:27124/vault/{{ encodeURIComponent($json.filePath) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-read-file",
+      "name": "Read File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1952,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Stage 2 — Mechanical Checks (Frontmatter + H1 + Intro Heading)\n// Processes ALL items in one execution to avoid n8n single-item drop issue\n\n// ── Schema definitions ────────────────────────────────────────────────────\n// Required keys per type, in correct order (excluding date created/modified which Linter owns)\nconst SCHEMA = {\n  project:  ['type', 'project', 'area', 'status'],\n  research: ['type', 'project', 'area', 'status'],\n  log:      ['type', 'project', 'area'],\n  wiki:     ['type', 'area'],\n  meta:     ['type', 'area'],\n};\n\n// Map filename prefixes to type values\nconst PREFIX_TO_TYPE = {\n  'Project':  'project',\n  'Research': 'research',\n  'Wiki':     'wiki',\n  'Log':      'log',\n  'Meta':     'meta',\n  'Area':     'area',\n};\n\n// Intro heading per type\nconst INTRO_HEADING = {\n  project:  'Brief',\n  research: 'Overview',\n  wiki:     'Overview',\n  log:      'Summary',\n  meta:     null,\n};\n\n// Bad intro heading names that should be auto-corrected (not flagged)\nconst BAD_INTROS = ['Description', 'About', 'Introduction', 'Background', 'Summary', 'Brief', 'Overview'];\n\n// ── Helper: toSlug ────────────────────────────────────────────────────────\n// Strip a type prefix (e.g. \"Project – \", \"Research – \") then lowercase-hyphenate\nfunction toSlug(str) {\n  const prefixMatch = str.match(/^(?:Project|Research|Wiki|Log|Meta|Area)\\s*[–-]\\s*(.+)$/);\n  const base = prefixMatch ? prefixMatch[1] : str;\n  return base.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');\n}\n\n// ── Helper: parseFrontmatter ──────────────────────────────────────────────\n// Returns { keys: {key: value}, order: [keys in file order], raw, fmEnd }\nfunction parseFrontmatter(content) {\n  const fmMatch = content.match(/^---(\\n[\\s\\S]*?\\n)---\\n/);\n  if (!fmMatch) return null;\n  const raw = fmMatch[1];\n  const fmEnd = fmMatch[0].length;\n  const order = [];\n  const keys = {};\n  for (const line of raw.split('\\n')) {\n    const m = line.match(/^([\\w ]+):\\s*(.*)$/);\n    if (m) {\n      order.push(m[1]);\n      keys[m[1]] = m[2].trim();\n    }\n  }\n  return { keys, order, raw, fmEnd };\n}\n\n// ── Helper: buildFrontmatter ──────────────────────────────────────────────\n// Reconstructs frontmatter block from an ordered array of [key, value] pairs\nfunction buildFrontmatter(pairs) {\n  const lines = pairs.map(([k, v]) => `${k}: ${v}`);\n  return `---\\n${lines.join('\\n')}\\n---\\n`;\n}\n\n// ── Helper: getAllKnownFiles ───────────────────────────────────────────────\n// Returns vault-relative paths from the SSH find stdout — used to locate\n// sibling Project – files without a separate SSH call\nfunction getAllKnownFiles() {\n  try {\n    const stdout = $('Find Modified Files (SSH)').first().json.stdout ?? '';\n    const vaultPath = $('Config').first().json.vaultPath;\n    const prefix = vaultPath.endsWith('/') ? vaultPath : vaultPath + '/';\n    return stdout.split('\\n')\n      .map(l => l.trim())\n      .filter(l => l.length > 0)\n      .map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l);\n  } catch(e) {\n    return [];\n  }\n}\n\n// ── Main loop ─────────────────────────────────────────────────────────────\n\nconst results = [];\nconst allKnownFiles = getAllKnownFiles();\nconst prepareItems = $('Prepare File Item').all();\n\nfor (const [index, item] of $input.all().entries()) {\n  const resolvedPath = prepareItems[index]?.json.filePath ?? null;\n  const raw = item.json.data ?? item.json.body ?? '';\n\n  if (!resolvedPath || !raw) {\n    results.push({ json: {\n      filePath: resolvedPath ?? `index:${index}`,\n      filename: resolvedPath ? resolvedPath.split('/').pop().replace(/\\.md$/, '') : `unknown-${index}`,\n      fileType: null,\n      content: raw,\n      changed: false,\n      fixes: [],\n      flags: [],\n      error: `Missing ${!resolvedPath ? 'filePath' : 'content'} at index ${index}`\n    }});\n    continue;\n  }\n\n  const filename = resolvedPath.split('/').pop().replace(/\\.md$/, '');\n  const pathParts = resolvedPath.split('/');\n  const folderPath = pathParts.slice(0, -1).join('/');\n  const parentFolder = pathParts.length >= 2 ? pathParts[pathParts.length - 2] : null;\n  const isInProjectsRoot = pathParts.length === 2 && pathParts[0] === 'Projects';\n\n  let content = raw;\n  const fixes = [];\n  const flags = [];\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 1: Frontmatter\n  // ──────────────────────────────────────────────────────────────\n  const fm = parseFrontmatter(content);\n\n  if (!fm) {\n    flags.push('No frontmatter block found — skipping frontmatter checks');\n  } else {\n    const fmKeys = fm.keys;\n    const fmOrder = fm.order;\n    const fmEnd = fm.fmEnd;\n    let fmChanged = false;\n\n    // — 1a: Derive type if missing —\n    let fileType = fmKeys['type'] ?? null;\n    if (!fileType) {\n      const prefixMatch = filename.match(/^([A-Za-z]+)\\s*[–-]/);\n      const derivedType = prefixMatch ? (PREFIX_TO_TYPE[prefixMatch[1]] ?? null) : null;\n      if (derivedType) {\n        fmKeys['type'] = derivedType;\n        if (!fmOrder.includes('type')) fmOrder.unshift('type');\n        fileType = derivedType;\n        fixes.push(`Inserted missing frontmatter key: type: ${derivedType} (derived from filename prefix)`);\n        fmChanged = true;\n      } else {\n        flags.push(`Cannot derive type from filename \"${filename}\" — manual review needed. Skipping remaining frontmatter checks.`);\n      }\n    }\n\n    if (fileType && SCHEMA[fileType]) {\n      const schemaKeys = SCHEMA[fileType];\n\n      // — 1b: Derive project slug if missing —\n      if (schemaKeys.includes('project') && !fmKeys['project']) {\n        let derivedSlug = null;\n        let derivedFrom = null;\n\n        // Strategy 1: sibling Project – *.md in same folder\n        const siblingProject = allKnownFiles.find(f => {\n          const parts = f.split('/');\n          const sibFolder = parts.slice(0, -1).join('/');\n          const sibName = parts[parts.length - 1];\n          return sibFolder === folderPath && /^Project\\s*[–-]/.test(sibName);\n        });\n\n        if (siblingProject) {\n          const sibName = siblingProject.split('/').pop().replace(/\\.md$/, '');\n          derivedSlug = toSlug(sibName);\n          derivedFrom = `sibling file \"${sibName}\"`;\n        } else if (!isInProjectsRoot && parentFolder && parentFolder !== 'Projects') {\n          // Strategy 2: parent folder name\n          derivedSlug = toSlug(parentFolder);\n          derivedFrom = `parent folder \"${parentFolder}\"`;\n        } else {\n          // Strategy 3: own filename\n          derivedSlug = toSlug(filename);\n          derivedFrom = `own filename \"${filename}\"`;\n        }\n\n        if (derivedSlug) {\n          fmKeys['project'] = derivedSlug;\n          fixes.push(`Inserted missing frontmatter key: project: ${derivedSlug} (derived from ${derivedFrom})`);\n          fmChanged = true;\n        } else {\n          flags.push(`Cannot derive project slug for \"${filename}\" — manual review needed`);\n        }\n      }\n\n      // — 1c: Insert status: active if missing (project / research only) —\n      if (schemaKeys.includes('status') && !fmKeys['status']) {\n        fmKeys['status'] = 'active';\n        fixes.push(`Inserted missing frontmatter key: status: active (default)`);\n        fmChanged = true;\n      }\n\n      // — 1d: Flag area if missing — LLM pass will infer —\n      if (schemaKeys.includes('area') && !fmKeys['area']) {\n        flags.push(`Missing frontmatter key: area — passed to LLM pass for inference`);\n      }\n\n      // — 1e: Reorder frontmatter keys to match schema —\n      // Linter-owned keys stay last in their current positions\n      const linterKeys = fmOrder.filter(k => k === 'date created' || k === 'date modified');\n      const nonLinterKeys = fmOrder.filter(k => k !== 'date created' && k !== 'date modified');\n\n      const orderedKeys = [];\n      for (const k of schemaKeys) {\n        if (fmKeys[k] !== undefined) orderedKeys.push(k);\n      }\n      for (const k of nonLinterKeys) {\n        if (!orderedKeys.includes(k)) orderedKeys.push(k);\n      }\n      for (const k of linterKeys) orderedKeys.push(k);\n\n      const currentOrder = [...nonLinterKeys, ...linterKeys];\n      const orderCorrect = currentOrder.every((k, i) => k === orderedKeys[i]) && currentOrder.length === orderedKeys.length;\n\n      if (!orderCorrect) {\n        fixes.push(`Reordered frontmatter keys to match schema for type:${fileType}`);\n        fmChanged = true;\n      }\n\n      // — 1f: Rebuild frontmatter block if anything changed —\n      if (fmChanged) {\n        const pairs = orderedKeys.map(k => [k, fmKeys[k]]);\n        const newFm = buildFrontmatter(pairs);\n        content = newFm + content.slice(fmEnd);\n      }\n    }\n  }\n\n  // Re-parse after frontmatter changes for downstream checks\n  const fmAfter = parseFrontmatter(content);\n  const fileType = fmAfter?.keys?.['type'] ?? fm?.keys?.['type'] ?? null;\n  const fmEnd2 = fmAfter?.fmEnd ?? fm?.fmEnd ?? 0;\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 2: H1\n  // ──────────────────────────────────────────────────────────────\n  const h1Match = content.match(/^# (.+)$/m);\n  if (!h1Match) {\n    const insertion = `# ${filename}\\n\\n`;\n    content = content.slice(0, fmEnd2) + insertion + content.slice(fmEnd2);\n    fixes.push(`Inserted missing H1: \"${filename}\"`);\n  } else {\n    const h1Text = h1Match[1].trim();\n    if (h1Text !== filename) {\n      content = content.replace(/^# .+$/m, `# ${filename}`);\n      fixes.push(`Corrected H1: \"${h1Text}\" → \"${filename}\"`);\n    }\n  }\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 3: Intro heading\n  // ──────────────────────────────────────────────────────────────\n  const expectedIntro = fileType ? (INTRO_HEADING[fileType] ?? null) : null;\n  if (expectedIntro) {\n    const fmEnd3 = parseFrontmatter(content)?.fmEnd ?? fmEnd2;\n    const bodyAfterFm = content.slice(fmEnd3);\n    const firstH2Match = bodyAfterFm.match(/^## (.+)$/m);\n    if (!firstH2Match) {\n      flags.push(`No H2 sections found — cannot verify intro heading`);\n    } else {\n      const firstH2 = firstH2Match[1].trim();\n      if (firstH2 !== expectedIntro && BAD_INTROS.includes(firstH2)) {\n        const corrected = bodyAfterFm.replace(/^## .+$/m, `## ${expectedIntro}`);\n        content = content.slice(0, fmEnd3) + corrected;\n        fixes.push(`Corrected intro heading: \"## ${firstH2}\" → \"## ${expectedIntro}\"`);\n      } else if (firstH2 !== expectedIntro) {\n        flags.push(`Intro heading is \"## ${firstH2}\" — expected \"## ${expectedIntro}\" for type:${fileType}. Manual review needed.`);\n      }\n    }\n  }\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 4: Task heading backlinks\n  // Project and research files only.\n  // Any ## Tasks heading must be formatted as:\n  //   ## Tasks – Doc Name [[Doc Name|↗️]]\n  // Auto-fix: bare ## Tasks, ## Tasks – Name (no backlink), or wrong name.\n  // Log/wiki files: flag if any tasks are present, do not fix.\n  // ──────────────────────────────────────────────────────────────\n  (function fixTaskHeadings() {\n    const applyTypes = ['project', 'research'];\n    const flagTypes  = ['log', 'wiki'];\n\n    if (flagTypes.includes(fileType)) {\n      if (/^- \\[[ x]\\]/m.test(content)) {\n        flags.push(`Tasks found in ${fileType} file — log/wiki files should not contain tasks`);\n      }\n      return;\n    }\n\n    if (!applyTypes.includes(fileType)) return;\n\n    const taskHeadingRe = /^(## Tasks)(?: – [^\\n\\[]*)?(?:\\s*\\[\\[[^\\]]*\\]\\])?$/gm;\n    const correctHeading = `## Tasks – ${filename} [[${filename}|↗️]]`;\n\n    let taskHeadingFound = false;\n    const newContent = content.replace(taskHeadingRe, (match) => {\n      taskHeadingFound = true;\n      if (match.trim() === correctHeading) return match;\n      fixes.push(`Fixed task heading: \"${match.trim()}\" → \"${correctHeading}\"`);\n      return correctHeading;\n    });\n\n    if (taskHeadingFound) content = newContent;\n  })();\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 5: Task section position\n  // Project and research files only.\n  // The Tasks section must appear immediately after Brief/Overview.\n  // Auto-fix: extract Tasks block and reinsert at the correct position.\n  // Dividers are intentionally stripped here — Check 6 rebuilds them\n  // cleanly on the final pass over the fully reordered content.\n  // ──────────────────────────────────────────────────────────────\n  (function fixTaskSectionPosition() {\n    const applyTypes = ['project', 'research'];\n    if (!applyTypes.includes(fileType)) return;\n\n    const fmResult = parseFrontmatter(content);\n    const fmEnd5 = fmResult ? fmResult.fmEnd : 0;\n    const body = content.slice(fmEnd5);\n\n    const introName = INTRO_HEADING[fileType];\n    if (!introName) return;\n\n    const h2Re = /^## .+$/gm;\n    const h2Matches = [...body.matchAll(h2Re)];\n    if (h2Matches.length < 2) return;\n\n    const tasksIdx = h2Matches.findIndex(m => /^## Tasks/.test(m[0]));\n    const introIdx  = h2Matches.findIndex(m => m[0].includes(`## ${introName}`));\n\n    if (tasksIdx === -1 || introIdx === -1) return;\n    if (tasksIdx === introIdx + 1) return; // already correct\n\n    const firstH2Pos = h2Matches[0].index;\n    const preamble = body.slice(0, firstH2Pos);\n\n    // Slice body into per-section chunks, each starting at its H2 heading\n    const sections = h2Matches.map((m, i) => {\n      const start = m.index;\n      const end = i + 1 < h2Matches.length ? h2Matches[i + 1].index : body.length;\n      return body.slice(start, end);\n    });\n\n    // Strip all leading --- and surrounding blank lines from each section.\n    // Check 6 (dividers) runs after this and rebuilds them correctly.\n    const cleanSections = sections.map(s => s.replace(/^(?:\\n*---\\n+)+/, '').replace(/^\\n+/, ''));\n\n    // Reorder: pull Tasks out, reinsert after intro\n    const tasksBlock = cleanSections.splice(tasksIdx, 1)[0];\n    const adjustedIntroIdx = tasksIdx < introIdx ? introIdx - 1 : introIdx;\n    cleanSections.splice(adjustedIntroIdx + 1, 0, tasksBlock);\n\n    // Join sections with a single blank line between them — no --- yet,\n    // Check 6 will add them in the correct positions\n    const rebuiltBody = preamble + cleanSections.join('\\n');\n\n    const newContent = content.slice(0, fmEnd5) + rebuiltBody;\n    if (newContent !== content) {\n      content = newContent;\n      fixes.push(`Moved Tasks section to immediately after ## ${introName}`);\n    }\n  })();\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 6: H2 section dividers  (runs last — cleans up after all\n  // structural changes above)\n  // Rules:\n  //   • --- between every H2 (not before the first)\n  //   • No --- between H3s within the same H2 block\n  //   • All auto-fix\n  // ──────────────────────────────────────────────────────────────\n  (function fixH2Dividers() {\n    const fmResult = parseFrontmatter(content);\n    const fmEnd6 = fmResult ? fmResult.fmEnd : 0;\n    const bodyIn = content.slice(fmEnd6);\n    const lines = bodyIn.split('\\n');\n    const out = [];\n    let h2Seen = false;\n\n    for (let i = 0; i < lines.length; i++) {\n      const line = lines[i];\n      const isH2 = /^## (?!#)/.test(line);\n      const isH3 = /^### (?!#)/.test(line);\n\n      if (isH2) {\n        // Strip any trailing blanks and --- lines in any combination\n        // e.g. ---\\n\\n--- or ---\\n--- both get fully cleared\n        let stripping = true;\n        while (stripping) {\n          stripping = false;\n          while (out.length > 0 && out[out.length - 1].trim() === '') { out.pop(); stripping = true; }\n          while (out.length > 0 && out[out.length - 1].trim() === '---') { out.pop(); stripping = true; }\n        }\n        if (h2Seen) {\n          out.push('');\n          out.push('---');\n        } else {\n          out.push('');\n        }\n        out.push(line);\n        h2Seen = true;\n      } else if (isH3) {\n        let lookback = out.length - 1;\n        while (lookback >= 0 && out[lookback].trim() === '') lookback--;\n        if (lookback >= 0 && out[lookback].trim() === '---') {\n          out.splice(lookback, out.length - lookback);\n          out.push('');\n        }\n        out.push(line);\n      } else {\n        out.push(line);\n      }\n    }\n\n    const bodyOut = out.join('\\n');\n    if (bodyOut !== bodyIn) {\n      content = content.slice(0, fmEnd6) + bodyOut;\n      fixes.push('Fixed H2 section dividers (--- between H2s; removed --- before H3s)');\n    }\n  })();\n\n  // ──────────────────────────────────────────────────────────────\n  // CHECK 7: Related section\n  // Rules:\n  //   • If Related block exists, fix formatting (plain **Related:**, one link per line)\n  //   • Sub-document types (research, log, wiki, meta) with project: set must link\n  //     to the sibling Project – *.md index if one exists in the same folder\n  //   • Project index files (type: project) and files with no sibling Project –\n  //     file are not checked for a project link\n  //   • If Related block is missing entirely, skip — LLM pass generates it\n  // ──────────────────────────────────────────────────────────────\n  (function fixRelatedSection() {\n    const fmResult = parseFrontmatter(content);\n    const fmEndR = fmResult ? fmResult.fmEnd : 0;\n\n    // Find **Related:** block anywhere in the body (not frontmatter)\n    // Matches: **Related:** followed by one or more [[...]] lines\n    const relatedBlockRe = /\\n\\*\\*Related:\\*\\*\\n(?:\\[\\[[^\\]]+\\]\\]\\n)+/;\n    const relatedMatch = content.slice(fmEndR).match(relatedBlockRe);\n\n    if (!relatedMatch) {\n      // No Related block anywhere — hand off to LLM pass\n      return;\n    }\n\n    const relatedRaw = relatedMatch[0]; // includes leading \\n\n\n    // Extract current links\n    const linkRe = /\\[\\[([^\\]]+)\\]\\]/g;\n    const existingLinks = [...relatedRaw.matchAll(linkRe)].map(m => m[1]);\n\n    // Determine whether a project index link is required\n    const subDocTypes = ['research', 'log', 'wiki', 'meta'];\n    let requiredProjectLink = null;\n\n    if (subDocTypes.includes(fileType) && fmAfter?.keys?.['project']) {\n      const siblingProject = allKnownFiles.find(f => {\n        const parts = f.split('/');\n        const sibFolder = parts.slice(0, -1).join('/');\n        const sibName   = parts[parts.length - 1];\n        return sibFolder === folderPath && /^Project\\s*[–-]/.test(sibName);\n      });\n      if (siblingProject) {\n        requiredProjectLink = siblingProject.split('/').pop().replace(/\\.md$/, '');\n      }\n    }\n\n    const projectLinked = requiredProjectLink\n      ? existingLinks.some(l => l.split('|')[0].trim() === requiredProjectLink)\n      : true;\n\n    let links = [...existingLinks];\n    if (!projectLinked) {\n      links = [requiredProjectLink, ...links];\n      fixes.push(`Added missing project index link to Related: [[${requiredProjectLink}]]`);\n    }\n\n    // Canonical Related block: \\n\\n**Related:**\\n[[L1]]\\n[[L2]]\\n\n    // Leading \\n\\n gives one blank line between H1 and **Related:**\n    const canonicalBlock = `\\n\\n**Related:**\\n${links.map(l => `[[${l}]]`).join('\\n')}\\n`;\n\n    // Find the H1 line position — Related must sit immediately after it\n    const h1Match = content.match(/^# .+$/m);\n    if (!h1Match) return; // no H1, nothing to anchor to\n    const h1End = content.indexOf(h1Match[0]) + h1Match[0].length;\n\n    // Remove the existing Related block from wherever it currently is\n    const bodyWithoutRelated = content.slice(fmEndR).replace(relatedRaw, '');\n\n    // Check what's currently immediately after H1 in the stripped body\n    const h1PosInStripped = bodyWithoutRelated.indexOf(h1Match[0]);\n    const afterH1 = bodyWithoutRelated.slice(h1PosInStripped + h1Match[0].length);\n\n    // Build corrected body: H1 + canonical Related + rest\n    // Strip any leading blank lines from afterH1 — Related block provides its own\n    const restOfBody = afterH1.replace(/^\\n+/, '');\n    const correctedBody = bodyWithoutRelated.slice(0, h1PosInStripped) +\n      h1Match[0] + canonicalBlock + restOfBody;\n\n    const newContent = content.slice(0, fmEndR) + correctedBody;\n\n    if (newContent !== content) {\n      const wasOutOfPlace = content.slice(h1End).search(relatedBlockRe) > 2;\n      if (wasOutOfPlace) fixes.push('Moved Related section to immediately below H1');\n      else if (canonicalBlock !== relatedRaw) fixes.push('Fixed Related section formatting');\n      content = newContent;\n    }\n  })();\n\n  const changed = content !== raw;\n  console.log(`[${filename}] fixes: ${fixes.length}, flags: ${flags.length}, changed: ${changed}`);\n\n  results.push({ json: {\n    filePath: resolvedPath,\n    filename,\n    fileType,\n    content,\n    changed,\n    fixes,\n    flags\n  }});\n}\n\nreturn results;"
+      },
+      "id": "node-mechanical-checks",
+      "name": "Mechanical Checks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "node-aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-changed",
+              "leftValue": "={{ $json.changed }}",
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-if-changed",
+      "name": "Changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2384,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://10.1.1.200:27124/vault/{{ encodeURIComponent($json.filePath) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-write-file",
+      "name": "Write File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2624,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pt-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "pt-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "pt-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "pt-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $json.changed }}"
+            },
+            {
+              "id": "pt-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "pt-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes }}"
+            },
+            {
+              "id": "pt-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags }}"
+            },
+            {
+              "id": "pt-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "skipped"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-pass-through",
+      "name": "Pass Through",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2832,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mwr-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $('Mechanical Checks').item.json.filename }}"
+            },
+            {
+              "id": "mwr-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Mechanical Checks').item.json.filePath }}"
+            },
+            {
+              "id": "mwr-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $('Mechanical Checks').item.json.fileType }}"
+            },
+            {
+              "id": "mwr-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $('Mechanical Checks').item.json.changed }}"
+            },
+            {
+              "id": "mwr-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $('Mechanical Checks').item.json.fixes }}"
+            },
+            {
+              "id": "mwr-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $('Mechanical Checks').item.json.flags }}"
+            },
+            {
+              "id": "mwr-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "=written"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-merge-write-result",
+      "name": "Merge Write Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2832,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pfi-path",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filteredFiles }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-prepare-item",
+      "name": "Prepare File Item",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://10.1.1.200:27124/vault/Obsidian/Housekeeping/Log%20%E2%80%93%20Obsidian%20Housekeeping.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "text/markdown"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-read-log",
+      "name": "Read Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2080,
+        896
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "node-merge-branches",
+      "name": "Merge Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        3056,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9u9lYZyviZunbye1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9u9lYZyviZunbye1",
+          "cachedResultName": "Util LLM Unload Model"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "manualModelName": "={{ $('Config').item.json.manualModelName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "key": "manualModelName",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        448,
+        304
+      ],
+      "id": "2e8c9848-5f4b-43aa-8621-c64bb4486dd6",
+      "name": "Call 'Util LLM Unload Model'",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "node-llm-all-in-one",
+      "name": "LLM Pass (All-in-One)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        304
+      ],
+      "parameters": {
+        "jsCode": "// ── LLM Pass (All-in-One) ─────────────────────────────────────────────────\n// Receives all file items from Merge Branches.\n// For each file: builds prompt, calls LM Studio, parses response, writes file if changed.\n// All HTTP calls are made internally — no branching or merging needed.\n// ─────────────────────────────────────────────────────────────────────────\n\nconst LLM_TYPES    = ['project', 'research', 'wiki', 'log'];\nconst modelName    = $('Config').first().json.manualModelName;\nconst obsidianBase = $('Config').first().json.obsidianBaseUrl ?? 'https://10.1.1.200:27124';\n\nconst SYSTEM_PROMPT = `You are a formatting assistant for an Obsidian vault. Fix structural and formatting issues only — never rewrite, summarise, or alter the substance of content.\n\nVault conventions:\n- YAML frontmatter block: type, project, area, status keys\n- H1 matches the filename exactly\n- **Related:** section immediately below H1, one [[link]] per line, no aliases\n- H2 sections are major topic breaks, separated by --- dividers (no --- before the first H2)\n- H3 sections are genuine sub-sections within an H2, not standalone topics\n- Tasks heading format: ## Tasks – Filename [[Filename|↗️]]\n\nYour checks:\n1. HEADING HIERARCHY — identify H3s used as standalone major topic breaks that should be H2s. Promote only when confidence is high. Flag if uncertain.\n2. RELATED SECTION — if no **Related:** section exists immediately below H1, infer likely related documents from the area: and project: frontmatter values and any internal [[links]] in the document. Insert using correct format. If you cannot infer with confidence, do not insert.\n3. CLARITY FLAGS — flag (do not fix) any section where the heading clearly does not match the content beneath it.\n\nStrict rules:\n- Never rewrite, expand, or summarise body content\n- Never add links to area files in Related sections — area: values are category tags, not documents\n- Never modify frontmatter values\n- Never modify task content\n- Return ONLY a JSON object, no preamble, no markdown fences:\n{\n  \"content\": \"<full corrected document>\",\n  \"fixes\": [\"one string per fix applied\"],\n  \"flags\": [\"one string per flag for human review\"]\n}`;\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const filePath    = item.json.filePath;\n  const filename    = item.json.filename;\n  const fileType    = item.json.fileType;\n  const content     = item.json.content;\n  const changed     = item.json.changed ?? false;\n  const fixes       = [...(item.json.fixes ?? [])];\n  const flags       = [...(item.json.flags ?? [])];\n  const writeStatus = item.json.writeStatus ?? 'skipped';\n\n  // Skip types that don't need the LLM pass\n  if (!fileType || !LLM_TYPES.includes(fileType)) {\n    results.push({ json: {\n      filePath, filename, fileType, content, changed, fixes, flags,\n      writeStatus, llmSkipped: true, llmChanged: false, llmError: null\n    }});\n    continue;\n  }\n\n  let llmContent = content;\n  let llmFixes   = [];\n  let llmFlags   = [];\n  let llmError   = null;\n  let llmChanged = false;\n\n  // ── Call LM Studio ──────────────────────────────────────────────────\n  try {\n    const response = await $http.request({\n      method: 'POST',\n      url: 'http://10.1.1.200:1234/v1/chat/completions',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        model: modelName,\n        temperature: 0.2,\n        messages: [\n          { role: 'system', content: SYSTEM_PROMPT },\n          { role: 'user',   content: `Check this document and return the corrected version as JSON:\\n\\n${content}` }\n        ]\n      }),\n      timeout: 600000\n    });\n\n    const rawText = response.choices?.[0]?.message?.content ?? '';\n    const cleaned = rawText.replace(/^```json\\s*/i, '').replace(/\\s*```$/i, '').trim();\n    const parsed  = JSON.parse(cleaned);\n\n    if (!parsed.content || parsed.content.trim() === '') {\n      llmError = 'LLM returned empty content — original preserved';\n      flags.push(llmError);\n    } else {\n      llmContent = parsed.content;\n      llmFixes   = Array.isArray(parsed.fixes) ? parsed.fixes : [];\n      llmFlags   = Array.isArray(parsed.flags) ? parsed.flags : [];\n      llmChanged = llmContent !== content;\n    }\n\n  } catch (err) {\n    llmError = `LLM call failed: ${err.message}`;\n    flags.push(llmError);\n  }\n\n  // ── Write to Obsidian if LLM changed the file ────────────────────────\n  let finalWriteStatus = writeStatus;\n\n  if (llmChanged) {\n    try {\n      const encodedPath = filePath.split('/').map(p => encodeURIComponent(p)).join('/');\n      await $http.request({\n        method: 'PUT',\n        url: `${obsidianBase}/vault/${encodedPath}`,\n        headers: {\n          'Content-Type': 'text/markdown',\n          'Authorization': $('Read Housekeeping.md').first().json.request?.headers?.Authorization ?? ''\n        },\n        body: llmContent,\n        skipSslVerification: true\n      });\n      finalWriteStatus = 'written';\n      console.log(`[${filename}] LLM changes written`);\n    } catch (err) {\n      llmError = `Write failed: ${err.message}`;\n      flags.push(llmError);\n      finalWriteStatus = 'write-failed';\n      console.log(`[${filename}] Write failed: ${err.message}`);\n    }\n  }\n\n  results.push({ json: {\n    filePath,\n    filename,\n    fileType,\n    content:     llmChanged ? llmContent : content,\n    changed:     changed || llmChanged,\n    fixes:       [...fixes, ...llmFixes],\n    flags:       [...flags, ...llmFlags],\n    writeStatus: finalWriteStatus,\n    llmSkipped:  false,\n    llmChanged,\n    llmError\n  }});\n}\n\nreturn results;"
+      },
+      "notes": "Loops over all items, builds prompt, calls LM Studio, parses response, writes changed files — all in one node. No branching, no merging, no context pairing issues."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Call 'Util LLM Unload Model'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Housekeeping.md": {
+      "main": [
+        [
+          {
+            "node": "Parse Timestamp & Flags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Timestamp & Flags": {
+      "main": [
+        [
+          {
+            "node": "Find Modified Files (SSH)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Modified Files (SSH)": {
+      "main": [
+        [
+          {
+            "node": "Filter & Parse File List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Parse File List": {
+      "main": [
+        [
+          {
+            "node": "Split Out Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "node": "Mechanical Checks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Write Test Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mechanical Checks": {
+      "main": [
+        [
+          {
+            "node": "Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Changed?": {
+      "main": [
+        [
+          {
+            "node": "Write File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pass Through",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        [
+          {
+            "node": "Merge Write Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Write Result": {
+      "main": [
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Files": {
+      "main": [
+        [
+          {
+            "node": "Prepare File Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare File Item": {
+      "main": [
+        [
+          {
+            "node": "Read File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Read Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Log": {
+      "main": [
+        [
+          {
+            "node": "Build Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Through": {
+      "main": [
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Call 'Util LLM Unload Model'": {
+      "main": [
+        [
+          {
+            "node": "Read Housekeeping.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Branches": {
+      "main": [
+        [
+          {
+            "node": "LLM Pass (All-in-One)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Pass (All-in-One)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "c64358db-5cac-4468-8bc1-4102b74fa585",
+  "activeVersionId": null,
+  "versionCounter": 177,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

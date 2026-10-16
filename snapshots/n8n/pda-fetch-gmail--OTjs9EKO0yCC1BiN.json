@@ -1,0 +1,623 @@
+{
+  "updatedAt": "2026-06-15T06:48:55.597Z",
+  "createdAt": "2026-03-27T19:51:12.765Z",
+  "id": "OTjs9EKO0yCC1BiN",
+  "name": "PDA Fetch Gmail",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "q": "={{ 'after:' + $('Config').item.json.feedsSinceGmailDate }}"
+        }
+      },
+      "webhookId": "REDACTED",
+      "id": "2339080a-ce30-4ba9-aaff-359c5392d580",
+      "alwaysOutputData": true,
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        48,
+        112
+      ],
+      "name": "Gmail - Personal",
+      "typeVersion": 2.2,
+      "executeOnce": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "q": "={{ 'after:' + $('Config').item.json.feedsSinceGmailDate }}"
+        }
+      },
+      "alwaysOutputData": true,
+      "id": "65665740-3764-43ba-b9fa-204432ddee0f",
+      "name": "Gmail - Work",
+      "webhookId": "REDACTED",
+      "executeOnce": true,
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -640,
+        112
+      ],
+      "typeVersion": 2.2,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://10.1.1.200:27124/vault/Obsidian/PDA/Inbox/feed_gmail.md",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "position": [
+        1600,
+        -128
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "id": "6dbc7f8f-0121-497d-bfcd-4d6407bfd18a",
+      "typeVersion": 4.4,
+      "name": "create obsidian feed",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "position": [
+        -976,
+        304
+      ],
+      "name": "When clicking 'Execute workflow'",
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.manualTrigger",
+      "id": "9f183afc-4955-4905-b87e-549e62f9eebb"
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "name": "HTTP Request - Personal",
+      "alwaysOutputData": true,
+      "position": [
+        208,
+        112
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "id": "b8abac86-c095-430d-b4fe-8530e74e94df",
+      "typeVersion": 4.4,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "labelIds": [
+            "SENT"
+          ],
+          "q": "={{ 'after:' + $('Config').item.json.feedsSinceGmailDate }}"
+        }
+      },
+      "name": "Gmail - Work SENT",
+      "type": "n8n-nodes-base.gmail",
+      "id": "3e18fdc8-84ac-4170-a8c2-0db3526a8b62",
+      "alwaysOutputData": true,
+      "webhookId": "REDACTED",
+      "typeVersion": 2.2,
+      "executeOnce": true,
+      "position": [
+        -288,
+        112
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.httpRequest",
+      "alwaysOutputData": true,
+      "id": "cbde157b-b86c-4a50-9ba9-91ed464ff889",
+      "position": [
+        -112,
+        112
+      ],
+      "name": "HTTP Request - Work SENT",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "position": [
+        -464,
+        112
+      ],
+      "name": "HTTP Request - Work",
+      "id": "eb6e46c7-d404-44f1-9ac5-efef9acc21b0",
+      "type": "n8n-nodes-base.httpRequest",
+      "alwaysOutputData": true,
+      "typeVersion": 4.4,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "labelIds": [
+            "SENT"
+          ],
+          "q": "={{ 'after:' + $('Config').item.json.feedsSinceGmailDate }}"
+        }
+      },
+      "name": "Gmail - Personal SENT",
+      "alwaysOutputData": true,
+      "id": "3fdd54d9-73a7-4d4e-95d1-0c332d6f5a78",
+      "type": "n8n-nodes-base.gmail",
+      "webhookId": "REDACTED",
+      "typeVersion": 2.2,
+      "executeOnce": true,
+      "position": [
+        368,
+        112
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "position": [
+        544,
+        112
+      ],
+      "typeVersion": 4.4,
+      "id": "b7f5ce99-01e5-4b96-ae74-893900743077",
+      "type": "n8n-nodes-base.httpRequest",
+      "alwaysOutputData": true,
+      "name": "HTTP Request - Personal SENT",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "q": "is:starred"
+        }
+      },
+      "typeVersion": 2.2,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [
+        704,
+        112
+      ],
+      "name": "Gmail - Work Starred",
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "type": "n8n-nodes-base.gmail",
+      "webhookId": "REDACTED",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "name": "HTTP Request - Work Starred",
+      "alwaysOutputData": true,
+      "position": [
+        880,
+        112
+      ],
+      "typeVersion": 4.4,
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dvgelYMGIQ3y1zjp",
+          "name": "Gmail - Joy Inc"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "q": "is:starred"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        112
+      ],
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Gmail - Personal Starred",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "webhookId": "REDACTED",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://gmail.googleapis.com/gmail/v1/users/me/messages/{{ $json.id }}?format=full",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gmailOAuth2",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "name": "HTTP Request - Personal Starred",
+      "position": [
+        1232,
+        112
+      ],
+      "typeVersion": 4.4,
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i9PMLnixXj3CsyYe",
+          "name": "Gmail - personal"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── 1. Inputs ──────────────────────────────────────────────────────────────────\n// Windowed fetch — time-bounded, both accounts\nlet allWorkItems = [];\ntry { allWorkItems.push(...$('HTTP Request - Work').all()); } catch (e) {}\ntry { allWorkItems.push(...$('HTTP Request - Work SENT').all()); } catch (e) {}\n\nlet allPersonalItems = [];\ntry { allPersonalItems.push(...$('HTTP Request - Personal').all()); } catch (e) {}\ntry { allPersonalItems.push(...$('HTTP Request - Personal SENT').all()); } catch (e) {}\n\n// Starred fetch — unbounded, both accounts\nlet allWorkStarredItems = [];\ntry { allWorkStarredItems.push(...$('HTTP Request - Work Starred').all()); } catch (e) {}\n\nlet allPersonalStarredItems = [];\ntry { allPersonalStarredItems.push(...$('HTTP Request - Personal Starred').all()); } catch (e) {}\n\n// feedsSince: UTC ISO string — read from Config\nconst feedsSince = $('Config').first().json.feedsSince || null;\n\n// ── 2. User Config ──────────────────────────────────────────────────────────────\nconst config = {\n  workEmail: 'REDACTED-EMAIL',\n  personalEmail: 'REDACTED-EMAIL',\n  maxBodyLength: 2500\n};\n\n// ── 3. Helpers ──────────────────────────────────────────────────────────────────\nfunction decodeBase64(data) {\n  if (!data) return \"\";\n  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');\n  return Buffer.from(base64, 'base64').toString('utf-8');\n}\n\nfunction decodeHtmlEntities(str) {\n  if (!str) return '';\n  return str\n    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>').replace(/&quot;/g, '\"').replace(/&#39;/g, \"'\")\n    .replace(/&#x27;/g, \"'\").replace(/&#x2F;/g, '/')\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))\n    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));\n}\n\nfunction stripHtmlTags(html) {\n  if (!html) return \"\";\n  let text = html\n    .replace(/<style[^>]*>[^]*?<\\/style>/gi, '')\n    .replace(/<script[^>]*>[^]*?<\\/script>/gi, '')\n    .replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n\\n')\n    .replace(/<div[^>]*>/gi, '\\n').replace(/<[^>]+>/g, ' ');\n  text = decodeHtmlEntities(text);\n  text = text.replace(/^[ \\t]+|[ \\t]+$/gm, '').replace(/[ \\t]{2,}/g, ' ').replace(/\\n{3,}/g, '\\n\\n');\n  return text.trim();\n}\n\nfunction chopTextReplies(text) {\n  if (!text) return \"\";\n  const patterns = [\n    /\\nFrom:[\\s\\S]{1,250}?\\nSent:/i, /\\nFrom:[\\s\\S]{1,250}?\\nDate:/i,\n    /\\n[-_]{7,}/, /\\n-{7,}\\s*Original Message/i, /\\nOn[\\s\\S]{1,250}?\\bwrote:/i\n  ];\n  let cutIndex = text.length;\n  for (const pattern of patterns) {\n    const match = text.search(pattern);\n    if (match !== -1 && match < cutIndex) cutIndex = match;\n  }\n  return text.substring(0, cutIndex).trim();\n}\n\nfunction getCleanedBody(payload) {\n  if (!payload) return \"\";\n  let htmlData = \"\", textData = \"\";\n  function findParts(p) {\n    if (p.mimeType === 'text/html' && p.body?.data) htmlData = decodeBase64(p.body.data);\n    else if (p.mimeType === 'text/plain' && p.body?.data) textData = decodeBase64(p.body.data);\n    if (p.parts) p.parts.forEach(findParts);\n  }\n  if (payload.body?.data && payload.mimeType) {\n    if (payload.mimeType === 'text/html') htmlData = decodeBase64(payload.body.data);\n    if (payload.mimeType === 'text/plain') textData = decodeBase64(payload.body.data);\n  }\n  findParts(payload);\n  let processedText = \"\";\n  if (htmlData) {\n    const htmlSplitters = ['<div class=\"gmail_quote', '<div class=\"gmail_extra', '<blockquote', '<hr tabindex=\"-1\"', '<div id=\"appendonsend\"', '<div style=\"border:none;border-top:solid #B5C4DF'];\n    let lowerHtml = htmlData.toLowerCase();\n    let cutIndex = htmlData.length;\n    for (const splitter of htmlSplitters) {\n      const idx = lowerHtml.indexOf(splitter.toLowerCase());\n      if (idx !== -1 && idx < cutIndex) cutIndex = idx;\n    }\n    processedText = stripHtmlTags(htmlData.substring(0, cutIndex));\n  } else if (textData) {\n    processedText = decodeHtmlEntities(textData);\n  }\n  return chopTextReplies(processedText);\n}\n\nfunction getCategory(labels = []) {\n  if (labels.includes('CATEGORY_PROMOTIONS') || labels.includes('CATEGORY_SOCIAL')) return 'noise';\n  if (labels.includes('CATEGORY_UPDATES')) return 'updates';\n  return 'attention';\n}\n\nfunction isSentEmail(labels = [], fromHeader = '') {\n  if (!labels || !Array.isArray(labels)) return false;\n  if (!labels.includes('SENT')) return false;\n  const fromLower = (fromHeader || '').toLowerCase();\n  return fromLower.includes(config.workEmail.toLowerCase()) || fromLower.includes(config.personalEmail.toLowerCase());\n}\n\n// ── 4. Build JSON message objects ───────────────────────────────────────────────\n// source_type: 'gmail_starred' for starred fetch, 'gmail' for windowed fetch\nfunction buildMessage(item, account, sourceType) {\n  const e = item.json;\n  if (!e.id || !e.payload) return null;\n  const headers = e.payload?.headers || [];\n  const findHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';\n  const labels  = e.labelIds || [];\n  const fromRaw = findHeader('From');\n  const isSent  = isSentEmail(labels, fromRaw);\n  const toRaw   = findHeader('To');\n  const ccRaw   = findHeader('Cc');\n  const recipients = [];\n  if (toRaw) recipients.push(...toRaw.split(',').map(s => s.trim()).filter(Boolean));\n  if (ccRaw) recipients.push(...ccRaw.split(',').map(s => s.trim()).filter(Boolean));\n  let body = getCleanedBody(e.payload);\n  body = body.replace(/\\s+/g, ' ').trim().substring(0, config.maxBodyLength);\n  const timestampUTC = e.internalDate\n    ? new Date(parseInt(e.internalDate)).toISOString()\n    : null;\n  return {\n    source:         'gmail',\n    source_type:    sourceType,\n    message_id:     e.id,\n    thread_id:      e.threadId || null,\n    timestamp:      timestampUTC,\n    timezone:       'UTC',\n    subject:        decodeHtmlEntities(findHeader('Subject') || '(No Subject)'),\n    sender:         fromRaw || '(Unknown Sender)',\n    recipients,\n    body,\n    is_starred:     labels.includes('STARRED'),\n    is_unread:      labels.includes('UNREAD'),\n    is_sent:        isSent,\n    account,\n    gmail_category: isSent ? 'sent' : getCategory(labels),\n    url:            `https://mail.google.com/mail/u/0/#all/${e.id}`\n  };\n}\n\n// ── 5. Process all items ─────────────────────────────────────────────────────────\n// Build starred set first. Then layer windowed messages on top,\n// skipping any already captured as starred (starred version always wins).\nconst starredById = new Map();\n\nfor (const item of allWorkStarredItems) {\n  const msg = buildMessage(item, 'work', 'gmail_starred');\n  if (msg && !starredById.has(msg.message_id)) starredById.set(msg.message_id, msg);\n}\nfor (const item of allPersonalStarredItems) {\n  const msg = buildMessage(item, 'personal', 'gmail_starred');\n  if (msg && !starredById.has(msg.message_id)) starredById.set(msg.message_id, msg);\n}\n\nconst messages = [...starredById.values()];\nconst seenIds = new Set(starredById.keys());\n\nfor (const item of allWorkItems) {\n  const msg = buildMessage(item, 'work', 'gmail');\n  if (msg && !seenIds.has(msg.message_id)) { seenIds.add(msg.message_id); messages.push(msg); }\n}\nfor (const item of allPersonalItems) {\n  const msg = buildMessage(item, 'personal', 'gmail');\n  if (msg && !seenIds.has(msg.message_id)) { seenIds.add(msg.message_id); messages.push(msg); }\n}\n\n// ── 6. Filter windowed messages by feedsSince; starred messages are exempt ───────\n// Starred items always pass through regardless of age.\nconst filtered = feedsSince\n  ? messages.filter(m => m.source_type === 'gmail_starred' || !m.timestamp || m.timestamp >= feedsSince)\n  : messages;\n\n// Sort ascending by timestamp\nfiltered.sort((a, b) => {\n  if (!a.timestamp) return 1;\n  if (!b.timestamp) return -1;\n  return a.timestamp.localeCompare(b.timestamp);\n});\n\n// ── 7. Wrap in fenced JSON block for Obsidian .md storage ────────────────────────\nconst fence = '```';\nconst content = `${fence}json\\n${JSON.stringify(filtered, null, 2)}\\n${fence}`;\n\nreturn [{ json: { content } }];"
+      },
+      "position": [
+        1440,
+        112
+      ],
+      "id": "54390bd6-f0d8-42ac-8794-a2ad5e461177",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Process Emails"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -992,
+        -64
+      ],
+      "typeVersion": 1.1,
+      "id": "6062acf6-eed1-4803-983b-7cd0ce5afacb"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "feedsSinceGmailDate",
+              "value": "={{ $json.feedsSinceGmailDate || $now.minus({days:1}).toFormat('yyyy/MM/dd') }}",
+              "id": "cfg-001",
+              "type": "string"
+            },
+            {
+              "name": "feedsSince",
+              "id": "cfg-002",
+              "value": "={{ $json.feedsSince || $now.minus({days:1}).toISO() }}",
+              "type": "string"
+            },
+            {
+              "type": "number",
+              "value": "={{ $json.feedsSinceUnix || $now.minus({days:1}).toUnixInteger() }}",
+              "name": "feedsSinceUnix",
+              "id": "cfg-003"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        112
+      ],
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "id": "791dad33-0e36-4ac4-9597-458177082145"
+    }
+  ],
+  "connections": {
+    "Process Emails": {
+      "main": [
+        [
+          {
+            "type": "main",
+            "index": 0,
+            "node": "create obsidian feed"
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Work Starred": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Personal Starred",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Personal Starred": {
+      "main": [
+        [
+          {
+            "node": "Process Emails",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Personal Starred": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Personal Starred",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Personal SENT": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Work Starred",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Work": {
+      "main": [
+        [
+          {
+            "type": "main",
+            "node": "Gmail - Work SENT",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Personal SENT": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "HTTP Request - Personal SENT",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Gmail - Personal": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "HTTP Request - Personal",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Work SENT": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Personal",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Gmail - Work Starred": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Work Starred",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Work": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Personal": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Personal SENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Work SENT": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "HTTP Request - Work SENT",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Gmail - Work",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "versionId": "b75a4b0d-935a-49fe-86f8-a8a0811068f0",
+  "activeVersionId": "55ae8b79-ef82-46e8-93b4-7270813f1f24",
+  "versionCounter": 430,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [
+    {
+      "updatedAt": "2026-04-13T02:59:41.607Z",
+      "createdAt": "2026-04-13T02:59:41.607Z",
+      "id": "Ii87B02BjbkE0vW9",
+      "name": "pda"
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

@@ -1,0 +1,698 @@
+{
+  "updatedAt": "2026-05-10T05:08:06.166Z",
+  "createdAt": "2026-05-09T00:16:35.990Z",
+  "id": "U7t9qGuqL3mdYhoR",
+  "name": "Housekeeping – LLM Formatting Pass",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "node-trigger",
+      "name": "Execute Workflow Trigger",
+      "position": [
+        16,
+        112
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d8ebe012-4c07-4441-ace8-87e0ff7ab67e",
+              "name": "lmStudioUrl",
+              "value": "http://10.1.1.200:1234/v1/chat/completions",
+              "type": "string"
+            },
+            {
+              "id": "643c5c83-6b21-4159-a4c0-4d44797228be",
+              "name": "manualModelName",
+              "value": "qwen3.5-27b-claude-4.6-os-instruct-mxfp8-mlx",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-config",
+      "name": "Config",
+      "position": [
+        224,
+        304
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "notes": "LLM and Obsidian config — lives here as this is the only workflow that calls LM Studio"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-type",
+              "leftValue": "={{ $json.fileType }}",
+              "operator": {
+                "operation": "isIn",
+                "type": "string"
+              },
+              "rightValue": "project,research,wiki,log"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "id": "node-check-type",
+      "name": "LLM Type?",
+      "position": [
+        448,
+        304
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sk-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "sk-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "sk-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "sk-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "sk-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $json.changed ?? false }}"
+            },
+            {
+              "id": "sk-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes ?? [] }}"
+            },
+            {
+              "id": "sk-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags ?? [] }}"
+            },
+            {
+              "id": "sk-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "={{ $json.writeStatus ?? 'skipped' }}"
+            },
+            {
+              "id": "sk-llmskipped",
+              "name": "llmSkipped",
+              "type": "boolean",
+              "value": "=true"
+            },
+            {
+              "id": "sk-llmchanged",
+              "name": "llmChanged",
+              "type": "boolean",
+              "value": "=false"
+            },
+            {
+              "id": "sk-llmerror",
+              "name": "llmError",
+              "type": "string",
+              "value": "="
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-skip",
+      "name": "Skip (not LLM type)",
+      "position": [
+        672,
+        480
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bp-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "bp-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "bp-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "bp-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "bp-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $json.changed ?? false }}"
+            },
+            {
+              "id": "bp-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes ?? [] }}"
+            },
+            {
+              "id": "bp-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags ?? [] }}"
+            },
+            {
+              "id": "bp-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "={{ $json.writeStatus ?? 'skipped' }}"
+            },
+            {
+              "id": "bp-system",
+              "name": "systemPrompt",
+              "type": "string",
+              "value": "You are a formatting assistant for an Obsidian vault. Fix structural and formatting issues only — never rewrite, summarise, or alter the substance of content.\n\nVault conventions:\n- YAML frontmatter block: type, project, area, status keys\n- H1 matches the filename exactly\n- **Related:** section immediately below H1, one [[link]] per line, no aliases\n- H2 sections are major topic breaks, separated by --- dividers (no --- before the first H2)\n- H3 sections are genuine sub-sections within an H2, not standalone topics\n- Tasks heading format: ## Tasks – Filename [[Filename|↗️]]\n\nYour checks:\n1. HEADING HIERARCHY — identify H3s used as standalone major topic breaks that should be H2s. Promote only when confidence is high. Flag if uncertain.\n2. RELATED SECTION — if no **Related:** section exists immediately below H1, infer likely related documents from the area: and project: frontmatter values and any internal [[links]] in the document. Insert using correct format. If you cannot infer with confidence, do not insert.\n3. CLARITY FLAGS — flag (do not fix) any section where the heading clearly does not match the content beneath it.\n\nStrict rules:\n- Never rewrite, expand, or summarise body content\n- Never add links to area files in Related sections — area: values are category tags, not documents\n- Never modify frontmatter values\n- Never modify task content\n- Return ONLY a JSON object, no preamble, no markdown fences:\n{\n  \"content\": \"<full corrected document>\",\n  \"fixes\": [\"one string per fix applied\"],\n  \"flags\": [\"one string per flag for human review\"]\n}"
+            },
+            {
+              "id": "bp-user",
+              "name": "userMessage",
+              "type": "string",
+              "value": "=Check this document and return the corrected version as JSON:\n\n{{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-build-prompt",
+      "name": "Build Prompt",
+      "position": [
+        672,
+        304
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "notes": "Assembles system prompt and user message. Keeping prompt construction here makes it easy to edit without touching the HTTP node."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.lmStudioUrl }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $('Config').item.json.modelName }}"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{ role: 'system', content: $('Build Prompt').item.json.systemPrompt }, { role: 'user', content: $('Build Prompt').item.json.userMessage }] }}"
+            },
+            {
+              "name": "stream",
+              "value": "=false"
+            },
+            {
+              "name": "temperature",
+              "value": "=0.1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "node-http",
+      "name": "Call LM Studio",
+      "position": [
+        896,
+        304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item;\nconst rawText = item.json.choices?.[0]?.message?.content ?? '';\nconst cleaned = rawText.replace(/^```json\\s*/i, '').replace(/\\s*```$/i, '').trim();\n\n// Carry all upstream context through\nconst filePath    = $('Build Prompt').item.json.filePath;\nconst filename    = $('Build Prompt').item.json.filename;\nconst fileType    = $('Build Prompt').item.json.fileType;\nconst origContent = $('Build Prompt').item.json.content;\nconst changed     = $('Build Prompt').item.json.changed ?? false;\nconst fixes       = [...($('Build Prompt').item.json.fixes ?? [])];\nconst flags       = [...($('Build Prompt').item.json.flags ?? [])];\nconst writeStatus = $('Build Prompt').item.json.writeStatus ?? 'skipped';\n\nlet llmContent = origContent;\nlet llmFixes   = [];\nlet llmFlags   = [];\nlet llmError   = null;\nlet llmChanged = false;\n\ntry {\n  const parsed = JSON.parse(cleaned);\n  if (!parsed.content || parsed.content.trim() === '') {\n    llmError = 'LLM returned empty content — original preserved';\n    flags.push(llmError);\n  } else {\n    llmContent = parsed.content;\n    llmFixes   = Array.isArray(parsed.fixes) ? parsed.fixes : [];\n    llmFlags   = Array.isArray(parsed.flags) ? parsed.flags : [];\n    llmChanged = llmContent !== origContent;\n  }\n} catch (err) {\n  llmError = `Failed to parse LLM response: ${err.message}`;\n  flags.push(llmError);\n}\n\nreturn [{ json: {\n  filePath, filename, fileType,\n  content:     llmChanged ? llmContent : origContent,\n  changed:     changed || llmChanged,\n  fixes:       [...fixes, ...llmFixes],\n  flags:       [...flags, ...llmFlags],\n  writeStatus,\n  llmSkipped:  false,\n  llmChanged,\n  llmError\n}}];"
+      },
+      "id": "node-parse",
+      "name": "Parse LLM Response",
+      "position": [
+        1120,
+        304
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "notes": "Parses the LLM JSON response. Falls back gracefully on empty content or parse errors."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-llm-changed",
+              "leftValue": "={{ $json.llmChanged }}",
+              "operator": {
+                "operation": "equals",
+                "type": "boolean"
+              },
+              "rightValue": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "id": "node-llm-changed",
+      "name": "LLM Changed?",
+      "position": [
+        1344,
+        304
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Config').item.json.obsidianBaseUrl }}/vault/{{ $json.filePath.split('/').map(p => encodeURIComponent(p)).join('/') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ $json.content }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "node-write",
+      "name": "Write File",
+      "position": [
+        1568,
+        160
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "HROKm66cGpJi3eI6",
+          "name": "Header Auth - Obsidian"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mw-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $('Parse LLM Response').item.json.filePath }}"
+            },
+            {
+              "id": "mw-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $('Parse LLM Response').item.json.filename }}"
+            },
+            {
+              "id": "mw-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $('Parse LLM Response').item.json.fileType }}"
+            },
+            {
+              "id": "mw-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $('Parse LLM Response').item.json.content }}"
+            },
+            {
+              "id": "mw-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $('Parse LLM Response').item.json.changed }}"
+            },
+            {
+              "id": "mw-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $('Parse LLM Response').item.json.fixes }}"
+            },
+            {
+              "id": "mw-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $('Parse LLM Response').item.json.flags }}"
+            },
+            {
+              "id": "mw-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "=written"
+            },
+            {
+              "id": "mw-llmskipped",
+              "name": "llmSkipped",
+              "type": "boolean",
+              "value": "=false"
+            },
+            {
+              "id": "mw-llmchanged",
+              "name": "llmChanged",
+              "type": "boolean",
+              "value": "=true"
+            },
+            {
+              "id": "mw-llmerror",
+              "name": "llmError",
+              "type": "string",
+              "value": "="
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-mark-written",
+      "name": "Mark Written",
+      "position": [
+        1792,
+        160
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pt-filepath",
+              "name": "filePath",
+              "type": "string",
+              "value": "={{ $json.filePath }}"
+            },
+            {
+              "id": "pt-filename",
+              "name": "filename",
+              "type": "string",
+              "value": "={{ $json.filename }}"
+            },
+            {
+              "id": "pt-filetype",
+              "name": "fileType",
+              "type": "string",
+              "value": "={{ $json.fileType }}"
+            },
+            {
+              "id": "pt-content",
+              "name": "content",
+              "type": "string",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "id": "pt-changed",
+              "name": "changed",
+              "type": "boolean",
+              "value": "={{ $json.changed }}"
+            },
+            {
+              "id": "pt-fixes",
+              "name": "fixes",
+              "type": "array",
+              "value": "={{ $json.fixes }}"
+            },
+            {
+              "id": "pt-flags",
+              "name": "flags",
+              "type": "array",
+              "value": "={{ $json.flags }}"
+            },
+            {
+              "id": "pt-writestatus",
+              "name": "writeStatus",
+              "type": "string",
+              "value": "={{ $json.writeStatus }}"
+            },
+            {
+              "id": "pt-llmskipped",
+              "name": "llmSkipped",
+              "type": "boolean",
+              "value": "=false"
+            },
+            {
+              "id": "pt-llmchanged",
+              "name": "llmChanged",
+              "type": "boolean",
+              "value": "=false"
+            },
+            {
+              "id": "pt-llmerror",
+              "name": "llmError",
+              "type": "string",
+              "value": "={{ $json.llmError ?? '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-pass-through",
+      "name": "Pass Through",
+      "position": [
+        1568,
+        448
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {},
+      "id": "node-merge",
+      "name": "Merge Result",
+      "position": [
+        2016,
+        304
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3
+    }
+  ],
+  "connections": {
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call LM Studio",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call LM Studio": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse LLM Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "LLM Type?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Config",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "LLM Changed?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Write File",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Pass Through",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "LLM Type?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Prompt",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Skip (not LLM type)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Mark Written": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "LLM Changed?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Pass Through": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Skip (not LLM type)": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Write File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Mark Written",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Pacific/Auckland",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "versionId": "73c36fbd-c91f-4f5d-bff6-46bb9bac727f",
+  "activeVersionId": "73c36fbd-c91f-4f5d-bff6-46bb9bac727f",
+  "versionCounter": 33,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": "Version 73c36fbd",
+    "description": ""
+  }
+}
