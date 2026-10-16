@@ -10,7 +10,7 @@ Design and plan: Obsidian, Project - Homelab Ansible Repo.
 - Host names carry the site prefix (calliope-frigate, halcyon-frigate).
 - files/ holds hand-written configs that are deployed from here. Always run with --check --diff first.
 - snapshots/ holds small copies of host files where history matters. Added by the snapshot role, never by hand.
-- No secrets in this repo. Hosts keep secrets in env files; the repo holds placeholders. Rebuild secrets go in Ansible Vault.
+- No secrets in this repo. Hosts keep secrets in env files; the repo holds placeholders. No Ansible Vault is used; anything needed to rebuild comes from the password manager.
 - Commits are scanned with gitleaks. A failed scan blocks the commit.
 
 After cloning, enable the hook: git config core.hooksPath .githooks (needs gitleaks installed).
