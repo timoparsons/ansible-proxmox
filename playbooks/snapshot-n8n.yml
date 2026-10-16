@@ -1,0 +1,118 @@
+---
+# Snapshot the n8n workflows into snapshots/n8n/ (redacted), commit only when something changed,
+# scan with gitleaks (the repo pre-commit hook), then push.
+#   ansible-playbook -i inventories/calliope playbooks/snapshot-n8n.yml
+# Workflows are exported inside the n8n container and redacted on the n8n host (secrets, webhook
+# paths, pinned test data, owner details). Only the redacted copies are fetched. Credentials are
+# never exported. The redaction script stops the run if a suspicious string survives.
+- name: Export and redact the n8n workflows on the n8n host
+  hosts: calliope-n8n
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    work_dir: /var/tmp/n8n-snapshot
+  tasks:
+    - name: Make a private working folder
+      ansible.builtin.file:
+        path: "{{ work_dir }}"
+        state: directory
+        mode: '0700'
+
+    - name: Export, redact and pack the workflows
+      block:
+        - name: Make the folder for the raw export
+          ansible.builtin.file:
+            path: "{{ work_dir }}/raw"
+            state: directory
+            mode: '0700'
+
+        - name: Export the workflows inside the n8n container and copy them out
+          ansible.builtin.shell: docker exec n8n sh -c 'rm -rf /tmp/wf && mkdir -p /tmp/wf && n8n export:workflow --backup --output=/tmp/wf/' && docker cp n8n:/tmp/wf/. {{ work_dir }}/raw/
+          changed_when: true
+
+        - name: Copy in the redaction script
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../files/snapshot/redact_n8n.py"
+            dest: "{{ work_dir }}/redact_n8n.py"
+            mode: '0700'
+
+        - name: Redact (stops here if anything suspicious survives)
+          ansible.builtin.command: python3 {{ work_dir }}/redact_n8n.py {{ work_dir }}/raw {{ work_dir }}/out
+          register: redact
+          changed_when: true
+
+        - name: Show the redaction summary
+          ansible.builtin.debug:
+            msg: "{{ redact.stdout_lines }}"
+
+        - name: Pack the redacted files only
+          ansible.builtin.command: tar czf {{ work_dir }}/out.tgz -C {{ work_dir }}/out .
+          changed_when: true
+
+        - name: Fetch the redacted pack to the Ansible host
+          ansible.builtin.fetch:
+            src: "{{ work_dir }}/out.tgz"
+            dest: /var/tmp/n8n-snapshot.tgz
+            flat: true
+      always:
+        - name: Remove the temporary folder inside the container
+          ansible.builtin.command: docker exec n8n rm -rf /tmp/wf
+          changed_when: false
+          failed_when: false
+
+        - name: Remove the working folder (it holds the unredacted export)
+          ansible.builtin.file:
+            path: "{{ work_dir }}"
+            state: absent
+
+- name: Update the repo copy, commit only on change, scan and push
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    repo: /opt/ansible-proxmox
+    snap_dir: /opt/ansible-proxmox/snapshots/n8n
+  tasks:
+    - name: Replace the snapshot folder with the new redacted copy
+      ansible.builtin.shell: |
+        set -e
+        rm -rf {{ snap_dir }}
+        mkdir -p {{ snap_dir }}
+        tar xzf /var/tmp/n8n-snapshot.tgz -C {{ snap_dir }}
+        rm -f /var/tmp/n8n-snapshot.tgz
+      changed_when: true
+
+    - name: Stage the snapshot (the folder is ignored by default, so force)
+      ansible.builtin.command: git -C {{ repo }} add -f -A snapshots/n8n
+      changed_when: false
+
+    - name: Is anything different from the last commit
+      ansible.builtin.command: git -C {{ repo }} diff --cached --quiet -- snapshots/n8n
+      register: staged_diff
+      failed_when: staged_diff.rc not in [0, 1]
+      changed_when: false
+
+    - name: Say what happened when nothing changed
+      ansible.builtin.debug:
+        msg: No workflow changed since the last snapshot, nothing to commit.
+      when: staged_diff.rc == 0
+
+    - name: Commit (the gitleaks pre-commit hook scans it) and push
+      when: staged_diff.rc == 1
+      block:
+        - name: Commit
+          ansible.builtin.command: git -C {{ repo }} commit -m "n8n workflow snapshot {{ lookup('pipe', 'date -u +%Y-%m-%d') }}" -- snapshots/n8n
+          changed_when: true
+
+        - name: Push
+          ansible.builtin.command: git -C {{ repo }} push
+          changed_when: true
+      rescue:
+        - name: Unstage so nothing half-committed is left
+          ansible.builtin.command: git -C {{ repo }} reset -q -- snapshots/n8n
+          changed_when: false
+
+        - name: Fail loudly
+          ansible.builtin.fail:
+            msg: The commit or push failed, for example the secret scan blocked it. The snapshot files are left on disk, unstaged, for review.

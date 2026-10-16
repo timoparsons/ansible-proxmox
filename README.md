@@ -35,3 +35,11 @@ After cloning, enable the hook: git config core.hooksPath .githooks (needs gitle
 - Set host_backup_local_cifs in the host's host_vars (currently halcyon-proxmox: //10.2.1.10/backup/halcyon/proxmox) to also write a tar.gz of the same staged files to that share on every run. The script mounts it with the host's /root/.smbcredentials, writes the file, and unmounts. The newest 8 copies are kept, ordered by the timestamp in the name.
 - It does not depend on PBS or on the network between sites, so a rebuilt Halcyon host can be restored from the local copy alone: tar xzf FILE -C SCRATCH_FOLDER.
 - If the NAS cannot be mounted or PBS cannot be reached, the script still attempts the other destination and exits with an error.
+
+## n8n workflow snapshot
+
+- playbooks/snapshot-n8n.yml exports every n8n workflow (inside the n8n container on calliope-n8n), redacts them ON the n8n host with files/snapshot/redact_n8n.py, fetches only the redacted copies into snapshots/n8n/, commits only when something changed (the gitleaks hook scans the commit) and pushes. Run it: ansible-playbook -i inventories/calliope playbooks/snapshot-n8n.yml
+- Redacted: user keys, tokens, API keys and bearer values (including ones hard-coded in code nodes), any long mixed letter and digit string, webhook paths and webhook ids, email addresses and Google calendar ids. Dropped: pinned test data, static data, owner details. Credentials are never exported.
+- The script stops the run if a suspicious string survives (a tripwire for long mixed strings, 64 character hex and bearer values). Credential type names such as googleCalendarOAuth2Api are allowed.
+- It is a history and diff copy, not a restore source. The restore source is the PBS backup of CT 131, which holds the database and the encryption key for stored credentials (/opt/n8n_data/config). Importing the redacted JSON would lose the redacted values.
+- A failed scan leaves the files on disk, unstaged, and fails the run. Nothing is pushed.
