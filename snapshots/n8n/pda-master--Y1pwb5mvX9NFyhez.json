@@ -202,60 +202,31 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.pushover.net/1/messages.json",
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "token",
-              "value": "REDACTED"
-            },
-            {
-              "name": "user",
-              "value": "REDACTED"
-            },
-            {
-              "name": "title",
-              "value": "=`📋 Daily Briefing — ${$now.setZone('Pacific/Auckland').toFormat('EEE d MMM')}`"
-            },
-            {
-              "name": "message",
-              "value": "=`Your briefing is ready. Tap to open in Obsidian.`"
-            },
-            {
-              "name": "url",
-              "value": "=`obsidian://open?vault=YOUR_VAULT_NAME&file=Overview%2F${$now.setZone('Pacific/Auckland').toFormat('yyyy-MM-dd')}%20-%20Daily%20Briefing`"
-            },
-            {
-              "name": "url_title",
-              "value": "Open in Obsidian"
-            },
-            {
-              "name": "priority",
-              "value": "0"
-            },
-            {
-              "name": "sound",
-              "value": "magic"
-            },
-            {
-              "name": "device",
-              "value": "tim-iphone"
-            }
-          ]
-        },
-        "options": {}
+        "userKey": "REDACTED",
+        "message": "=`Your briefing is ready. Tap to open in Obsidian.`",
+        "priority": 0,
+        "additionalFields": {
+          "device": "tim-iphone",
+          "sound": "magic",
+          "title": "=`📋 Daily Briefing — ${$now.setZone('Pacific/Auckland').toFormat('EEE d MMM')}`",
+          "url": "=`obsidian://open?vault=YOUR_VAULT_NAME&file=Overview%2F${$now.setZone('Pacific/Auckland').toFormat('yyyy-MM-dd')}%20-%20Daily%20Briefing`",
+          "url_title": "Open in Obsidian"
+        }
       },
       "id": "pushover-notify",
       "name": "Pushover Notification",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.pushover",
+      "typeVersion": 1,
       "position": [
         1328,
         -48
-      ]
+      ],
+      "credentials": {
+        "pushoverApi": {
+          "id": "jSTpPiEgxzoEMOCM",
+          "name": "Pushover account"
+        }
+      }
     },
     {
       "parameters": {
@@ -581,9 +552,9 @@
   },
   "meta": null,
   "nodeGroups": [],
-  "versionId": "c445318b-5f8b-44b5-8a31-0fbda7f46cc3",
+  "versionId": "095454d1-a235-4833-a4d5-2d02fd4699c1",
   "activeVersionId": null,
-  "versionCounter": 265,
+  "versionCounter": 266,
   "triggerCount": 1,
   "sourceWorkflowId": null,
   "tags": [
