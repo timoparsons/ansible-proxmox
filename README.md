@@ -44,3 +44,16 @@ After cloning, enable the hook: git config core.hooksPath .githooks (needs gitle
 - It is a history and diff copy, not a restore source. The restore source is the PBS backup of CT 131, which holds the database and the encryption key for stored credentials (/opt/n8n_data/config). Importing the redacted JSON would lose the redacted values.
 - A failed scan leaves the files on disk, unstaged, and fails the run. Nothing is pushed.
 - Schedule: weekly, Mondays 00:00 NZ, by the n8n workflow Ansible n8n Snapshot Weekly (id KKzzUUKabwD0PXfQ). It logs in to this host over SSH as root, runs this playbook in /opt/ansible-proxmox, and sends a Pushover summary (OK or FAILED, plus whether anything changed). The workflow was repurposed from the old Pull All workflow on 2026-10-17, so the old weekly pull of guest config into the old repos no longer runs.
+
+## Config snapshots (compose files, app configs, Home Assistant)
+
+- Playbook: playbooks/snapshot-configs.yml. What it collects, per guest, is listed in playbooks/vars/snapshot-configs.yml (edit that file to add or remove a path). Output: snapshots/configs/SITE/GUEST/ABSOLUTE_PATH, one folder per guest.
+- Run it: ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/snapshot-configs.yml. Add -e snapshot_commit=false to collect without staging, committing or pushing. Add -e snapshot_strict=false with --limit.
+- Calliope guests are read over SSH. Halcyon containers are read through the Proxmox host with pct (no Ansible key in them).
+- Redaction happens ON the guest in files/snapshot/collect_config.py, which reads each file and writes only the redacted copy. It redacts values under password, token, secret and key style names, passwords on command lines (-u USER -p PASSWORD), URLs with credentials, bcrypt hashes, JWTs, private key blocks and long random strings. Home Assistant device ids, image digests, !secret references and environment placeholders are kept.
+- Learn-only entries (learn in the vars file) read secrets.yaml and .env files for their values without collecting them. Any such value, and any value the script redacts, is scrubbed from every other place it appears on that guest.
+- Never collected, whatever the vars file says: secrets.yaml, .env files, backups (bak), logs, databases, keys, Plex Preferences.xml, known_devices.yaml and the other items in HARD_DENY in the script.
+- A tripwire stops that guest if a private key, URL credential, password hash, JWT, known secret value or long random-looking string is left. A guest that fails or is down keeps its previous snapshot, and the run fails at the end naming it.
+- Home Assistant: root YAML files, packages, scripts, python_scripts, themes, blueprints and the dashboards (.storage/lovelace*, JSON, pretty-printed so diffs read well). The rest of .storage is not collected.
+- After changing the redaction rules, check against the real secrets: hash the values in each Home Assistant secrets.yaml and look for those hashes among the tokens in snapshots/configs. This found a password written after -p in a Halcyon shell command on 2026-10-21.
+- Not covered: calliope-player, calliope-minecraft, Plex, Audiobookshelf, Papra and Immich settings (kept in their own databases), matter-server state, sabnzbd.ini.

@@ -1,0 +1,72 @@
+---
+# Included once per Halcyon container by snapshot-configs.yml. Loop variable ct: key = container id, value = name and files.
+# Runs on the Proxmox host: pushes the collector and manifest into the container, runs it there (so values are redacted
+# inside the container), pulls back only the redacted pack, and cleans up in the container and on the host.
+- name: "Snapshot container {{ ct.key }} ({{ ct.value.name }})"
+  vars:
+    hw: "/var/tmp/config-snapshot-ct{{ ct.key }}"
+  block:
+    - name: Make a private working folder on the host
+      ansible.builtin.file:
+        path: "{{ hw }}"
+        state: directory
+        mode: '0700'
+
+    - name: Copy in the collector and the manifest
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../files/snapshot/collect_config.py"
+        dest: "{{ hw }}/collect_config.py"
+        mode: '0700'
+
+    - name: Write the manifest
+      ansible.builtin.copy:
+        content: "{{ ct.value.files | to_nice_json }}"
+        dest: "{{ hw }}/manifest.json"
+        mode: '0600'
+
+    - name: Clear any old output in the container
+      ansible.builtin.command: pct exec {{ ct.key }} -- rm -rf /var/tmp/config-out /var/tmp/config-out.tgz
+      changed_when: false
+
+    - name: Push the collector and manifest into the container
+      ansible.builtin.shell: |
+        set -e
+        pct push {{ ct.key }} {{ hw }}/collect_config.py /var/tmp/collect_config.py --perms 0700
+        pct push {{ ct.key }} {{ hw }}/manifest.json /var/tmp/config-manifest.json --perms 0600
+      changed_when: true
+
+    - name: Collect and redact inside the container (stops here if the tripwire fires)
+      ansible.builtin.command: pct exec {{ ct.key }} -- python3 -I /var/tmp/collect_config.py /var/tmp/config-manifest.json /var/tmp/config-out
+      register: collected
+      changed_when: true
+
+    - name: Show the summary
+      ansible.builtin.debug:
+        msg: "{{ ct.value.name }}: {{ collected.stdout_lines }}"
+
+    - name: Pack the redacted files and pull the pack out
+      ansible.builtin.shell: |
+        set -e
+        pct exec {{ ct.key }} -- tar czf /var/tmp/config-out.tgz -C /var/tmp/config-out .
+        pct pull {{ ct.key }} /var/tmp/config-out.tgz {{ hw }}/out.tgz
+      changed_when: true
+
+    - name: Fetch the pack to the Ansible host
+      ansible.builtin.fetch:
+        src: "{{ hw }}/out.tgz"
+        dest: "{{ snapshot_landing }}/{{ snapshot_pct_guests[inventory_hostname].site }}/{{ ct.value.name }}.tgz"
+        flat: true
+  rescue:
+    - name: Say which container failed and carry on with the others
+      ansible.builtin.debug:
+        msg: "FAILED: {{ ct.value.name }} (CT {{ ct.key }}) produced no pack. Its previous snapshot is kept."
+  always:
+    - name: Remove the collector, manifest and output from the container
+      ansible.builtin.command: pct exec {{ ct.key }} -- rm -rf /var/tmp/config-out /var/tmp/config-out.tgz /var/tmp/collect_config.py /var/tmp/config-manifest.json
+      changed_when: false
+      failed_when: false
+
+    - name: Remove the working folder on the host
+      ansible.builtin.file:
+        path: "{{ hw }}"
+        state: absent

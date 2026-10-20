@@ -1,0 +1,143 @@
+---
+# What snapshot-configs.yml collects, per guest. Only these paths are ever read.
+# Entry fields: src (file or folder), recursive (folders, default false), include and exclude (globs on file names).
+# collect_config.py never collects secrets.yaml, .env files, *.bak*, logs, databases, keys or Plex Preferences.xml,
+# whatever is listed here, and redacts values before anything leaves the guest.
+# {learn: PATH, include: [globs]} entries are read for secret values only (secrets.yaml, .env files). They are never
+# collected or written; every value found there is scrubbed from everything else collected on that guest.
+# To add a file: add a line under the guest (or add a guest), then run the playbook.
+# Not covered on purpose: calliope-player and calliope-minecraft (down when this was written), Plex, Audiobookshelf,
+# Papra and Immich settings (kept in their own databases), matter-server state, yams sabnzbd.ini (credentials).
+
+snapshot_landing: /var/tmp/config-snapshot-fetch
+snapshot_work_dir: /var/tmp/config-snapshot
+
+# Home Assistant: root YAML, the include folders, and the dashboards (JSON in .storage). Not the rest of .storage.
+ha_common:
+  - {learn: /opt/homeassistant/config/secrets.yaml}
+  - {src: /opt/homeassistant/config, include: ['*.yaml', '*.yml']}
+  - {src: /opt/homeassistant/config/packages, recursive: true, include: ['*.yaml', '*.yml']}
+  - {src: /opt/homeassistant/config/scripts, recursive: true, include: ['*.yaml', '*.yml', '*.py', '*.sh']}
+  - {src: /opt/homeassistant/config/python_scripts, recursive: true, include: ['*.py']}
+  - {src: /opt/homeassistant/config/themes, recursive: true, include: ['*.yaml', '*.yml']}
+  - {src: /opt/homeassistant/config/blueprints, recursive: true, include: ['*.yaml', '*.yml']}
+  - {src: /opt/homeassistant/config/.storage, include: ['lovelace', 'lovelace.*', 'lovelace_*']}
+
+# Reached over SSH from the Ansible host (keyed by inventory host name).
+snapshot_ssh_guests:
+  calliope-adguard:
+    site: calliope
+    files:
+      - {src: /opt/AdGuardHome/AdGuardHome.yaml}
+  calliope-mqtt:
+    site: calliope
+    files:
+      - {src: /etc/mosquitto/mosquitto.conf}
+      - {src: /etc/mosquitto/conf.d, include: ['*.conf']}
+  calliope-frigate:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+      - {src: /opt/frigate/config/config.yml}
+  calliope-homeassistant:
+    site: calliope
+    files: "{{ [{'src': '/opt/docker-compose.yaml'}] + ha_common }}"
+  calliope-network:
+    site: calliope
+    files:
+      - {learn: /etc/caddy, include: ['.env', '*.env']}
+      - {src: /etc/caddy/Caddyfile}
+      - {src: /etc/cloudflared/config.yml}
+  calliope-homepage:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {learn: /opt/homepage, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+      - {src: /opt/homepage/config, include: ['*.yaml', '*.css', '*.js']}
+  calliope-navidrome:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {learn: /opt/navidrome, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+      - {src: /opt/beets/config.yaml}
+  calliope-management:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {learn: /opt/gatus, include: ['.env', '*.env']}
+      - {learn: /opt/mcp, include: ['.env', '*.env']}
+      - {learn: /opt/ha-mcp, include: ['.env', '*.env']}
+      - {learn: /opt/ha-mcp-halcyon, include: ['.env', '*.env']}
+      - {learn: /opt/adguard-mcp-calliope, include: ['.env', '*.env']}
+      - {learn: /opt/adguard-mcp-halcyon, include: ['.env', '*.env']}
+      - {learn: /opt/mcp-navidrome, include: ['.env', '*.env']}
+      - {learn: /opt/n8n-mcp, include: ['.env', '*.env']}
+      - {learn: /opt/navidrome-mcp, include: ['.env', '*.env']}
+      - {learn: /opt/proxmox-mcp-plus, include: ['.env', '*.env']}
+      - {learn: /opt/synology-mcp, include: ['.env', '*.env']}
+      - {learn: /opt/unifi-mcp, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+      - {src: /opt/gatus/config/config.yaml}
+  calliope-immich:
+    site: calliope
+    files:
+      - {learn: /opt/immich, include: ['.env', '*.env']}
+      - {src: /opt/immich/docker-compose.yml}
+      - {src: /opt/immich/docker-compose.override.yml}
+  calliope-resolvedb:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {learn: /opt/databases, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+  calliope-n8n:
+    site: calliope
+    files:
+      - {learn: /opt, include: ['.env', '*.env']}
+      - {learn: /opt/n8n_data, include: ['.env', '*.env']}
+      - {src: /opt/docker-compose.yml}
+  calliope-zigbee2mqtt:
+    site: calliope
+    files:
+      - {learn: /opt/zigbee2mqtt, include: ['.env', '*.env']}
+      - {src: /opt/zigbee2mqtt/docker-compose.yaml}
+      - {src: /opt/zigbee2mqtt/data/configuration.yaml}
+  calliope-yams:
+    site: calliope
+    files:
+      - {learn: /opt/yams, include: ['.env', '*.env']}
+      - {src: /opt/yams/docker-compose.yaml}
+
+# Reached through the Proxmox host with pct (the Ansible key is not installed in these containers).
+snapshot_pct_guests:
+  halcyon-proxmox:
+    site: halcyon
+    cts:
+      122:
+        name: halcyon-homeassistant
+        files: "{{ [{'src': '/root/docker-compose.yaml'}] + ha_common }}"
+      123:
+        name: halcyon-adguard
+        files:
+          - {src: /opt/AdGuardHome/AdGuardHome.yaml}
+      125:
+        name: halcyon-mqtt
+        files:
+          - {src: /etc/mosquitto/mosquitto.conf}
+          - {src: /etc/mosquitto/conf.d, include: ['*.conf']}
+      128:
+        name: halcyon-frigate
+        files:
+          - {learn: /root, include: ['.env', '*.env']}
+          - {learn: /opt/frigate, include: ['.env', '*.env']}
+          - {src: /root/docker-compose.yaml}
+          - {src: /opt/frigate/config/config.yaml}
+      148:
+        name: halcyon-immich
+        files:
+          - {learn: /opt/immich, include: ['.env', '*.env']}
+          - {src: /opt/immich/docker-compose.yml}
+          - {src: /opt/immich/docker-compose.override.yml}

@@ -1,0 +1,203 @@
+---
+# Snapshot app and Docker Compose config files from the guests into snapshots/configs/<site>/<guest>/ (redacted),
+# commit only when something changed (the gitleaks hook scans the commit), then push.
+#   ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/snapshot-configs.yml
+# Options:
+#   -e snapshot_commit=false   collect and redact only: files land in snapshots/configs, nothing is staged, committed or pushed
+#   -e snapshot_strict=false   do not fail the run when a guest produced no pack (use with --limit)
+# What is collected is listed in playbooks/vars/snapshot-configs.yml. Values are redacted ON the guest by
+# files/snapshot/collect_config.py, which reads each file and writes only the redacted copy; the unredacted text never
+# reaches the Ansible host. The script stops that guest's run if a tripwire finds something that looks like a secret.
+# A guest that is down or fails keeps its previous snapshot; the run reports it and fails at the end.
+- name: Empty landing folder on the Ansible host
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - vars/snapshot-configs.yml
+  tasks:
+    - name: Remove any old landing folder
+      ansible.builtin.file:
+        path: "{{ snapshot_landing }}"
+        state: absent
+
+    - name: Make it fresh and private
+      ansible.builtin.file:
+        path: "{{ snapshot_landing }}"
+        state: directory
+        mode: '0700'
+
+- name: Collect and redact on the guests reached over SSH
+  hosts: guests
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/snapshot-configs.yml
+  tasks:
+    - name: Skip guests that are not in the manifest (no connection is made)
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in snapshot_ssh_guests
+
+    - name: Collect, redact and fetch
+      block:
+        - name: Make a private working folder
+          ansible.builtin.file:
+            path: "{{ snapshot_work_dir }}"
+            state: directory
+            mode: '0700'
+
+        - name: Copy in the collector
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../files/snapshot/collect_config.py"
+            dest: "{{ snapshot_work_dir }}/collect_config.py"
+            mode: '0700'
+
+        - name: Write the manifest
+          ansible.builtin.copy:
+            content: "{{ snapshot_ssh_guests[inventory_hostname].files | to_nice_json }}"
+            dest: "{{ snapshot_work_dir }}/manifest.json"
+            mode: '0600'
+
+        - name: Collect and redact (stops here if the tripwire fires)
+          ansible.builtin.command: python3 -I {{ snapshot_work_dir }}/collect_config.py {{ snapshot_work_dir }}/manifest.json {{ snapshot_work_dir }}/out
+          register: collected
+          changed_when: true
+
+        - name: Show the summary
+          ansible.builtin.debug:
+            msg: "{{ collected.stdout_lines }}"
+
+        - name: Pack the redacted files only
+          ansible.builtin.command: tar czf {{ snapshot_work_dir }}/out.tgz -C {{ snapshot_work_dir }}/out .
+          changed_when: true
+
+        - name: Fetch the pack to the Ansible host
+          ansible.builtin.fetch:
+            src: "{{ snapshot_work_dir }}/out.tgz"
+            dest: "{{ snapshot_landing }}/{{ snapshot_ssh_guests[inventory_hostname].site }}/{{ inventory_hostname }}.tgz"
+            flat: true
+      always:
+        - name: Remove the working folder
+          ansible.builtin.file:
+            path: "{{ snapshot_work_dir }}"
+            state: absent
+
+- name: Collect and redact in the containers reached through the Proxmox host
+  hosts: proxmox_hosts
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/snapshot-configs.yml
+  tasks:
+    - name: Skip Proxmox hosts that have no containers in the manifest
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in snapshot_pct_guests
+
+    - name: One container at a time
+      ansible.builtin.include_tasks: tasks/snapshot-ct.yml
+      loop: "{{ snapshot_pct_guests[inventory_hostname].cts | dict2items }}"
+      loop_control:
+        loop_var: ct
+        label: "{{ ct.value.name }}"
+
+- name: Update the repo copy, commit only on change, scan and push
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - vars/snapshot-configs.yml
+  vars:
+    repo: /opt/ansible-proxmox
+    snap_root: /opt/ansible-proxmox/snapshots/configs
+    do_commit: "{{ snapshot_commit | default(true) | bool }}"
+    strict: "{{ snapshot_strict | default(true) | bool }}"
+  tasks:
+    - name: Find the packs that arrived
+      ansible.builtin.find:
+        paths: "{{ snapshot_landing }}"
+        patterns: '*.tgz'
+        recurse: true
+      register: found
+
+    - name: Work out which packs we expected and which are missing
+      ansible.builtin.set_fact:
+        missing_text: >-
+          {% set want = [] %}
+          {% for h, g in snapshot_ssh_guests.items() %}{% set _ = want.append(g.site ~ '/' ~ h ~ '.tgz') %}{% endfor %}
+          {% for h, g in snapshot_pct_guests.items() %}{% for id, ct in g.cts.items() %}{% set _ = want.append(g.site ~ '/' ~ ct.name ~ '.tgz') %}{% endfor %}{% endfor %}
+          {% set got = [] %}
+          {% for f in found.files %}{% set _ = got.append(f.path | regex_replace('^' ~ snapshot_landing ~ '/', '')) %}{% endfor %}
+          {{ want | difference(got) | list }}
+
+    - name: Turn that into a list
+      ansible.builtin.set_fact:
+        missing_packs: "{{ missing_text | trim | from_yaml }}"
+
+    - name: Replace each arrived guest folder with the new redacted copy
+      ansible.builtin.shell: |
+        set -e
+        if tar tzf "{{ item.path }}" | grep -E '(^/|(^|/)[.][.](/|$))'; then echo "unsafe member names in the pack"; exit 1; fi
+        dest="{{ snap_root }}/{{ item.path | dirname | basename }}/{{ item.path | basename | regex_replace('[.]tgz$', '') }}"
+        rm -rf "$dest"
+        mkdir -p "$dest"
+        tar xzf "{{ item.path }}" -C "$dest" --no-same-owner
+      loop: "{{ found.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      changed_when: true
+
+    - name: Remove the landing folder
+      ansible.builtin.file:
+        path: "{{ snapshot_landing }}"
+        state: absent
+
+    - name: Stage the snapshots (the folder is ignored by default, so force)
+      ansible.builtin.command: git -C {{ repo }} add -f -A snapshots/configs
+      changed_when: false
+      when: do_commit
+
+    - name: Is anything different from the last commit
+      ansible.builtin.command: git -C {{ repo }} diff --cached --quiet -- snapshots/configs
+      register: staged_diff
+      failed_when: staged_diff.rc not in [0, 1]
+      changed_when: false
+      when: do_commit
+
+    - name: Say what happened when nothing changed
+      ansible.builtin.debug:
+        msg: No config changed since the last snapshot, nothing to commit.
+      when: do_commit and staged_diff.rc == 0
+
+    - name: Say where the files are when not committing
+      ansible.builtin.debug:
+        msg: "snapshot_commit=false: redacted files are in {{ snap_root }}, nothing was staged, committed or pushed."
+      when: not do_commit
+
+    - name: Commit (the gitleaks pre-commit hook scans it) and push
+      when: do_commit and staged_diff.rc == 1
+      block:
+        - name: Commit
+          ansible.builtin.command: git -C {{ repo }} commit -m "config snapshot {{ lookup('pipe', 'date -u +%Y-%m-%d') }}" -- snapshots/configs
+          changed_when: true
+
+        - name: Push
+          ansible.builtin.command: git -C {{ repo }} push
+          changed_when: true
+      rescue:
+        - name: Unstage so nothing half-committed is left
+          ansible.builtin.command: git -C {{ repo }} reset -q -- snapshots/configs
+          changed_when: false
+
+        - name: Fail loudly
+          ansible.builtin.fail:
+            msg: The commit or push failed, for example the secret scan blocked it. The snapshot files are left on disk, unstaged, for review.
+
+    - name: Report guests that produced no pack
+      ansible.builtin.debug:
+        msg: "No pack from: {{ missing_packs }}. Their previous snapshot is kept."
+      when: missing_packs | length > 0
+
+    - name: Fail the run when a guest was missed
+      ansible.builtin.fail:
+        msg: "Some guests produced no pack: {{ missing_packs }}"
+      when: strict and missing_packs | length > 0
