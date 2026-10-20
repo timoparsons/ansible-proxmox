@@ -1,0 +1,170 @@
+
+# Loads default set of integrations. Do not remove.
+#default_config:
+
+# Replaced with the following to remove cloud.
+
+#automation:
+#backup:
+bluetooth:
+config:
+conversation:
+counter:
+dhcp:
+energy:
+ffmpeg:
+#frontend:
+hardware:
+history:
+homeassistant_alerts:
+#cloud:
+image_upload:
+input_boolean:
+input_button:
+input_datetime:
+input_number:
+input_select:
+input_text:
+logbook:
+#logger:
+#map:
+media_source:
+mobile_app:
+my:
+person:
+python_script:
+schedule:
+#scene:
+#script:
+ssdp:
+stream:
+sun:
+system_health:
+tag:
+timer:
+usb:
+webhook:
+zeroconf:
+zone:
+
+homeassistant:
+# Allow read / write access to folders
+  allowlist_external_dirs:
+    - "/config/www"
+
+# Set Latitude and longitude of Home
+  latitude: -37.23431423300682
+  longitude: 174.71220676229447
+
+# Customize radius of Home zone
+  customize:
+    zone.home:
+      radius: 20
+      
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+  extra_module_url:
+#    - /local/card-mod.js
+    - /hacsfiles/REDACTED-card-mod/card-mod.js #Manually add card-mod for better functionality
+    
+
+# Non standard port for security
+http:
+  server_port: 8443 # Use your chosen port
+  # These lines for Cloudflared
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.30.33.0/24
+    - 10.2.1.24
+    
+
+#shell_command:
+#  frigate_capture_stream_snapshot: bash /config/scripts/frigate_capture_stream_snapshot.sh {{camera_name}} {{output_folder}}
+#  frigate_download_notification_snapshot: bash /config/scripts/frigate_download_notification_snapshot.sh {{ event_id }} {{ output_folder }}
+
+# MQTT Sensor
+#mqtt:
+#  sensor:
+#    - name: "Latest Frigate Event"
+#      state_topic: "frigate/events"
+#      value_template: "{{ value_json['after']['id'] }}"
+    
+
+mqtt:
+  sensor:
+    - name: "Latest Frigate Event"
+      state_topic: "frigate/events"
+      value_template: "{{ value_json['after']['id'] }}"
+      json_attributes_topic: "frigate/events"
+      json_attributes_template: >
+        {
+          "label": "{{ value_json['after']['label'] }}",
+          "camera": "{{ value_json['after']['camera'] }}",
+          "score": "{{ value_json['after']['score'] }}",
+          "start_time": "{{ value_json['after']['start_time'] }}"
+        }
+
+
+# UPS REST Commands
+
+rest_command:
+  ups_set_shutdown_delay:
+    url: "http://10.2.1.20:8080/ups/shutdown-delay?delay={{ delay | default(180) }}"
+    method: POST
+    timeout: 15
+
+  ups_load_off:
+    url: "http://10.2.1.20:8080/ups/load-off"
+    method: POST
+    timeout: 15
+
+  ups_load_off_delay:
+    url: "http://10.2.1.20:8080/ups/load-off-delay"
+    method: POST
+    timeout: 15
+
+  ups_shutdown_reboot:
+    url: "http://10.2.1.20:8080/ups/shutdown-reboot"
+    method: POST
+    timeout: 15
+
+  ups_shutdown_stop:
+    url: "http://10.2.1.20:8080/ups/shutdown-stop"
+    method: POST
+    timeout: 15
+
+  ups_beeper_disable:
+    url: "http://10.2.1.20:8080/ups/beeper-disable"
+    method: POST
+    timeout: 15
+
+  ups_beeper_enable:
+    url: "http://10.2.1.20:8080/ups/beeper-enable"
+    method: POST
+    timeout: 15
+
+  ups_set_battery_charge_low:
+    url: "http://10.2.1.20:8080/ups/battery-charge-low?value={{ value | default(10) }}"
+    method: POST
+    timeout: 15
+
+  ups_set_battery_runtime_low:
+    url: "http://10.2.1.20:8080/ups/battery-runtime-low?value={{ value | default(120) }}"
+    method: POST
+    timeout: 15
+    
+
+# External file includes
+automation: !include automations.yaml
+#binary_sensor: !include binary_sensors.yaml
+#command_line: !include command_line.yaml
+#group: !include groups.yaml
+#input_boolean: !include input_boolean.yaml
+#light: !include lights.yaml
+rest: !include rest.yaml
+sensor: !include sensors.yaml
+scene: !include scenes.yaml
+script: !include scripts.yaml
+shell_command: !include shell_commands.yaml

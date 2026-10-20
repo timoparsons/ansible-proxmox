@@ -1,0 +1,47 @@
+tunnel: 09ffb6e9-7135-4619-b3a5-bed7395b5a3a
+credentials-file: REDACTED
+
+ingress:
+
+  - hostname: homeassistant.timparsons.nz
+    service: http://localhost:80
+
+  - hostname: homepage.timparsons.nz
+    service: http://localhost:80
+
+  - hostname: overseer.timparsons.nz
+    service: http://localhost:80
+
+  - hostname: plex.timparsons.nz
+    service: http://localhost:80
+  
+  - hostname: audiobook.timparsons.nz
+    service: http://localhost:80  
+
+  - hostname: photo.timparsons.nz
+    service: https://localhost:443
+    originRequest:
+      originServerName: photo.timparsons.nz
+
+  - hostname: music.timparsons.nz
+    service: https://localhost:443
+    originRequest:
+      originServerName: music.timparsons.nz
+
+  - hostname: stash.timparsons.nz
+    service: https://localhost:443
+    originRequest:
+      originServerName: stash.timparsons.nz
+
+  - hostname: n8n.timparsons.nz
+    service: http://localhost:80
+
+  - hostname: radarr.timparsons.nz
+    service: http://localhost:80
+
+
+  - hostname: pricebuddy.timparsons.nz
+    service: http://localhost:80
+
+  # Catch-all rule (required - must be last)
+  - service: http_status:404

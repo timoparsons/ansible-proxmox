@@ -1,0 +1,6813 @@
+- id: '1672821516833'
+  alias: Device Tracker – Homekit Switch – Tim
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: state
+    entity_id:
+    - input_boolean.tim_present_homekit
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: input_boolean.tim_present_homekit
+      state: 'on'
+    then:
+    - service: device_tracker.see
+      data:
+        location_name: home
+        dev_id: tim_homekit_switch
+    else:
+    - service: device_tracker.see
+      data:
+        dev_id: tim_homekit_switch
+        location_name: not_home
+  mode: single
+- id: '1672443033015'
+  alias: Device Tracker – Homekit Switch – Sonya
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: state
+    entity_id:
+    - input_boolean.sonya_present_homekit
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: input_boolean.sonya_present_homekit
+      state: 'on'
+    then:
+    - service: device_tracker.see
+      data:
+        location_name: home
+        dev_id: sonya_homekit_switch
+    else:
+    - service: device_tracker.see
+      data:
+        dev_id: sonya_homekit_switch
+        location_name: not_home
+  mode: single
+- id: '1672443105343'
+  alias: Device Tracker – Homekit Switch – Celeste
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: state
+    entity_id:
+    - input_boolean.celeste_present_homekit
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: input_boolean.celeste_present_homekit
+      state: 'on'
+    then:
+    - service: device_tracker.see
+      data:
+        location_name: home
+        dev_id: celeste_homekit_switch
+    else:
+    - service: device_tracker.see
+      data:
+        dev_id: celeste_homekit_switch
+        location_name: not_home
+  mode: single
+- id: '1672443140599'
+  alias: Device Tracker – Homekit Switch – Eve
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: state
+    entity_id:
+    - input_boolean.eve_present_homekit
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: input_boolean.eve_present_homekit
+      state: 'on'
+    then:
+    - service: device_tracker.see
+      data:
+        location_name: home
+        dev_id: eve_homekit_switch
+    else:
+    - service: device_tracker.see
+      data:
+        dev_id: eve_homekit_switch
+        location_name: not_home
+  mode: single
+- id: '1672461597266'
+  alias: Security – Away – Door or Window open
+  description: ''
+  triggers:
+  - entity_id:
+    - person.tim
+    - person.sonya
+    from: home
+    to: not_home
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: person.sonya
+    state: not_home
+  - condition: state
+    entity_id: person.tim
+    state: not_home
+  - condition: state
+    entity_id: binary_sensor.doors_windows
+    state: 'on'
+  actions:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_back_door
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The back door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_basement_door
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The basement door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_front_door
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The front door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_guest_bedroom_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The guest bedroom window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_office_side_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The office window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_office_rear_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The office window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.window_master_bedroom_contact
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The master bedroom window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  mode: single
+- id: '1672818237024'
+  alias: 'Entertainment – Projector – Homekit Button OFF: Turn OFF Projector'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.projector_homekit
+    from: 'on'
+    to: 'off'
+  condition:
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'on'
+    enabled: true
+  action:
+  - service: shell_command.projector_off
+    data: {}
+  - service: automation.trigger
+    metadata: {}
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.entertainment_lamp_red_timer_start
+  mode: single
+- id: '1672822755286'
+  alias: Alarm – Vacation Mode – Notification
+  description: Notification if Vacation mode is enabled or disabled
+  triggers:
+  - entity_id:
+    - input_boolean.vacation_mode_homekit
+    trigger: state
+  conditions: []
+  actions:
+  - if:
+    - condition: state
+      entity_id: input_boolean.vacation_mode_homekit
+      state: 'on'
+    then:
+    - data:
+        message: Vacation Mode ON
+        title: Home Alarm
+        data:
+          priority: 1
+          sound: gamelan
+      action: notify.pushover_household
+    else:
+    - data:
+        title: Home Alarm
+        message: Vacation Mode OFF
+        data:
+          priority: 1
+          sound: gamelan
+      action: notify.pushover_household
+  mode: single
+- id: '1672827564468'
+  alias: Entertainment – State Update – Lovelace Buttons
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: state
+    entity_id:
+    - input_boolean.projector_homekit
+  - platform: state
+    entity_id:
+    - binary_sensor.projector_status
+  - platform: state
+    entity_id:
+    - input_boolean.playstation_homekit
+  - platform: state
+    entity_id:
+    - binary_sensor.playstation_status
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.playstation_status
+      state: 'on'
+    then:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: input_boolean.playstation_homekit
+    else:
+    - service: input_boolean.turn_off
+      data: {}
+      target:
+        entity_id: input_boolean.playstation_homekit
+  - if:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+    then:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: input_boolean.projector_homekit
+    else:
+    - service: input_boolean.turn_off
+      data: {}
+      target:
+        entity_id: input_boolean.projector_homekit
+  mode: single
+  max_exceeded: silent
+- id: '1672868849206'
+  alias: Alarm – Vacation Mode – Set Alarm
+  description: ''
+  triggers:
+  - entity_id:
+    - person.tim
+    from: home
+    trigger: state
+  - entity_id:
+    - person.sonya
+    from: home
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vacation_mode_homekit
+    state: 'on'
+  - condition: state
+    entity_id: alarm_control_panel.crow_alarm_system_alarm
+    state: disarmed
+  - condition: state
+    entity_id: person.tim
+    state: not_home
+  - condition: state
+    entity_id: person.sonya
+    state: not_home
+  - condition: state
+    entity_id: binary_sensor.doors_windows
+    state: 'off'
+  actions:
+  - data: {}
+    enabled: true
+    target:
+      entity_id: alarm_control_panel.crow_alarm_system_alarm
+    action: alarm_control_panel.alarm_arm_away
+  - data:
+      title: Home Alarm
+      message: Arming – there is no-one home
+    action: notify.pushover_household
+  mode: single
+- id: '1672868991194'
+  alias: Alarm – Disarm if someone arrives home
+  description: ''
+  triggers:
+  - entity_id:
+    - person.tim
+    to: home
+    trigger: state
+  - entity_id:
+    - person.sonya
+    to: home
+    trigger: state
+  - entity_id:
+    - person.celeste
+    to: home
+    trigger: state
+  - entity_id:
+    - person.eve
+    to: home
+    trigger: state
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: alarm_control_panel.crow_alarm_system_alarm
+      state: disarmed
+    - condition: state
+      entity_id: alarm_control_panel.crow_alarm_system_alarm
+      state: disarming
+  - condition: numeric_state
+    entity_id: sensor.uptime_minutes
+    above: 5
+  actions:
+  - data:
+      code: '7923'
+    target:
+      entity_id: alarm_control_panel.crow_alarm_system_alarm
+    action: alarm_control_panel.alarm_disarm
+  - data:
+      title: Home alarm
+      message: Disarming – someone has arrived home
+      data:
+        priority: 1
+        sound: gamelan
+    action: notify.pushover_household
+  mode: single
+- id: '1673235944761'
+  alias: Alarm – Vacation Mode – Cannot Arm
+  description: ''
+  triggers:
+  - entity_id:
+    - person.tim
+    from: home
+    trigger: state
+  - entity_id:
+    - person.sonya
+    from: home
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vacation_mode_homekit
+    state: 'on'
+  - condition: state
+    entity_id: alarm_control_panel.crow_alarm_system_alarm
+    state: disarmed
+  - condition: state
+    entity_id: person.tim
+    state: not_home
+  - condition: state
+    entity_id: person.sonya
+    state: not_home
+  - condition: state
+    entity_id: binary_sensor.doors_windows
+    state: 'on'
+  actions:
+  - data:
+      title: Home Alarm
+      message: Cannot ARM
+      data:
+        priority: 1
+        sound: gamelan
+    action: notify.pushover_household
+  mode: single
+- id: '1673237930221'
+  alias: 'Security – Night – Door or Window open: Alert'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.doors_windows
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    trigger: state
+  - event: sunset
+    offset: 00:15:00
+    trigger: sun
+  conditions:
+  - condition: sun
+    after: sunset
+    after_offset: 00:15:00
+    before: sunrise
+  actions:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_back_door
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.silence_doorbell
+      state: 'off'
+    then:
+    - data:
+        title: Home Alarm
+        message: The back door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_basement_door
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The basement door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_doors_front_door
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.silence_doorbell
+      state: 'off'
+    then:
+    - data:
+        title: Home Alarm
+        message: The front door is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_guest_bedroom_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The guest bedroom window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_office_side_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The office window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  - if:
+    - condition: state
+      entity_id: binary_sensor.crow_alarm_windows_office_rear_window
+      state: 'on'
+    then:
+    - data:
+        title: Home Alarm
+        message: The office window is open
+        data:
+          priority: 1
+      action: notify.pushover_household
+  mode: single
+- id: '1673328356653'
+  alias: Security – Visitor – Door Chime
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.ds_2cd2087g2_lu20210722aawrg35627785_1_linedetection
+    to: 'on'
+    trigger: state
+  conditions:
+  - after: sunrise
+    before: sunset
+    before_offset: 02:00:00
+    condition: sun
+  - after: 07:00:00
+    before: '20:00:00'
+    condition: time
+  - condition: state
+    entity_id: input_boolean.silence_doorbell
+    state: 'off'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: person.tim
+      state: home
+    - condition: state
+      entity_id: person.sonya
+      state: home
+    - condition: state
+      entity_id: person.celeste
+      state: home
+  - condition: state
+    entity_id: timer.entrance_debounce_timer
+    state: idle
+  - condition: state
+    entity_id: binary_sensor.crow_alarm_doors_front_door
+    state: 'off'
+  actions:
+  - action: shell_command.sonos_doorbell
+    data: {}
+    enabled: true
+    metadata: {}
+  - action: shell_command.sonos_doorbell_dingdong
+    data: {}
+    enabled: false
+    metadata: {}
+  mode: single
+- id: '1673380014833'
+  alias: Security – Parking space alert
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.car_street_occupancy_debounce
+    to: 'off'
+    enabled: true
+  conditions:
+  - condition: state
+    entity_id: input_boolean.parking_space_alert
+    state: 'on'
+    enabled: true
+  actions:
+  - data:
+      url: http://10.1.1.28:5000/api/Front/latest.jpg
+      filename: front_yard.jpg
+      overwrite: true
+    action: downloader.download_file
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - data:
+      title: Parking
+      message: Your parking space is free
+      data:
+        attachment: /config/www/cameras/front_yard.jpg
+        priority: 2
+        retry: 60
+        expire: 3600
+      target: tim-iphone
+    action: notify.pushover_tim
+  - data: {}
+    target:
+      entity_id: input_boolean.parking_space_alert
+    action: input_boolean.turn_off
+  - action: shell_command.sonos_custom
+    data:
+      volume: 60
+      sound: parking_alert_voice.mp3
+      speaker: Office
+    enabled: false
+  mode: single
+- id: '1674338058100'
+  alias: Security – Door Chime SILENCE for 1hr
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.silence_doorbell
+    to: 'on'
+  condition: []
+  action:
+  - delay:
+      hours: 1
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.silence_doorbell
+  mode: single
+- id: '1676525553432'
+  alias: Security – Visitor – Snapshot, Timer & Alert
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.ds_2cd2087g2_lu20210722aawrg35627785_1_linedetection
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    enabled: true
+    entity_id: timer.entrance_debounce_timer
+    state: idle
+  - condition: state
+    enabled: true
+    entity_id: timer.frontdoor_debounce_timer
+    state: idle
+  - condition: state
+    entity_id: input_boolean.silence_doorbell
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.crow_alarm_doors_front_door
+    state: 'off'
+  actions:
+  - action: timer.start
+    data:
+      duration: 0
+    target:
+      entity_id: timer.entrance_debounce_timer
+  - action: shell_command.camera_snap
+    data: {}
+    enabled: false
+  - action: downloader.download_file
+    data:
+      filename: front_yard.jpg
+      overwrite: true
+      url: http://10.1.1.28:5000/api/Front/latest.jpg
+  - delay:
+      hours: 0
+      milliseconds: 500
+      minutes: 0
+      seconds: 0
+  - else:
+    - else:
+      - action: notify.pushover_household
+        data:
+          data:
+            attachment: /config/www/cameras/front_yard.jpg
+            priority: -1
+          message: You have a visitor
+          title: Security
+      if:
+      - after: 07:00:00
+        before: '23:00:00'
+        condition: time
+      then:
+      - action: notify.pushover_household
+        data:
+          data:
+            attachment: /config/www/cameras/front_yard.jpg
+          message: You have a visitor
+          title: Security
+    if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: person.sonya
+        state: not_home
+      - condition: state
+        entity_id: person.tim
+        state: not_home
+      - condition: state
+        entity_id: binary_sensor.crow_alarm_doors_front_door
+        state: 'off'
+    then:
+    - delay:
+        hours: 0
+        milliseconds: 0
+        minutes: 1
+        seconds: 20
+    - if:
+      - condition: state
+        entity_id: person.sonya
+        state: not_home
+      - condition: state
+        entity_id: person.tim
+        state: not_home
+      - condition: state
+        entity_id: binary_sensor.crow_alarm_doors_front_door
+        state: 'off'
+      then:
+      - action: notify.pushover_household
+        data:
+          data:
+            attachment: /config/www/cameras/front_yard.jpg
+            priority: -1
+          message: You had a visitor at home
+          title: Security
+  - action: shell_command.delete_camera_snap
+    data: {}
+    enabled: true
+  mode: single
+- id: '1678918280179'
+  alias: 'Security – Front Door – Open: Start Debounce Timer'
+  description: ''
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.crow_alarm_doors_front_door
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: timer.frontdoor_debounce_timer
+    state: idle
+  actions:
+  - data: {}
+    target:
+      entity_id: timer.frontdoor_debounce_timer
+    action: timer.start
+  mode: single
+- id: '1682825867862'
+  alias: 'Lounge – Lamps – Motion: Lamps ON, Timer START'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.crow_alarm_sensors_front_hallway
+    - binary_sensor.crow_alarm_sensors_kitchen
+    - binary_sensor.motion_stairwell_occupancy
+    to: 'on'
+    platform: state
+  conditions:
+  - condition: time
+    after: '23:00:00'
+    enabled: true
+    before: 09:00:00
+  - condition: state
+    entity_id: light.lounge_lamps
+    state: 'off'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+  - condition: sun
+    before: sunrise
+    after: sunset
+    before_offset: 00:30:00
+    after_offset: 00:30:00
+  actions:
+  - data:
+      kelvin: 2400
+      brightness: 24
+    target:
+      entity_id: light.lounge_lamps
+    action: light.turn_on
+  - data:
+      duration: 00:01:30
+    target:
+      entity_id: timer.lounge_lamp_timer
+    action: timer.start
+  mode: single
+- id: '1682827230630'
+  alias: 'Lounge – Lamps – Timer finish: Lamps OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - timer.lounge_lamp_timer
+    to: idle
+  condition:
+  - condition: state
+    entity_id: light.lounge_lamps
+    state: 'on'
+    enabled: false
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.lounge_lamps
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adapt_color_lounge_lighting
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.lightdimmer_shelly_hallway_light_0
+  mode: single
+- id: '1682921495097'
+  alias: 'Lounge – Lamps – Dusk: ON'
+  description: ''
+  triggers:
+  - event: sunset
+    offset: -00:30:00
+    trigger: sun
+  conditions:
+  - condition: state
+    entity_id: group.persons
+    state: Home
+    enabled: false
+  actions:
+  - data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_lounge_lighting
+    action: switch.turn_off
+  - target:
+      entity_id:
+      - switch.adaptive_lighting_lounge_lighting
+    data: {}
+    action: switch.turn_off
+  - data: {}
+    target:
+      entity_id: switch.adaptive_lighting_lounge_lighting
+    action: switch.turn_on
+  - data: {}
+    target:
+      entity_id: light.lounge_lamps
+    action: light.turn_on
+  - if:
+    - condition: state
+      entity_id: switch.wemo_plug_440_outlet
+      state: 'on'
+      enabled: false
+    - condition: state
+      entity_id: input_boolean.wemo_homekit_control
+      state: 'on'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.lightbulb_office
+  mode: single
+- id: '1687251611124'
+  alias: 'Lounge – Lamps – Dawn: ON'
+  description: ''
+  triggers:
+  - at: 05:50:00
+    trigger: time
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: sun
+    before: sunrise
+  actions:
+  - data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_lounge_lighting
+    action: switch.turn_off
+  - data: {}
+    target:
+      entity_id: switch.adaptive_lighting_lounge_lighting
+    action: switch.turn_on
+  - data: {}
+    target:
+      entity_id: light.lounge_lamps
+    action: light.turn_on
+  mode: single
+- id: '1687252451966'
+  alias: 'Lounge – Lamps – Sun Up: OFF'
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '1:00:00'
+  condition: []
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.lounge_lamps
+  mode: single
+- id: '1687300837151'
+  alias: 'Office – Heater – Switch on: Timer START'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.wemo_plug_2
+    to: 'on'
+  conditions: []
+  actions:
+  - data: {}
+    target:
+      entity_id: timer.heater_timer
+    action: timer.start
+  mode: single
+- id: '1687300959614'
+  alias: Office – Heater – Switch / Timer OFF
+  description: ''
+  triggers:
+  - entity_id:
+    - timer.heater_timer
+    to: idle
+    trigger: state
+  - entity_id:
+    - input_boolean.wemo_plug_2
+    to: 'off'
+    trigger: state
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.wemo_plug_2
+  - data: {}
+    target:
+      entity_id: timer.heater_timer
+    action: timer.cancel
+  mode: single
+- id: '1687331109648'
+  alias: Security – Night – Downstairs Movement
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.crow_alarm_sensors_downstairs_lounge
+    - binary_sensor.crow_alarm_sensors_basement
+    - binary_sensor.crow_alarm_sensors_downstairs_hallway
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: time
+    after: 00:45:00
+    before: 05:00:00
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: binary_sensor.playstation_status
+      state: 'on'
+      enabled: false
+    - condition: state
+      entity_id: media_player.appletv
+      state: playing
+  - condition: state
+    entity_id: input_boolean.silence_doorbell
+    state: 'off'
+  - condition: state
+    entity_id: timer.downstairs_hallway_security_timer
+    state: idle
+  - condition: state
+    entity_id: timer.tvroom_lamp_timer
+    state: idle
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: 'off'
+      for:
+        hours: 0
+        minutes: 5
+        seconds: 0
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: standby
+      for:
+        hours: 0
+        minutes: 5
+        seconds: 0
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: idle
+      for:
+        hours: 0
+        minutes: 5
+        seconds: 0
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: media_player.playstation_4
+        state: playing
+        for:
+          hours: 0
+          minutes: 5
+          seconds: 0
+  actions:
+  - data:
+      message: Movement detected downstairs
+      data:
+        priority: 1
+        sound: gamelan
+    action: notify.pushover_household
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: timer.downstairs_hallway_security_timer
+    action: timer.start
+  mode: single
+- id: '1687382584229'
+  alias: 'Startup – on Boot: Checklist'
+  description: ''
+  triggers:
+  - event: start
+    platform: homeassistant
+  conditions: []
+  actions:
+  - data: {}
+    target:
+      entity_id: switch.wemo_plug_782_outlet
+    enabled: false
+    action: switch.turn_off
+  - data:
+      skip_condition: true
+    target:
+      entity_id: automation.shellies_announce_both
+    enabled: false
+    action: automation.trigger
+  - delay:
+      hours: 0
+      minutes: 2
+      seconds: 0
+      milliseconds: 0
+    enabled: true
+  - data:
+      skip_condition: true
+    target:
+      entity_id:
+      - automation.shellies_announce_both
+    enabled: true
+    action: automation.trigger
+  - if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+        state: armed_away
+      - condition: state
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+        state: armed_home
+      - condition: state
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+        state: armed_night
+      - condition: state
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+        state: arming
+    then:
+    - action: alarm_control_panel.alarm_disarm
+      metadata: {}
+      data: {}
+      target:
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+  mode: single
+- id: '1687942234907'
+  alias: 'Entertainment – Lamp – Devices ON: Turn ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    from: standby
+  - platform: state
+    entity_id:
+    - binary_sensor.projector_status
+    to: 'on'
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    from: standby
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: playing
+    - condition: state
+      entity_id: media_player.appletv
+      state: playing
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      transition: 3
+      effect: rainbow
+    target:
+      entity_id: light.tv_room_lights
+  - if:
+    - condition: state
+      state: active
+      entity_id: timer.tvroom_lamp_timer
+    then:
+    - service: timer.cancel
+      data: {}
+      target:
+        entity_id: timer.tvroom_lamp_timer
+  mode: single
+- id: '1687942337625'
+  alias: 'Entertainment – Lamp – Trigger: Turn OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    to: playing
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    to: playing
+  - platform: state
+    entity_id:
+    - binary_sensor.presence_tvroom_presence
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+  condition: []
+  action:
+  - service: light.turn_off
+    data:
+      transition: 3
+    target:
+      entity_id: light.tv_room_lights
+  mode: single
+- id: '1688029921495'
+  alias: 'Entertainment – Projector – ON but no PS4: HDMI switch'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.projector_status
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  condition:
+  - condition: state
+    entity_id: media_player.playstation_4
+    state: standby
+  action:
+  - if:
+    - condition: state
+      entity_id: media_player.appletv
+      state: standby
+    then:
+    - service: media_player.turn_on
+      data: {}
+      target:
+        entity_id: media_player.appletv
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 3
+        milliseconds: 0
+  - service: shell_command.projector_hdmi1
+    data: {}
+  mode: single
+- id: '1688102174445'
+  alias: 'Entertainment – Lamp – Presence Detected: Turn ON'
+  description: ''
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.crow_alarm_sensors_downstairs_lounge
+    to: 'on'
+    enabled: false
+  - platform: state
+    entity_id:
+    - binary_sensor.presence_tvroom_presence
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  conditions:
+  - condition: state
+    entity_id: timer.tvroom_lamp_timer
+    state: idle
+    enabled: false
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+    enabled: false
+  - condition: or
+    conditions:
+    - condition: sun
+      before: sunrise
+      before_offset: 01:00:00
+      after: sunset
+      after_offset: -00:30:00
+    - condition: numeric_state
+      entity_id: sensor.lux_office_illuminance_lux
+      below: 200
+  actions:
+  - data:
+      duration: 00:01:10
+    target:
+      entity_id: timer.tvroom_lamp_timer
+    enabled: false
+    action: timer.start
+  - data:
+      brightness_pct: 50
+      rgb_color:
+      - 255
+      - 115
+      - 0
+    target:
+      entity_id: light.tv_room_lights
+    action: light.turn_on
+  mode: single
+- id: '1688176092867'
+  alias: 'Entertainment – Lamp – Timer finish: Turn OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - timer.tvroom_lamp_timer
+    to: idle
+  condition:
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'off'
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.tv_room_lights
+  mode: single
+- id: '1688206491873'
+  alias: 'Entertainment – Projector – ON: Update volume every 5 sec'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.projector_status
+    to: 'on'
+  condition: []
+  action:
+  - repeat:
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ not is_state(''sensor.projector_volume'', ''updating'')
+            }}'
+        then:
+        - service: homeassistant.update_entity
+          data: {}
+          target:
+            entity_id: sensor.projector_volume
+          enabled: true
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 5
+          milliseconds: 0
+      until:
+      - condition: state
+        entity_id: binary_sensor.projector_status
+        state: 'off'
+  mode: single
+- id: '1688259734000'
+  alias: 'Entertainment – Projector – Turns OFF: Shutdown ALL'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.projector_status
+    from: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: timer.tvroom_lamp_timer
+    state: idle
+  actions:
+  - data:
+      skip_condition: true
+    target:
+      entity_id: automation.entertainment_lamp_red_timer_start
+    action: automation.trigger
+  - if:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: media_player.playstation_4
+        state: standby
+    then:
+    - data: {}
+      target:
+        entity_id: media_player.playstation_4
+      action: media_player.media_stop
+    - data: {}
+      target:
+        entity_id: media_player.playstation_4
+      enabled: true
+      action: media_player.turn_off
+  - if:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: media_player.appletv
+        state: standby
+    then:
+    - data: {}
+      action: script.entertainment_appletv_power_toggle
+  - data: {}
+    target:
+      entity_id: sensor.projector_volume
+    action: homeassistant.update_entity
+  - action: media_player.media_stop
+    metadata: {}
+    data: {}
+    target:
+      device_id: 0112f4d9402920e3b0effe4c1e4226ac
+  mode: single
+- id: '1689390193841'
+  alias: 'Entertainment – Lamp – Turns off: Cancel timer'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - light.tv_room_lights
+    to: 'off'
+  condition:
+  - condition: state
+    entity_id: timer.tvroom_lamp_timer
+    state: active
+  action:
+  - service: timer.cancel
+    data: {}
+    target:
+      entity_id: timer.tvroom_lamp_timer
+  mode: single
+- id: '1689390904212'
+  alias: 'Lounge – Lamps – Lamps off: Timer CANCEL'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - light.lounge_lamps
+    to: 'off'
+  condition:
+  - condition: state
+    entity_id: timer.lounge_lamp_timer
+    state: active
+  action:
+  - service: timer.cancel
+    data: {}
+    target:
+      entity_id: timer.lounge_lamp_timer
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_lounge_lighting
+  mode: single
+- id: shellies_announce
+  alias: Shellies Announce
+  trigger:
+  - platform: homeassistant
+    event: start
+  - platform: time_pattern
+    hours: /1
+  action:
+    service: mqtt.publish
+    data:
+      topic: shellies/command
+      payload: announce
+- id: shellies_discovery
+  alias: Shellies Discovery
+  mode: queued
+  max: 999
+  trigger:
+    platform: mqtt
+    topic: shellies/announce
+  condition:
+  - condition: template
+    value_template: '{{ trigger.payload_json.gen is not defined }}'
+  action:
+    service: python_script.shellies_discovery
+    data:
+      id: '{{ trigger.payload_json.id }}'
+      mac: '{{ trigger.payload_json.mac }}'
+      fw_ver: '{{ trigger.payload_json.fw_ver }}'
+      model: '{{ trigger.payload_json.model | default }}'
+      mode: '{{ trigger.payload_json.mode | default }}'
+      host: '{{ trigger.payload_json.ip }}'
+- id: shellies_announce_gen2
+  alias: Shellies Announce Gen2
+  trigger:
+  - platform: homeassistant
+    event: start
+  action:
+  - repeat:
+      for_each: '{{ device_ids }}'
+      sequence:
+      - service: mqtt.publish
+        data:
+          topic: '{{ repeat.item }}/rpc'
+          payload: '{{ device_info_payload }}'
+  variables:
+    device_info_payload: '{{ {''id'': 1, ''src'':''shellies_discovery'', ''method'':''Shelly.GetConfig''}
+      | to_json }}'
+    device_ids:
+    - shellies/shellyplus1_downstairshallway
+    - shellies/shelly2pm_downstairsbathroom
+    - shellies/shellyplus1_patio
+    - shellies/shellyplus1_sidepath
+    - shellies/bathroom_towelrail
+    - shellies/bathroom_switch
+    - shellies/downstairs_hallway
+- id: shellies_discovery_gen2
+  alias: Shellies Discovery Gen2
+  trigger:
+  - platform: mqtt
+    topic: shellies_discovery/rpc
+  action:
+  - service: python_script.shellies_discovery_gen2
+    data:
+      id: '{{ trigger.payload_json.src }}'
+      device_config: '{{ trigger.payload_json.result }}'
+  - service: mqtt.publish
+    data:
+      topic: '{{ trigger.payload_json.result.mqtt.topic_prefix }}/command'
+      payload: status_update
+  mode: queued
+  max: 999
+- id: '1690081230969'
+  alias: 'Back Yard – Door Open: Lights ON'
+  description: ''
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.crow_alarm_doors_back_door
+    to: 'on'
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+    after_offset: -01:00:00
+    before_offset: 01:00:00
+  - condition: state
+    entity_id: input_boolean.silence_doorbell
+    state: 'off'
+  actions:
+  - data: {}
+    target:
+      entity_id: switch.lightswitch_shelly_sidepath_relay_0
+    action: switch.turn_on
+  - data: {}
+    target:
+      entity_id: switch.lightswitch_shelly_patio_relay_0
+    action: switch.turn_on
+  mode: single
+- id: '1690962262319'
+  alias: 'Bathroom2 – Guest Mode – Light ON: Fan ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.lightswitch_shelly2pm_downstairsbathroom_relay_0
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_boolean.bathroom2_guest_mode
+    state: 'on'
+  action:
+  - data: {}
+    target:
+      entity_id: switch.lightswitch_shelly2pm_downstairsbathroom_relay_1
+    action: switch.turn_on
+  mode: single
+- id: '1691736117820'
+  alias: 'Lounge – Lamps – Midnight: OFF'
+  description: ''
+  triggers:
+  - at: '23:59:00'
+    trigger: time
+    weekday:
+    - sun
+    - sat
+    - fri
+    - thu
+    - wed
+    - tue
+    - mon
+  conditions:
+  - condition: state
+    entity_id: light.lounge_lamps
+    state: 'on'
+    enabled: false
+  actions:
+  - data: {}
+    target:
+      entity_id:
+      - light.lounge_lamps
+      - light.lightdimmer_shelly_hallway_light_0
+    action: light.turn_off
+  mode: single
+- id: '1698654688131'
+  alias: 'Entertainment – Away for 10min: Turn Projector OFF'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.presence_tvroom_presence
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'off'
+  actions:
+  - data:
+      skip_condition: true
+    target:
+      entity_id: automation.entertainment_lamp_red_timer_start
+    enabled: false
+    action: automation.trigger
+  - data: {}
+    action: shell_command.projector_off
+  - data:
+      message: Everyone's gone – turning Projector OFF
+      target: tim-iphone
+    action: notify.pushover_tim
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.tv_room_lights
+    action: light.turn_off
+  mode: single
+- id: '1698694637969'
+  alias: Entertainment – Lamp – Red timer START
+  description: ''
+  trigger: []
+  condition:
+  - condition: state
+    entity_id: timer.tvroom_lamp_timer
+    state: idle
+  action:
+  - service: light.turn_on
+    data:
+      rgb_color:
+      - 255
+      - 0
+      - 0
+      brightness_pct: 100
+    target:
+      entity_id: light.tv_room_lights
+  - service: timer.start
+    data:
+      duration: 00:01:00
+    target:
+      entity_id: timer.tvroom_lamp_timer
+  mode: single
+- id: '1699776753451'
+  alias: Lounge – Lamps – 2245 SLEEP MODE
+  description: ''
+  trigger:
+  - platform: time
+    at: '22:45:00'
+  condition:
+  - condition: state
+    entity_id: light.lounge_lamps
+    state: 'on'
+  action:
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_lounge_lighting
+  mode: single
+- id: '1700379122472'
+  alias: 'Lounge – Lamps – SLEEP Mode: Turn Hallway OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.adaptive_lighting_sleep_mode_lounge_lighting
+    to: 'on'
+  condition: []
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.lightdimmer_shelly_hallway_light_0
+  mode: single
+- id: '1700509433597'
+  alias: 'Lounge – Lamps – Dawn: SLEEP Mode OFF'
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: -01:00:00
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    target:
+      entity_id:
+      - switch.adaptive_lighting_sleep_mode_lounge_lighting
+      - switch.adaptive_lighting_sleep_mode_adaptive_lighting_celeste
+  - service: switch.turn_on
+    data: {}
+    target:
+      entity_id:
+      - switch.adaptive_lighting_lounge_lighting
+      - switch.adaptive_lighting_adaptive_lighting_celeste
+  mode: single
+- id: '1701665380217'
+  alias: Maintenance – Pushover Test
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - data: {}
+    enabled: true
+    action: shell_command.camera_snap
+  - data:
+      data:
+        attachment: /config/www/cameras/front_yard.jpg
+      title: Security
+      message: This is a test
+      target: tim-iphone
+    action: notify.pushover_tim
+  - data: {}
+    action: shell_command.delete_camera_snap
+  mode: single
+- id: '1701683798292'
+  alias: Maintenance – iOS Notification Test
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - data: {}
+    enabled: true
+    action: shell_command.camera_snap
+  - data:
+      data:
+        attachment: /config/www/cameras/front_yard.jpg
+      message: Testing
+      title: TEST
+    action: notify.mobile_app_tims_iphone
+  - data:
+      data:
+        attachment: /config/www/cameras/front_yard.jpg
+      title: Security
+      message: This is a test
+      target: tim-iphone
+    enabled: false
+    action: notify.pushover_tim
+  - data: {}
+    action: shell_command.delete_camera_snap
+  mode: single
+- id: '1702966385933'
+  alias: Kitchen – Water leak under dishwasher
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.waterleak_dishwasher_water_leak
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+    trigger: state
+  conditions: []
+  actions:
+  - data:
+      title: Water Leak Detected
+      message: Water detected under dishwasher
+      data:
+        priority: 2
+        retry: 60
+        expire: 3600
+        sound: alien
+    action: notify.pushover_household
+  mode: single
+- id: '1703037974641'
+  alias: 'Bathroom – Door open: Alert'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.door_bathroom_contact
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.bathroom_door_alert
+    state: 'on'
+    enabled: true
+  actions:
+  - data:
+      title: Bathroom
+      message: The bathroom door has opened
+      data:
+        priority: 1
+      target: tim-iphone
+    action: notify.pushover_tim
+  - data: {}
+    target:
+      entity_id:
+      - input_boolean.bathroom_door_alert
+    action: input_boolean.turn_off
+  - action: input_boolean.turn_on
+    metadata: {}
+    target:
+      entity_id: input_boolean.bathroom_door_alert_triggered
+    data: {}
+  mode: single
+- id: '1704512683956'
+  alias: Irrigation - Decrement Days Counter
+  description: At midnight, decrement all irrigation zone counters if they're above
+    0
+  triggers:
+  - at: 00:00:00
+    trigger: time
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_sprayzone
+      above: 0
+    then:
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_sprayzone
+      action: counter.decrement
+      data: {}
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_dripzone
+      above: 0
+    then:
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_dripzone
+      action: counter.decrement
+      data: {}
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_lawnzone
+      above: 0
+    then:
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_lawnzone
+      action: counter.decrement
+      data: {}
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_vegezone
+      above: 0
+    then:
+    - target:
+        entity_id:
+        - counter.irrigation_daysuntilnext_vegezone
+      action: counter.decrement
+      data: {}
+  mode: single
+- id: '1704515078564'
+  alias: Irrigation - Morning Irrigation Sequence OLD Nov 2025
+  description: Sequential irrigation of all zones starting one hour before sunrise
+  triggers:
+  - event: sunrise
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_dripzone
+      below: 1
+    then:
+    - if:
+      - condition: template
+        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
+          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+          | float <\n  states('input_number.irrigation_moisturetrigger_dripzone')
+          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_dripzone',
+          'on'))\n}}"
+      - condition: state
+        entity_id: input_boolean.irrigation_enable_dripzone
+        state: 'on'
+      then:
+      - data:
+          title: Irrigation
+          message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
+            | round }} mins
+          target: tim-iphone
+        action: notify.pushover_tim
+      - target:
+          entity_id: timer.irrigation_timer_dripzone
+        data:
+          duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'') |
+            float * 60) | round }}'
+        action: timer.start
+      - target:
+          entity_id: switch.watervalve_dripzone_state
+        action: switch.turn_on
+        data: {}
+      - wait_for_trigger:
+        - entity_id: timer.irrigation_timer_dripzone
+          from: active
+          to: idle
+          trigger: state
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_dripzone
+      data:
+        value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int }}'
+      action: counter.set_value
+    - target:
+        entity_id: input_datetime.irrigation_last_dripzone
+      data:
+        datetime: '{{ now().isoformat() }}'
+      action: input_datetime.set_datetime
+    enabled: false
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_sprayzone
+      below: 1
+    then:
+    - if:
+      - condition: template
+        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
+          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+          | float <\n  states('input_number.irrigation_moisturetrigger_sprayzone')
+          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_sprayzone',
+          'on'))\n}}"
+      - condition: state
+        entity_id: input_boolean.irrigation_enable_sprayzone
+        state: 'on'
+      then:
+      - data:
+          title: Irrigation
+          message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
+            | round }} mins
+          target: tim-iphone
+        action: notify.pushover_tim
+      - target:
+          entity_id: timer.irrigation_timer_sprayzone
+        data:
+          duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
+            | float * 60) | round }}'
+        action: timer.start
+      - target:
+          entity_id: switch.watervalve_sprayzone_state
+        action: switch.turn_on
+        data: {}
+      - wait_for_trigger:
+        - entity_id: timer.irrigation_timer_sprayzone
+          from: active
+          to: idle
+          trigger: state
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_sprayzone
+      data:
+        value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int }}'
+      action: counter.set_value
+    - target:
+        entity_id: input_datetime.irrigation_last_sprayzone
+      data:
+        datetime: '{{ now().isoformat() }}'
+      action: input_datetime.set_datetime
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_lawnzone
+      below: 1
+    then:
+    - if:
+      - condition: template
+        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
+          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+          | float <\n  states('input_number.irrigation_moisturetrigger_lawnzone')
+          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_lawnzone',
+          'on'))\n}}"
+      - condition: state
+        entity_id: input_boolean.irrigation_enable_lawnzone
+        state: 'on'
+      then:
+      - data:
+          title: Irrigation
+          message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
+            | round }} mins
+          target: tim-iphone
+        action: notify.pushover_tim
+      - target:
+          entity_id: timer.irrigation_timer_lawnzone
+        data:
+          duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'') |
+            float * 60) | round }}'
+        action: timer.start
+      - target:
+          entity_id: switch.watervalve_lawnzone_state
+        action: switch.turn_on
+        data: {}
+      - wait_for_trigger:
+        - entity_id: timer.irrigation_timer_lawnzone
+          from: active
+          to: idle
+          trigger: state
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_lawnzone
+      data:
+        value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int }}'
+      action: counter.set_value
+    - target:
+        entity_id: input_datetime.irrigation_last_lawnzone
+      data:
+        datetime: '{{ now().isoformat() }}'
+      action: input_datetime.set_datetime
+    enabled: false
+  mode: single
+- id: '1704518880915'
+  alias: Irrigation - Update Counter on frequency change
+  description: Updates irrigation counters when frequency settings change for any
+    zone
+  triggers:
+  - entity_id: input_number.irrigation_frequency_sprayzone
+    id: sprayzone
+    trigger: state
+  - entity_id: input_number.irrigation_frequency_dripzone
+    id: dripzone
+    trigger: state
+  - entity_id: input_number.irrigation_frequency_lawnzone
+    id: lawnzone
+    trigger: state
+  - entity_id: input_number.irrigation_frequency_vegezone
+    id: vegezone
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: sprayzone
+      sequence:
+      - target:
+          entity_id: counter.irrigation_daysuntilnext_sprayzone
+        data:
+          value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
+            }}'
+        action: counter.set_value
+    - conditions:
+      - condition: trigger
+        id: dripzone
+      sequence:
+      - target:
+          entity_id: counter.irrigation_daysuntilnext_dripzone
+        data:
+          value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
+            }}'
+        action: counter.set_value
+    - conditions:
+      - condition: trigger
+        id: lawnzone
+      sequence:
+      - target:
+          entity_id: counter.irrigation_daysuntilnext_lawnzone
+        data:
+          value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
+            }}'
+        action: counter.set_value
+    - conditions:
+      - condition: trigger
+        id: vegezone
+      sequence:
+      - target:
+          entity_id: counter.irrigation_daysuntilnext_vegezone
+        data:
+          value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
+            }}'
+        action: counter.set_value
+  mode: single
+- id: '1704521201143'
+  alias: Shellies Announce BOTH
+  description: ''
+  trigger: []
+  condition: []
+  action:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id:
+      - automation.shellies_announce
+      - automation.shellies_announce_gen2
+  mode: single
+- id: '1708048300563'
+  alias: 'Location – Sonya enters Calliope: notify Tim'
+  description: ''
+  triggers:
+  - device_id: f6833d2e56b8cf5afee1c7b248fb78af
+    domain: device_tracker
+    entity_id: 647d1c5c57102ce6a8e6224ba51ab17e
+    type: enters
+    zone: zone.calliope
+    trigger: device
+  conditions:
+  - condition: zone
+    entity_id: person.tim
+    zone: zone.home
+    enabled: false
+  - condition: state
+    entity_id: sensor.home_sonya_s_iphone_direction_of_travel
+    state: towards
+  actions:
+  - metadata: {}
+    data:
+      message: Sonya is on Calliope and heading home
+    action: notify.mobile_app_tims_iphone
+  mode: single
+- id: '1708056207263'
+  alias: 'Location – Sonya enters Zone: Notify Tim'
+  description: ''
+  triggers:
+  - entity_id: person.sonya
+    zone: zone.cheltenham
+    event: enter
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.home
+    event: enter
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.cheltenham
+    event: leave
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.home
+    event: leave
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.jeff_sandy_s
+    event: enter
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.north_head
+    event: enter
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.north_head
+    event: leave
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.jeff_sandy_s
+    event: leave
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.torpedo_bay
+    event: enter
+    trigger: zone
+  - entity_id: person.sonya
+    zone: zone.torpedo_bay
+    event: leave
+    trigger: zone
+  conditions:
+  - condition: zone
+    entity_id: person.tim
+    zone: zone.home
+    enabled: false
+  actions:
+  - metadata: {}
+    data:
+      message: "{% if trigger.event == \"leave\" %}\n  Sonya left {{ trigger.zone.attributes.friendly_name
+        }}\n{% else %}\n  Sonya entered {{ trigger.zone.attributes.friendly_name }}\n{%
+        endif %}\n"
+      importance: time-sensitive
+    action: notify.mobile_app_tims_iphone
+  mode: single
+- id: '1708210727796'
+  alias: Sensor Update – Ferry departures
+  description: Updates merged ferry departure sensors for Devonport and Downtown
+  triggers:
+  - trigger: time_pattern
+    minutes: /1
+  - trigger: homeassistant
+    event: start
+  conditions: []
+  actions:
+  - action: python_script.next_ferries
+    data:
+      entity_id: sensor.ferry_devonport_downtown_pier2
+      secondary_entity_id: sensor.ferry_devonport_downtown_pier4
+      target_id: sensor.devonport_downtown
+  - action: python_script.next_ferries
+    data:
+      entity_id: sensor.ferry_downtown_devonport_pier2
+      secondary_entity_id: sensor.ferry_downtown_devonport_pier4
+      target_id: sensor.downtown_devonport
+  mode: single
+- id: '1708766230114'
+  alias: Maintenance – Nanoleaf Reset HOMEKIT
+  description: ''
+  trigger: []
+  condition: []
+  action:
+  - service: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.wemo_homekit_control
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - repeat:
+      count: 5
+      sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+          - input_boolean.wemo_homekit_control
+        data: {}
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 3
+          milliseconds: 0
+      - service: input_boolean.turn_on
+        target:
+          entity_id:
+          - input_boolean.wemo_homekit_control
+        data: {}
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 1
+          milliseconds: 0
+  mode: single
+- id: '1712045614626'
+  alias: Lighting – Celeste – 2145 SLEEP mode
+  description: ''
+  trigger:
+  - platform: time
+    at: '21:50:00'
+  condition:
+  - condition: state
+    entity_id: light.celeste_bedroom
+    state: 'on'
+  action:
+  - data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adaptive_lighting_celeste
+    action: switch.turn_on
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_adaptive_lighting_celeste
+    action: switch.turn_on
+  mode: single
+- id: '1712128693465'
+  alias: 'Lighting – Celeste – Turn ON: Adaptive ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - light.celeste_bedroom
+    from: unavailable
+  condition: []
+  action:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adaptive_lighting_celeste
+    action: switch.turn_off
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_adaptive_lighting_celeste
+    action: switch.turn_off
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adaptive_lighting_celeste
+    action: switch.turn_on
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.celeste_bedroom
+    action: light.turn_on
+  mode: single
+- id: '1714342042624'
+  alias: Maintenance – Zigbee Sensor Offline – Notification
+  description: ''
+  use_blueprint:
+    path: Mr-Groch/offline-notification-for-sensors-with-last_seen.yaml
+    input:
+      hours: 48
+      actions:
+      - metadata: {}
+        data:
+          data:
+            priority: 2
+            retry: 60
+            expire: 3600
+            sound: alien
+          title: Zigbee Sensor Offline
+          message: '{{sensors}}'
+          target: tim-iphone
+        action: notify.pushover_tim
+      exclude:
+        entity_id:
+        - sensor.lightbulb_hue_spare_last_seen
+        - sensor.0xa4c1380d63c92bd0_last_seen
+        - sensor.window_master_bedroom_last_seen
+        - sensor.watervalve_vegezone_last_seen
+        - sensor.watervalve_sprayzone_last_seen
+- id: '1714645156968'
+  alias: Maintenance – Pushover Offline – Send iOS Notification
+  description: ''
+  trigger:
+  - platform: template
+    value_template: '"{{ ''notify.pushover'' in state_attr(''sensor.watchman_missing_services'',
+      ''entities'') | map(attribute=''id'') | list }}"'
+    for:
+      hours: 2
+      minutes: 0
+      seconds: 0
+  condition: []
+  action:
+  - service: script.send_dynamic_notification_tims_iphone
+    metadata: {}
+    data:
+      message: Pushover is offline
+      importance: time-sensitive
+  - service: homeassistant.reload_config_entry
+    metadata: {}
+    data:
+      entry_id: e12402c3f56b200c71faffea61192809
+    enabled: false
+  mode: single
+- id: '1716696657403'
+  alias: 'Entertainment – Lamp – Devices PAUSE: Turn ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    from: playing
+    enabled: true
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    from: playing
+    enabled: true
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: playing
+    - condition: state
+      entity_id: media_player.appletv
+      state: playing
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      transition: 3
+      effect: aurora
+    target:
+      entity_id: light.tv_room_lights
+  - if:
+    - condition: state
+      state: active
+      entity_id: timer.tvroom_lamp_timer
+    then:
+    - service: timer.cancel
+      data: {}
+      target:
+        entity_id: timer.tvroom_lamp_timer
+  mode: single
+- id: '1716700600122'
+  alias: 'Entertainment – Lamp – Presence Away: Turn Lamp OFF'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.presence_tvroom_presence
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'off'
+    enabled: true
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'off'
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.tv_room_lights
+    action: light.turn_off
+  mode: single
+- id: '1716701851415'
+  alias: 'Entertainment – Lamp – Devices OFF: Turn OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    to: standby
+  - platform: state
+    entity_id:
+    - binary_sensor.projector_status
+    to: 'off'
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    to: standby
+  condition:
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'off'
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+  action:
+  - service: light.turn_off
+    target:
+      entity_id:
+      - light.tv_room_lights
+    data: {}
+  - if:
+    - condition: state
+      state: active
+      entity_id: timer.tvroom_lamp_timer
+    then:
+    - service: timer.cancel
+      data: {}
+      target:
+        entity_id: timer.tvroom_lamp_timer
+  mode: single
+- id: '1716706374921'
+  alias: 'Entertainment – Playstation ON: Lamp ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    from: standby
+  - platform: state
+    entity_id:
+    - media_player.playstation_4
+    from: playing
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.appletv
+      state: playing
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      transition: 3
+      effect: Icicle
+    target:
+      entity_id: light.tv_room_lights
+  mode: single
+- id: '1716706431499'
+  alias: 'Entertainment – AppleTV ON: Lamp ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    from: standby
+  - platform: state
+    entity_id:
+    - media_player.appletv
+    from: playing
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.playstation_4
+      state: playing
+  - condition: state
+    entity_id: binary_sensor.presence_tvroom_presence
+    state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      transition: 3
+      effect: aurora
+    target:
+      entity_id: light.tv_room_lights
+  mode: single
+- id: '1716708582622'
+  alias: 'Master Bedroom – Motion: Lamp ON'
+  description: 'Motion in the hallway or master bedroom. Tim''s and Sonya''s bedside
+    lamps are handled independently, each with its own timer (timer.bedroom_lamp_tim,
+    timer.bedroom_lamp_sonya). For each lamp: if it is off (after sunset-30min, before
+    22:50, Tim''s iPhone not charging and no Focus): turn it on (Adaptive Lighting
+    sets brightness/colour) and start its 3-minute timer. If it is on AND its timer
+    is active (turned on by this automation): restart its timer so it stays on while
+    there is movement. If it was turned on manually (timer idle): do nothing.'
+  triggers:
+  - entity_id:
+    - binary_sensor.crow_alarm_sensors_front_hallway
+    - binary_sensor.crow_alarm_sensors_master_bedroom
+    to: 'on'
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - alias: 'Tim lamp on via motion: restart timer'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_tim
+        state: active
+      sequence:
+      - action: timer.start
+        data:
+          duration: 00:03:00
+        target:
+          entity_id: timer.bedroom_lamp_tim
+    - alias: 'Tim lamp off: turn on and start timer'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'off'
+      - condition: state
+        entity_id: sensor.tims_iphone_battery_state
+        state: Not Charging
+      - after: sunset
+        after_offset:
+          hours: 0
+          minutes: 0
+          seconds: 0
+        condition: sun
+      - before: '22:00:00'
+        condition: time
+      - condition: state
+        entity_id: binary_sensor.tims_iphone_focus
+        state: 'off'
+      sequence:
+      - action: light.turn_on
+        data: {}
+        target:
+          entity_id: light.bedside_tim
+      - action: timer.start
+        data:
+          duration: 00:03:00
+        target:
+          entity_id: timer.bedroom_lamp_tim
+  - choose:
+    - alias: 'Sonya lamp on via motion: restart timer'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_sonya
+        state: active
+      sequence:
+      - action: timer.start
+        data:
+          duration: 00:03:00
+        target:
+          entity_id: timer.bedroom_lamp_sonya
+    - alias: 'Sonya lamp off: turn on and start timer'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'off'
+      - after: sunset
+        after_offset:
+          hours: 0
+          minutes: 0
+          seconds: 0
+        condition: sun
+      - before: '22:00:00'
+        condition: time
+      - condition: state
+        entity_id: sensor.tims_iphone_battery_state
+        state: Not Charging
+      - condition: state
+        entity_id: binary_sensor.tims_iphone_focus
+        state: 'off'
+      sequence:
+      - action: light.turn_on
+        data: {}
+        target:
+          entity_id: light.bedside_sonya
+      - action: timer.start
+        data:
+          duration: 00:03:00
+        target:
+          entity_id: timer.bedroom_lamp_sonya
+  mode: restart
+- id: '1724050712266'
+  alias: 'Lounge – Lamps – Button Single Press: Toggle ON/OFF'
+  description: ''
+  trigger:
+  - platform: device
+    domain: mqtt
+    device_id: 0b640f2c6d0d2bf13d3c2da7cc6320aa
+    type: action
+    subtype: single
+  condition: []
+  action:
+  - service: light.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: light.lounge_lamps
+  mode: single
+- id: '1724056544139'
+  alias: 'Lounge – Lamps – Button Hold: Dinner Signal'
+  description: ''
+  triggers:
+  - domain: mqtt
+    device_id: 0b640f2c6d0d2bf13d3c2da7cc6320aa
+    type: action
+    subtype: hold
+    trigger: device
+  conditions: []
+  actions:
+  - variables:
+      lounge_lamps_state: '{{ states(''light.lounge_lamps'') }}'
+      lounge_lamps_brightness: '{{ state_attr(''light.lounge_lamps'', ''brightness'')
+        | default(255) }}'
+      lounge_lamps_color: '{{ state_attr(''light.lounge_lamps'', ''rgb_color'') |
+        default([255, 255, 255]) }}'
+      lounge_lamps_color_temp: '{{ state_attr(''light.lounge_lamps'', ''color_temp'')
+        }}'
+      office_light_state: '{{ states(''light.lightbulb_office'') }}'
+      office_light_brightness: '{{ state_attr(''light.lightbulb_office'', ''brightness'')
+        | default(255) }}'
+      office_light_color: '{{ state_attr(''light.lightbulb_office'', ''rgb_color'')
+        | default([255, 255, 255]) }}'
+      office_light_color_temp: '{{ state_attr(''light.lightbulb_office'', ''color_temp'')
+        }}'
+      celeste_bedroom_state: '{{ states(''light.celeste_bedroom'') }}'
+      celeste_bedroom_brightness: '{{ state_attr(''light.celeste_bedroom'', ''brightness'')
+        | default(255) }}'
+      celeste_bedroom_color: '{{ state_attr(''light.celeste_bedroom'', ''rgb_color'')
+        | default([255, 255, 255]) }}'
+      celeste_bedroom_color_temp: '{{ state_attr(''light.celeste_bedroom'', ''color_temp'')
+        }}'
+      tv_room_state: '{{ states(''light.tv_room_lights'') }}'
+      tv_room_brightness: '{{ state_attr(''light.tv_room_lights'', ''brightness'')
+        | default(255) }}'
+      tv_room_color: '{{ state_attr(''light.tv_room_lights'', ''rgb_color'') | default([255,
+        255, 255]) }}'
+      tv_room_color_temp: '{{ state_attr(''light.tv_room_lights'', ''color_temp'')
+        }}'
+      adaptive_lounge_state: '{{ states(''switch.adaptive_lighting_lounge_lighting'')
+        }}'
+      adaptive_celeste_state: '{{ states(''switch.adaptive_lighting_adaptive_lighting_celeste'')
+        }}'
+  - target:
+      entity_id:
+      - switch.adaptive_lighting_lounge_lighting
+    data: {}
+    action: switch.turn_off
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - repeat:
+      count: 5
+      sequence:
+      - target:
+          entity_id:
+          - light.lounge_lamps
+          - light.lightbulb_office
+          - light.tv_room_lights
+        data:
+          rgb_color:
+          - 251
+          - 0
+          - 255
+          brightness_pct: 100
+        action: light.turn_on
+      - delay:
+          milliseconds: 500
+      - target:
+          entity_id:
+          - light.lounge_lamps
+          - light.lightbulb_office
+          - light.tv_room_lights
+        action: light.turn_off
+        data: {}
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 150
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ adaptive_lounge_state == ''on'' }}'
+      sequence:
+      - target:
+          entity_id: switch.adaptive_lighting_lounge_lighting
+        action: switch.turn_on
+    REDACTED []
+  - delay:
+      milliseconds: 500
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ lounge_lamps_state == ''on'' }}'
+      sequence:
+      - target:
+          entity_id: light.lounge_lamps
+        data:
+          brightness: '{{ lounge_lamps_brightness }}'
+          rgb_color: '{{ lounge_lamps_color if lounge_lamps_color_temp is none else
+            omit }}'
+          color_temp: '{{ lounge_lamps_color_temp if lounge_lamps_color_temp is not
+            none else omit }}'
+        action: light.turn_on
+    REDACTED
+    - target:
+        entity_id: light.lounge_lamps
+      action: light.turn_off
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ office_light_state == ''on'' }}'
+      sequence:
+      - target:
+          entity_id: light.lightbulb_office
+        data:
+          brightness: '{{ office_light_brightness }}'
+          rgb_color: '{{ office_light_color if office_light_color_temp is none else
+            omit }}'
+          color_temp: '{{ office_light_color_temp if office_light_color_temp is not
+            none else omit }}'
+        action: light.turn_on
+    REDACTED
+    - target:
+        entity_id: light.lightbulb_office
+      action: light.turn_off
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ tv_room_state == ''on'' }}'
+      sequence:
+      - target:
+          entity_id: light.tv_room_lights
+        data:
+          brightness: '{{ tv_room_brightness }}'
+          rgb_color: '{{ tv_room_color if tv_room_color_temp is none else omit }}'
+          color_temp: '{{ tv_room_color_temp if tv_room_color_temp is not none else
+            omit }}'
+        action: light.turn_on
+    REDACTED
+    - target:
+        entity_id: light.tv_room_lights
+      action: light.turn_off
+  mode: single
+- id: '1724062759043'
+  alias: 'Bathroom – Door open: Shower RECENT'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.door_bathroom_contact
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_select.shower_status
+    state: active
+  action:
+  - service: input_select.select_option
+    target:
+      entity_id: input_select.shower_status
+    data:
+      option: recent
+  mode: single
+- id: '1724064138004'
+  alias: 'Bathroom – Shower RECENT Timeout: Shower Status OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_select.shower_status
+    to: recent
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+  condition:
+  - condition: state
+    entity_id: input_select.shower_status
+    state: recent
+  action:
+  - target:
+      entity_id: input_select.shower_status
+    data:
+      option: 'off'
+    action: input_select.select_option
+  mode: single
+- id: '1725167749937'
+  alias: 'Bathroom2 – Humidity RISE: Shower ACTIVE'
+  description: ''
+  triggers:
+  - entity_id:
+    - sensor.temperature_bathroom2_humidity
+    above: 88
+    trigger: numeric_state
+  - entity_id:
+    - sensor.bathroom2_humidity_derivative
+    above: 2.5
+    trigger: numeric_state
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.door_bathroom2_contact
+    state: 'off'
+  - condition: numeric_state
+    entity_id: sensor.bathroom2_humidity_difference
+    above: 2
+  actions:
+  - metadata: {}
+    data:
+      option: active
+    target:
+      entity_id:
+      - input_select.shower2_status
+    action: input_select.select_option
+  mode: single
+- id: '1725167833581'
+  alias: 'Bathroom2 – Shower RECENT Timeout: Shower Status OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_select.shower2_status
+    to: recent
+    for:
+      hours: 0
+      minutes: 20
+      seconds: 0
+  condition:
+  - condition: state
+    entity_id: input_select.shower2_status
+    state: recent
+  action:
+  - data:
+      option: 'off'
+    target:
+      entity_id: input_select.shower2_status
+    action: input_select.select_option
+  mode: single
+- id: '1725168276809'
+  alias: 'Bathroom2 – Door open: Alert'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.door_bathroom2_contact
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.bathroom2_door_alert
+    state: 'on'
+    enabled: true
+  actions:
+  - data:
+      title: Bathroom
+      message: The downstairs bathroom door has opened
+      data:
+        priority: 1
+      target: tim-iphone
+    action: notify.pushover_tim
+  - data: {}
+    target:
+      entity_id:
+      - input_boolean.bathroom2_door_alert
+    action: input_boolean.turn_off
+  mode: single
+- id: '1725168340781'
+  alias: 'Bathroom2 – Door open: Shower RECENT'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.door_bathroom2_contact
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_select.shower2_status
+    state: active
+  action:
+  - service: input_select.select_option
+    data:
+      option: recent
+    target:
+      entity_id: input_select.shower2_status
+  mode: single
+- id: '1725169820489'
+  alias: 'Bathroom2 – Fan ON: Fan Timer START'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.lightswitch_shelly2pm_downstairsbathroom_relay_1
+    to: 'on'
+    from: 'off'
+  condition: []
+  action:
+  - metadata: {}
+    data:
+      duration: 00:10:00
+    target:
+      entity_id: timer.bathroom2_fan_timer
+    action: timer.start
+  mode: single
+- id: '1725170516403'
+  alias: 'Bathroom2 – Light Switch ON: Timer START'
+  description: ''
+  triggers:
+  - entity_id:
+    - switch.lightswitch_shelly2pm_downstairsbathroom_relay_0
+    to: 'on'
+    from: 'off'
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      duration: 00:10:00
+    target:
+      entity_id:
+      - timer.bathroom2_light_timer
+    action: timer.start
+  mode: single
+- id: '1725178686469'
+  alias: 'Bathroom2 – Fan Switch / Timer OFF: Switch OFF / Timer CANCEL'
+  description: Manage bathroom fan based on timer and humidity difference
+  triggers:
+  - trigger: state
+    entity_id:
+    - switch.lightswitch_shelly2pm_downstairsbathroom_relay_1
+    id: switch_trigger
+    to: 'off'
+    from: 'on'
+  - entity_id:
+    - timer.bathroom2_fan_timer
+    to: idle
+    trigger: state
+    id: timer_trigger
+    from: active
+    enabled: true
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - switch_trigger
+    then:
+    - action: timer.cancel
+      metadata: {}
+      data: {}
+      target:
+        entity_id: timer.bathroom2_fan_timer
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 1
+        milliseconds: 0
+    - metadata: {}
+      data:
+        option: 'off'
+      target:
+        entity_id: input_select.shower2_status
+      action: input_select.select_option
+  - if:
+    - condition: trigger
+      id:
+      - timer_trigger
+    then:
+    - choose:
+      - conditions:
+        - condition: time
+          before: 00:00:00
+          after: 05:00:00
+        - condition: numeric_state
+          entity_id: sensor.bathroom2_humidity_difference
+          above: 4
+        sequence:
+        - target:
+            entity_id: timer.bathroom2_fan_timer
+          data:
+            duration: 00:05:00
+          enabled: true
+          action: timer.start
+      REDACTED
+      - target:
+          entity_id:
+          - switch.lightswitch_shelly2pm_downstairsbathroom_relay_1
+        data: {}
+        action: switch.turn_off
+      - metadata: {}
+        data:
+          option: 'off'
+        target:
+          entity_id: input_select.shower2_status
+        action: input_select.select_option
+  mode: single
+- id: '1725574559502'
+  alias: Sensor Update – Download GTFS Data
+  description: ''
+  trigger:
+  - platform: time
+    at: 00:00:00
+  condition:
+  - condition: time
+    weekday:
+    - sun
+  action:
+  - service: script.1715823901372
+    metadata: {}
+    data: {}
+  mode: single
+- id: '1725674133401'
+  alias: 'Lounge – Lamps – Button Double Press: Toggle Hallway ON/OFF'
+  description: ''
+  triggers:
+  - domain: mqtt
+    device_id: 0b640f2c6d0d2bf13d3c2da7cc6320aa
+    type: action
+    subtype: double
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      brightness: 255
+    target:
+      entity_id: light.lightdimmer_shelly_hallway_light_0
+    action: light.toggle
+  mode: single
+- id: '1726036668816'
+  alias: 'Bathroom – Schedule: Toggle Towel Rail'
+  description: ''
+  triggers:
+  - entity_id:
+    - schedule.bathroom_towelrail_schedule
+    trigger: state
+  conditions: []
+  actions:
+  - if:
+    - condition: state
+      state: 'on'
+      entity_id: schedule.bathroom_towelrail_schedule
+    - condition: state
+      entity_id: input_boolean.vacation_mode_homekit
+      state: 'off'
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.bathroom_towelrail_relay_0
+    else:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.bathroom_towelrail_relay_0
+  mode: single
+- id: '1726176922643'
+  alias: Maintenance – Automatic Backups OLD Oct 2026
+  description: ''
+  use_blueprint:
+    input:
+      backup_action:
+      - action: auto_backup.backup
+        data:
+          include_folders:
+          - config
+          keep_days: '{{ keep_days }}'
+          name: '{{ name }}'
+          password: '{{ password }}'
+      - action: notify.pushover_tim
+        data:
+          message: Backing up Home Assistant
+          target: tim-iphone
+        metadata: {}
+      enable_daily: false
+      enable_weekly: false
+      use_action_hourly: false
+    path: jcwillox/automatic_backups.yaml
+- id: '1726193635057'
+  alias: Dogwalk Trigger WIP
+  description: ''
+  triggers:
+  - entity_id:
+    - person.tim
+    to: Stanley Bay
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+  - entity_id:
+    - person.tim
+    to: Cheltenham
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+    from: Torpedo Bay
+  - entity_id:
+    - person.tim
+    to: Cheltenham
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+    from: not_home
+  - entity_id:
+    - person.tim
+    to: North Head
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+    from: Torpedo Bay
+  - entity_id:
+    - person.tim
+    to: North Head
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+    from: not_home
+  - entity_id:
+    - person.tim
+    to: Cheltenham
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+    trigger: state
+    from: Devonport
+  - entity_id:
+    - person.tim
+    to: Torpedo Bay
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: timer.dogwalk_timer
+    state: idle
+  - condition: state
+    entity_id: sun.sun
+    state: above_horizon
+  actions:
+  - action: input_select.select_option
+    metadata: {}
+    data:
+      option: Stanley Bay
+    target:
+      entity_id: input_select.dogwalk_location
+  - action: timer.start
+    metadata: {}
+    data:
+      duration: 00:57:00
+    target:
+      entity_id: timer.dogwalk_timer
+  mode: single
+- id: '1726194323651'
+  alias: Dog Home WIP
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - person.tim
+    to: home
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: input_select.dogwalk_location
+      state: None
+  action:
+  - action: input_select.select_option
+    metadata: {}
+    data:
+      option: None
+    target:
+      entity_id: input_select.dogwalk_location
+  - action: timer.cancel
+    target:
+      entity_id:
+      - timer.dogwalk_timer
+    data: {}
+  mode: single
+- id: '1726288156569'
+  alias: 'Bathroom – Fan ON: Fan Timer START'
+  description: ''
+  triggers:
+  - entity_id:
+    - switch.bathroom_switch_switch_1
+    to: 'on'
+    from: 'off'
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      duration: 00:10:00
+    target:
+      entity_id:
+      - timer.bathroom_fan_timer
+    action: timer.start
+  mode: single
+- id: '1726289006777'
+  alias: 'Bathroom – Guest Mode – Light ON: Fan ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.bathroom_switch_switch_0
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_boolean.bathroom_guest_mode
+    state: 'on'
+  action:
+  - data: {}
+    action: switch.turn_on
+    target:
+      entity_id:
+      - switch.bathroom_switch_switch_1
+  mode: single
+- id: '1726289181781'
+  alias: 'Bathroom – Humidity RISE: Shower ACTIVE'
+  description: ''
+  triggers:
+  - entity_id:
+    - sensor.temperature_bathroom_humidity
+    above: 88
+    trigger: numeric_state
+  - entity_id:
+    - sensor.bathroom_humidity_derivative
+    above: 1.5
+    trigger: numeric_state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.door_bathroom_contact
+    state: 'off'
+  actions:
+  - metadata: {}
+    data:
+      option: active
+    target:
+      entity_id:
+      - input_select.shower_status
+    action: input_select.select_option
+  mode: single
+- id: '1726289692937'
+  alias: 'Bathroom – Light Switch / Timer OFF: Switch OFF / Timer CANCEL'
+  description: ''
+  triggers:
+  - entity_id:
+    - switch.bathroom_switch_switch_0
+    to: 'off'
+    from: 'on'
+    trigger: state
+    id: switch
+  - entity_id:
+    - timer.bathroom_light_timer
+    to: idle
+    from: active
+    trigger: state
+    id: timer
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - switch
+    then:
+    - target:
+        entity_id:
+        - timer.bathroom_light_timer
+      data: {}
+      action: timer.cancel
+  - if:
+    - condition: trigger
+      id:
+      - timer
+    - condition: state
+      entity_id: input_select.shower_status
+      state: active
+    then:
+    - action: timer.start
+      metadata: {}
+      data:
+        duration: 00:10:00
+      target:
+        entity_id: timer.bathroom_light_timer
+    else:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.bathroom_switch_switch_0
+  mode: single
+- id: '1726289784180'
+  alias: 'Bathroom – Light Switch ON: Timer START'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.bathroom_switch_switch_0
+    to: 'on'
+    from: 'off'
+  condition: []
+  action:
+  - metadata: {}
+    data:
+      duration: 00:10:00
+    target:
+      entity_id:
+      - timer.bathroom_light_timer
+    action: timer.start
+  mode: single
+- id: '1726653863539'
+  alias: 'Downstairs – Hallway – Unavailable: Switch OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.downstairs_hallway_switch_0
+    from: unavailable
+    to: 'on'
+  - platform: state
+    entity_id:
+    - switch.downstairs_hallway_switch_0
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+  condition: []
+  action:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.downstairs_hallway_switch_0
+  mode: single
+- id: '1727930600796'
+  alias: 'Bathroom – Fan Switch / Timer OFF: Switch OFF / Timer CANCEL'
+  description: Manage bathroom fan based on timer and humidity difference
+  triggers:
+  - trigger: state
+    entity_id:
+    - switch.bathroom_switch_switch_1
+    id: switch_trigger
+    to: 'off'
+    from: 'on'
+  - entity_id:
+    - timer.bathroom_fan_timer
+    to: idle
+    trigger: state
+    id: timer_trigger
+    from: active
+    enabled: true
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - switch_trigger
+    then:
+    - action: timer.cancel
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - timer.bathroom_fan_timer
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 1
+        milliseconds: 0
+      enabled: false
+    - metadata: {}
+      data:
+        option: 'off'
+      target:
+        entity_id:
+        - input_select.shower_status
+      action: input_select.select_option
+      enabled: false
+  - if:
+    - condition: trigger
+      id:
+      - timer_trigger
+    then:
+    - choose:
+      - conditions:
+        - condition: time
+          before: 00:00:00
+          after: 05:00:00
+        - condition: numeric_state
+          entity_id: sensor.bathroom_humidity_difference
+          above: 4
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: sensor.bathroom_humidity_derivative
+            state: unknown
+        sequence:
+        - target:
+            entity_id:
+            - timer.bathroom_fan_timer
+          data:
+            duration: 00:05:00
+          enabled: true
+          action: timer.start
+      REDACTED
+      - target:
+          entity_id:
+          - switch.bathroom_switch_switch_1
+        data: {}
+        action: switch.turn_off
+      - metadata: {}
+        data:
+          option: 'off'
+        target:
+          entity_id:
+          - input_select.shower_status
+        action: input_select.select_option
+  mode: single
+- id: '1728086021281'
+  alias: 'Bathroom2 – Light Switch / Timer OFF: Switch OFF / Timer CANCEL'
+  description: ''
+  triggers:
+  - entity_id:
+    - switch.lightswitch_shelly2pm_downstairsbathroom_relay_0
+    to: 'off'
+    from: 'on'
+    trigger: state
+    id: switch
+  - entity_id:
+    - timer.bathroom2_light_timer
+    to: idle
+    from: active
+    trigger: state
+    id: timer
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - switch
+    then:
+    - target:
+        entity_id:
+        - timer.bathroom2_light_timer
+      data: {}
+      action: timer.cancel
+  - if:
+    - condition: trigger
+      id:
+      - timer
+    then:
+    - if:
+      - condition: state
+        entity_id: input_select.shower2_status
+        state: active
+      then:
+      - action: timer.start
+        metadata: {}
+        data:
+          duration: 00:10:00
+        target:
+          entity_id: timer.bathroom2_light_timer
+      else:
+      - action: switch.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: switch.lightswitch_shelly2pm_downstairsbathroom_relay_0
+  mode: single
+- id: '1729117726427'
+  alias: 'Proxmox – Jellyfin Timeout: Stop LXC'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.lxc_jellyfin_143_status
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.lxc_jellyfin_143_status
+    state: 'on'
+  actions:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.lxc_jellyfin_143_stop
+  - action: notify.pushover_servers
+    metadata: {}
+    data:
+      message: Shutting down Jellyfin
+      target: tim-iphone,mac-studio
+  mode: single
+- id: '1730152817861'
+  alias: Nanoleaf Reset Oct 2024
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: switch.turn_on
+    target:
+      entity_id: switch.wemo_plug_563_outlet
+    data: {}
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - repeat:
+      count: 5
+      sequence:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.wemo_plug_563_outlet
+        data: {}
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 3
+          milliseconds: 0
+      - action: switch.turn_on
+        target:
+          entity_id: switch.wemo_plug_563_outlet
+        data: {}
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 1
+          milliseconds: 0
+  mode: single
+- id: '1730452755730'
+  alias: Irrigation - Turn off after Duration
+  description: Automatically turns off irrigation valves after 30 minutes and notifies
+    which valve was triggered
+  triggers:
+  - entity_id: switch.watervalve_sprayzone_state
+    to: 'on'
+    for:
+      minutes: 30
+    id: sprayzone
+    trigger: state
+  - entity_id:
+    - switch.watervalve_dripzone_state
+    to: 'on'
+    for:
+      hours: 1
+      minutes: 0
+      seconds: 0
+    id: dripzone
+    trigger: state
+  - entity_id:
+    - switch.watervalve_vegezone_state
+    to: 'on'
+    for:
+      minutes: 60
+    id: vegezone
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: sprayzone
+      sequence:
+      - target:
+          entity_id: switch.watervalve_sprayzone_state
+        action: switch.turn_off
+        data: {}
+      - data:
+          message: Sprayzone has been on for 30min. Turning off now.
+          target: tim-iphone
+        action: notify.pushover_tim
+    - conditions:
+      - condition: trigger
+        id: dripzone
+      sequence:
+      - target:
+          entity_id: switch.watervalve_dripzone_state
+        action: switch.turn_off
+        data: {}
+      - data:
+          message: Dripzone has been on for 30min. Turning off now.
+          target: tim-iphone
+        action: notify.pushover_tim
+    - conditions:
+      - condition: trigger
+        id: vegezone
+      sequence:
+      - target:
+          entity_id: switch.watervalve_vegezone_state
+        action: switch.turn_off
+        data: {}
+      - data:
+          message: Vegezone  has been on for 60min. Turning off now.
+          target: tim-iphone
+        action: notify.pushover_tim
+    REDACTED
+    - target:
+        entity_id:
+        - switch.watervalve_sprayzone_state
+        - switch.watervalve_dripzone_state
+        - switch.watervalve_vegezone_state
+      action: switch.turn_off
+      data: {}
+    - data:
+        message: Unknown zone triggered. Turning off all valves as precaution.
+        target: tim-iphone
+      action: notify.pushover_tim
+  mode: single
+- id: '1730786066468'
+  alias: 'Office – Presence AWAY: Switch Gear OFF'
+  description: Turns off office equipment when away. Uses extended timeout (90 min)
+    during business hours Mon–Fri 7am–6pm, 10 min otherwise. Skipped entirely if Edit
+    Suite Power Override is ON.
+  triggers:
+  - entity_id:
+    - sensor.espresence_tim_iphone
+    for:
+      hours: 0
+      minutes: '{{ 90 if (now().weekday() < 5 and 7 <= now().hour < 18) else 10 }}'
+      seconds: 0
+    from: office
+    id: presence_timeout
+    to: not_home
+    trigger: state
+  - at: '21:00:00'
+    id: evening_shutdown
+    trigger: time
+  - entity_id:
+    - light.lightbulb_office
+    for:
+      hours: 3
+      minutes: 0
+      seconds: 0
+    id: equipment_timeout
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.edit_suite_power_override
+    state: 'off'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.lightbulb_office
+      state: 'on'
+    - condition: state
+      entity_id: switch.smartplug_wemo_editsuite
+      state: 'on'
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: sensor.espresence_tim_iphone
+          state: office
+      - condition: template
+        value_template: '{{ trigger.id in [''presence_timeout'', ''evening_shutdown'']
+          }}'
+    - condition: and
+      conditions:
+      - condition: template
+        value_template: '{{ trigger.id == ''equipment_timeout'' }}'
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: sensor.espresence_tim_iphone
+          state: office
+  actions:
+  - action: logbook.log
+    data:
+      message: 'Equipment shutdown triggered by: {{ trigger.id }}{% if trigger.id
+        == ''presence_timeout'' %} ({{ ''Business hours – 90 min timeout'' if (now().weekday()
+        < 5 and 7 <= now().hour < 18) else ''After hours – 10 min timeout'' }}){%
+        endif %}'
+      name: Office Automation
+  - action: switch.turn_off
+    continue_on_error: true
+    data: {}
+    enabled: true
+    target:
+      entity_id: switch.smartplug_wemo_editsuite
+  - action: light.turn_off
+    continue_on_error: true
+    data: {}
+    target:
+      device_id: 260a8dc6f1811191979aa2b2bed0a363
+  - action: notify.pushover_tim
+    data:
+      message: Equipment turned off – {{ trigger.id }}{% if trigger.id == 'presence_timeout'
+        %} after {{ 90 if (now().weekday() < 5 and 7 <= now().hour < 18) else 10 }}
+        min away{% elif trigger.id == 'evening_shutdown' %} evening shutdown{% elif
+        trigger.id == 'equipment_timeout' %} light left on for 3+ hours{% endif %}
+      priority: '{{ 0 if trigger.id == ''evening_shutdown'' else -1 }}'
+      target: tim-iphone
+      title: Away from Office
+  mode: single
+- id: '1730875769504'
+  alias: Irrigation - Zone Timers FINISH and Valves OFF
+  description: Handles timer completion and manual valve off for all irrigation zones
+  triggers:
+  - entity_id: timer.irrigation_timer_sprayzone
+    from: active
+    to: idle
+    id: sprayzone_timer
+    trigger: state
+  - entity_id: switch.watervalve_sprayzone_state
+    to: 'off'
+    id: sprayzone_valve
+    trigger: state
+  - entity_id: timer.irrigation_timer_dripzone
+    from: active
+    to: idle
+    id: dripzone_timer
+    trigger: state
+  - entity_id: switch.watervalve_dripzone_state
+    to: 'off'
+    id: dripzone_valve
+    trigger: state
+  - entity_id: timer.irrigation_timer_lawnzone
+    from: active
+    to: idle
+    id: lawnzone_timer
+    trigger: state
+  - entity_id: switch.watervalve_lawnzone_state
+    to: 'off'
+    id: lawnzone_valve
+    trigger: state
+  - entity_id: timer.irrigation_timer_vegezone
+    from: active
+    to: idle
+    id: vegezone_timer
+    trigger: state
+  - entity_id: switch.watervalve_vegezone_state
+    to: 'off'
+    id: vegezone_valve
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: sprayzone_timer
+        - condition: trigger
+          id: sprayzone_valve
+      sequence:
+      - target:
+          entity_id: switch.watervalve_sprayzone_state
+        action: switch.turn_off
+        data: {}
+      - target:
+          entity_id: timer.irrigation_timer_sprayzone
+        action: timer.cancel
+        data: {}
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: dripzone_timer
+        - condition: trigger
+          id: dripzone_valve
+      sequence:
+      - target:
+          entity_id: switch.watervalve_dripzone_state
+        action: switch.turn_off
+        data: {}
+      - target:
+          entity_id: timer.irrigation_timer_dripzone
+        action: timer.cancel
+        data: {}
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: lawnzone_timer
+        - condition: trigger
+          id: lawnzone_valve
+      sequence:
+      - target:
+          entity_id: switch.watervalve_lawnzone_state
+        action: switch.turn_off
+        data: {}
+      - target:
+          entity_id: timer.irrigation_timer_lawnzone
+        action: timer.cancel
+        data: {}
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: vegezone_timer
+        - condition: trigger
+          id: vegezone_valve
+      sequence:
+      - target:
+          entity_id: switch.watervalve_vegezone_state
+        action: switch.turn_off
+        data: {}
+      - target:
+          entity_id: timer.irrigation_timer_vegezone
+        action: timer.cancel
+        data: {}
+  mode: single
+- id: '1730885759254'
+  alias: Irrigation - Zone Timers START
+  description: Start appropriate timer when any irrigation valve turns on
+  triggers:
+  - entity_id: switch.watervalve_sprayzone_state
+    to: 'on'
+    id: sprayzone
+    trigger: state
+  - entity_id: switch.watervalve_dripzone_state
+    to: 'on'
+    id: dripzone
+    trigger: state
+  - entity_id:
+    - switch.watervalve_vegezone_state
+    to: 'on'
+    id: vegezone
+    trigger: state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: sprayzone
+      - condition: state
+        entity_id: timer.irrigation_timer_sprayzone
+        state: idle
+      sequence:
+      - target:
+          entity_id: timer.irrigation_timer_sprayzone
+        data:
+          duration: '{{ (states(''input_number.irrigation_manualduration_sprayzone'')
+            | int * 60) | string }}'
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: dripzone
+      - condition: state
+        entity_id: timer.irrigation_timer_dripzone
+        state: idle
+      sequence:
+      - target:
+          entity_id: timer.irrigation_timer_dripzone
+        data:
+          duration: '{{ (states(''input_number.irrigation_manualduration_dripzone'')
+            | int * 60) | string }}'
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: lawnzone
+      - condition: state
+        entity_id: timer.irrigation_timer_lawnzone
+        state: idle
+      sequence:
+      - target:
+          entity_id: timer.irrigation_timer_lawnzone
+        data:
+          duration: '{{ (states(''input_number.irrigation_manualduration_lawnzone'')
+            | int * 60) | string }}'
+        action: timer.start
+    - conditions:
+      - condition: trigger
+        id: vegezone
+      - condition: state
+        entity_id: timer.irrigation_timer_vegezone
+        state: idle
+      sequence:
+      - target:
+          entity_id: timer.irrigation_timer_vegezone
+        data:
+          duration: '{{ (states(''input_number.irrigation_manualduration_vegezone'')
+            | int * 60) | string }}'
+        action: timer.start
+  mode: single
+- id: '1732837360821'
+  alias: Lighting – Office – Office Lamp ON
+  description: Turns on office lamp when edit suite activates (if lux < 200), when
+    presence detected after sunset, or at sunset.
+  triggers:
+  - entity_id:
+    - switch.smartplug_wemo_editsuite
+    to: 'on'
+    from: 'off'
+    platform: state
+    id: edit_suite_on
+  - entity_id:
+    - sensor.espresence_tim_iphone
+    to: office
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+    platform: state
+    id: presence_office
+  - event: sunset
+    offset: 0
+    platform: sun
+    id: sunset
+  conditions: []
+  actions:
+  - choose:
+    - alias: Edit suite on with low light
+      conditions:
+      - condition: trigger
+        id: edit_suite_on
+      - condition: numeric_state
+        entity_id: sensor.lux_office_illuminance
+        below: 200
+      sequence:
+      - action: light.turn_on
+        data: {}
+        target:
+          device_id: 260a8dc6f1811191979aa2b2bed0a363
+      - action: switch.turn_on
+        data: {}
+        target:
+          entity_id: switch.adaptive_lighting_office
+    - alias: Presence or sunset – after dark with Tim in office
+      conditions:
+      - condition: trigger
+        id:
+        - presence_office
+        - sunset
+      - condition: sun
+        after: sunset
+        before: sunrise
+        after_offset: -00:30:00
+      - condition: state
+        entity_id: sensor.espresence_tim_iphone
+        state: office
+      sequence:
+      - action: light.turn_on
+        data: {}
+        target:
+          device_id: 260a8dc6f1811191979aa2b2bed0a363
+  mode: single
+- id: '1732837448620'
+  alias: 'Office – Suite OFF or Presence AWAY: Lamp OFF'
+  description: ''
+  triggers:
+  - entity_id:
+    - switch.smartplug_wemo_editsuite
+    to: 'off'
+    from: 'on'
+    trigger: state
+  - entity_id:
+    - sensor.espresence_tim_iphone
+    from: office
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.edit_suite_power_override
+    state:
+    - 'off'
+  actions:
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      device_id: 260a8dc6f1811191979aa2b2bed0a363
+  mode: single
+- id: '1733608044300'
+  alias: Christmas Lights – Turn OFF
+  description: ''
+  triggers:
+  - trigger: time
+    at: '22:45:00'
+  - trigger: state
+    entity_id:
+    - light.lounge_lamps
+    to: 'off'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.christmas_season
+    state: 'on'
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.wemo_plug_563_outlet
+      - switch.wemo_plug_782_outlet
+  mode: single
+- id: '1733610797362'
+  alias: Christmas Lights – Tree ON
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunrise
+    offset: 02:00:00
+  - trigger: sun
+    event: sunset
+    offset: 0
+  - trigger: state
+    entity_id:
+    - light.lounge_lamps
+    to: 'on'
+    enabled: false
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.christmas_season
+    state: 'on'
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.wemo_plug_782_outlet
+  mode: single
+- id: '1733638980587'
+  alias: Christmas Lights – Bench ON
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 0
+  - trigger: state
+    entity_id:
+    - light.lounge_lamps
+    to: 'on'
+    enabled: false
+  - trigger: time
+    at: '19:30:00'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.christmas_season
+    state: 'on'
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      device_id: 68ced8265db52e240310e7886a28a854
+  mode: single
+- id: '1734859481920'
+  alias: 'Entertainment – PS4 Rocket League: Set volume'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - media_player.playstation_4
+    attribute: source
+    to: ROCKET LEAGUE
+  - trigger: state
+    entity_id:
+    - media_player.playstation_4
+    attribute: source
+    to: Rocket League®
+  - trigger: state
+    entity_id:
+    - light.projector_volume_templatelight
+    to: 'on'
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: media_player.playstation_4
+      attribute: source
+      state: ROCKET LEAGUE
+    - condition: state
+      entity_id: media_player.playstation_4
+      attribute: source
+      state: Rocket League®
+  actions:
+  - action: media_player.volume_set
+    metadata: {}
+    data:
+      volume_level: 0.5
+    target:
+      entity_id: media_player.tv_room
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 50
+    target:
+      entity_id: light.projector_volume_templatelight
+  mode: single
+- id: '1736029765964'
+  alias: Irrigation - Evening Irrigation Sequence OLD Nov 2025
+  description: Sequential irrigation of all zones starting one hour before sunset
+  triggers:
+  - event: sunset
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_vegezone
+      below: 1
+    then:
+    - if:
+      - condition: template
+        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
+          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+          | float <\n  states('input_number.irrigation_moisturetrigger_vegezone')
+          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_vegezone',
+          'on'))\n}}"
+      - condition: state
+        entity_id: input_boolean.irrigation_enable_vegezone
+        state: 'on'
+      then:
+      - data:
+          title: Irrigation
+          message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
+            | round }} mins
+          target: tim-iphone
+        action: notify.pushover_tim
+      - target:
+          entity_id: timer.irrigation_timer_vegezone
+        data:
+          duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'') |
+            float * 60) | round }}'
+        action: timer.start
+      - target:
+          entity_id:
+          - switch.watervalve_vegezone_state
+        action: switch.turn_on
+        data: {}
+      - wait_for_trigger:
+        - entity_id:
+          - timer.irrigation_timer_vegezone
+          from: active
+          to: idle
+          trigger: state
+    - target:
+        entity_id: counter.irrigation_daysuntilnext_vegezone
+      data:
+        value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int }}'
+      action: counter.set_value
+    - target:
+        entity_id: input_datetime.irrigation_last_vegezone
+      data:
+        datetime: '{{ now().isoformat() }}'
+      action: input_datetime.set_datetime
+    enabled: true
+  mode: single
+- id: '1736032841443'
+  alias: Alarm – Toggle Alarm
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: alarm_control_panel.alarm_arm_away
+    metadata: {}
+    data: {}
+    target:
+      entity_id: alarm_control_panel.alarm
+    enabled: false
+  - if:
+    - condition: state
+      entity_id: alarm_control_panel.crow_alarm_system_alarm
+      state: armed_away
+    then:
+    - action: alarm_control_panel.alarm_disarm
+      metadata: {}
+      data:
+        code: '7923'
+      target:
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+    else:
+    - action: alarm_control_panel.alarm_arm_away
+      metadata: {}
+      data: {}
+      target:
+        entity_id: alarm_control_panel.crow_alarm_system_alarm
+  mode: single
+- id: '1736664563575'
+  alias: Smoke Detector Alert
+  description: Sends high priority Pushover notification when any smoke detector is
+    triggered
+  triggers:
+  - entity_id:
+    - binary_sensor.smoke_office_smoke
+    - binary_sensor.smoke_understairs_smoke
+    to: 'on'
+    trigger: state
+  actions:
+  - data:
+      title: SMOKE DETECTED!
+      message: Smoke detected in {{ state_attr(trigger.entity_id, 'area_name') if
+        state_attr(trigger.entity_id, 'area_name') else trigger.entity_id.split('.')[1].split('_')[1]
+        | title }}
+      data:
+        priority: 2
+        url: homeassistant://navigate/{{ trigger.entity_id }}
+        url_title: View in Home Assistant
+        sound: alien
+        retry: 30
+        expire: 3600
+    action: notify.pushover_household
+  mode: parallel
+- id: '1738485947579'
+  alias: 'Entertainment – Playlist Selected: Play Sonos'
+  triggers:
+  - entity_id: input_select.entertainment_playlist_select
+    trigger: state
+  actions:
+  - action: script.play_spotify_playlist_on_sonos
+    data: {}
+- id: '1745215727126'
+  alias: 'Office – Hallway Motion: Alert'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.motion_stairwell_occupancy
+    - binary_sensor.crow_alarm_sensors_downstairs_hallway
+    to: 'on'
+    platform: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.office_alert
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.espresense_office_connectivity
+    state: 'on'
+  actions:
+  - if:
+    - condition: state
+      entity_id: light.lightbulb_office
+      state: 'on'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 89
+        - 0
+      target:
+        entity_id: light.lightbulb_office
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 0
+        milliseconds: 100
+    - action: adaptive_lighting.apply
+      metadata: {}
+      data:
+        lights:
+        - light.lightbulb_office
+    else:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 0
+        - 0
+      target:
+        entity_id: light.lightbulb_office
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 0
+        milliseconds: 100
+    - action: light.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.lightbulb_office
+  mode: single
+- id: '1745357138802'
+  alias: 'Security – Dog Mode – Motion or Door: Notification'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.motion_sensors
+    - binary_sensor.doors_windows
+    to: 'on'
+    trigger: state
+    id: motion_trigger
+  - entity_id:
+    - binary_sensor.doors_windows
+    to: 'on'
+    trigger: state
+    id: door_trigger
+  conditions:
+  - condition: state
+    entity_id: input_boolean.security_dog_mode
+    state: 'on'
+  - condition: state
+    entity_id: timer.downstairs_hallway_security_timer
+    state: idle
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: person.tim
+      state: home
+    - condition: state
+      entity_id: person.sonya
+      state: home
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: motion_trigger
+      sequence:
+      - data:
+          message: Motion detected at home
+          data:
+            priority: 1
+            sound: gamelan
+          target: tim-iphone
+        action: notify.pushover_tim
+    - conditions:
+      - condition: trigger
+        id: door_trigger
+      sequence:
+      - data:
+          message: Door or window opened at home
+          data:
+            priority: 2
+            retry: 60
+            expire: 3600
+            sound: alien
+          target: tim-iphone
+        action: notify.pushover_tim
+    REDACTED
+    - data:
+        message: Security alert at home
+        target: tim-iphone
+        data:
+          priority: 2
+          retry: 60
+          expire: 3600
+          sound: alien
+      action: notify.pushover_tim
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: timer.downstairs_hallway_security_timer
+    action: timer.start
+  mode: single
+- id: '1747562242610'
+  alias: 'Bathroom – Shower ACTIVE: Timer START, Fan START'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_select.shower_status
+    to: active
+  conditions: []
+  actions:
+  - action: timer.start
+    metadata: {}
+    data:
+      duration: 00:20:00
+    target:
+      entity_id: timer.bathroom_light_timer
+  - if:
+    - condition: time
+      before: '22:30:00'
+      after: 06:00:00
+    then:
+    - data: {}
+      action: switch.turn_on
+      target:
+        entity_id: switch.bathroom_switch_switch_1
+    - metadata: {}
+      data:
+        duration: 00:20:00
+      target:
+        entity_id:
+        - timer.bathroom_fan_timer
+      action: timer.start
+  mode: single
+- id: '1747562681899'
+  alias: 'Bathroom2 – Shower ACTIVE: Timer START, Fan START'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_select.shower2_status
+    to: active
+  conditions: []
+  actions:
+  - action: timer.start
+    metadata: {}
+    data:
+      duration: 00:20:00
+    target:
+      entity_id:
+      - timer.bathroom2_light_timer
+  - if:
+    - condition: time
+      before: '22:30:00'
+      after: 06:00:00
+    then:
+    - data: {}
+      action: switch.turn_on
+      target:
+        entity_id: switch.lightswitch_shelly2pm_downstairsbathroom_relay_1
+    - metadata: {}
+      data:
+        duration: 00:20:00
+      target:
+        entity_id:
+        - timer.bathroom2_fan_timer
+      action: timer.start
+  mode: single
+- id: '1748763446500'
+  alias: Security – Parking – Car Street Occupancy (Debounced)
+  description: Debounces the carstreet car occupancy binary sensor. At the end of
+    each debounce delay, checks that camera.front is not unavailable — if HA had a
+    momentary connection drop, it will still be unavailable (or only just recovered),
+    filtering out false positives caused by reconnection state replays.
+  triggers:
+  - entity_id: binary_sensor.carstreet_car_occupancy
+    to: 'on'
+    for: 00:00:05
+    id: turn_on
+    trigger: state
+  - entity_id: binary_sensor.carstreet_car_occupancy
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 15
+    id: turn_off
+    trigger: state
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: camera.front
+      state: unavailable
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: turn_on
+      sequence:
+      - target:
+          entity_id: input_boolean.car_street_occupancy_debounce
+        action: input_boolean.turn_on
+        data: {}
+    - conditions:
+      - condition: trigger
+        id: turn_off
+      sequence:
+      - target:
+          entity_id: input_boolean.car_street_occupancy_debounce
+        action: input_boolean.turn_off
+        data: {}
+- id: '1748904458198'
+  alias: 'Location – Tim on Calliope: Carpark Notification'
+  description: ''
+  triggers:
+  - device_id: 1b08b2ea0552554cb3449d1d8477199b
+    domain: device_tracker
+    entity_id: f4af130e4d66dd87c187ef03ba179875
+    type: enters
+    zone: zone.calliope_east
+    trigger: device
+  - device_id: 1b08b2ea0552554cb3449d1d8477199b
+    domain: device_tracker
+    entity_id: f4af130e4d66dd87c187ef03ba179875
+    type: enters
+    zone: zone.calliope_west
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: 1b08b2ea0552554cb3449d1d8477199b
+    domain: device_tracker
+    entity_id: f4af130e4d66dd87c187ef03ba179875
+    type: is_not_home
+  - condition: state
+    entity_id: sensor.home_tims_iphone_direction_of_travel
+    state: towards
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: person.tim
+      state: home
+      attribute: last_changed
+  actions:
+  - action: notify.mobile_app_tims_iphone
+    metadata: {}
+    data:
+      message: '{% if is_state(''binary_sensor.carstreet_car_occupancy'', ''on'')
+        %}     Carpark is TAKEN   {% else %}     Carpark is FREE   {% endif %}'
+      data:
+        image: http://10.1.1.28:5000/api/Front/latest.jpg
+        actions:
+        - action: VIEW_IMAGE
+          title: View Image
+          uri: http://10.1.1.28:5000/api/Front/latest.jpg
+  mode: single
+- id: '1748985637521'
+  alias: Kitchen – Dishwasher Evening Check
+  description: Check dishwasher status at 9pm and send notifications
+  triggers:
+  - at: '21:00:00'
+    trigger: time
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ not is_connected }}'
+      sequence:
+      - action: notify.mobile_app_tims_iphone
+        metadata: {}
+        data:
+          message: The dishwasher is not connected. Please check the Home Connect
+            integration.
+          title: Dishwasher Alert
+          data:
+            push:
+              interruption-level: critical
+    - conditions:
+      - condition: template
+        value_template: '{{ is_connected }}'
+      - condition: template
+        value_template: '{{ not has_activity_recently }}'
+      sequence:
+      - action: notify.mobile_app_tims_iphone
+        metadata: {}
+        data:
+          message: The dishwasher is connected but hasn't run in the last 4 hours.
+            Did you forget to start it?
+          title: Dishwasher Reminder
+          data:
+            push:
+              interruption-level: critical
+        enabled: false
+      - action: notify.pushover_household
+        metadata: {}
+        data:
+          message: The dishwasher is connected but hasn't run in the last 4 hours.
+            Did you forget to start it?
+          title: Dishwasher Reminder
+          data:
+            push:
+              interruption-level: critical
+    - conditions:
+      - condition: template
+        value_template: '{{ is_connected and has_activity_recently }}'
+      sequence:
+      - action: notify.mobile_app_tims_iphone
+        metadata: {}
+        data:
+          message: Dishwasher is connected and has run recently. All good! ✅
+          title: Dishwasher Status
+          data:
+            push:
+              interruption-level: passive
+        enabled: false
+  variables:
+    connectivity_sensor: binary_sensor.bosch_dishwasher_connection
+    operation_sensor: sensor.bosch_dishwasher_operation_state
+    is_connected: '{{ is_state(''binary_sensor.bosch_dishwasher_connection'', ''on'')
+      }}'
+    current_operation: '{{ states(''sensor.bosch_dishwasher_operation_state'') }}'
+    has_activity_recently: '{{ (as_timestamp(now()) - as_timestamp(states.sensor.bosch_dishwasher_operation_state.last_changed,
+      0)) < 14400 }}'
+  mode: single
+- id: '1750496398969'
+  alias: Enhanced Frigate Notification with Pushover
+  description: Frigate notification with both mobile app and Pushover alerts
+  triggers:
+  - trigger: mqtt
+    topic: frigate/reviews
+    payload: new
+    value_template: '{{ value_json[''type''] }}'
+    id: frigate-event
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.payload_json.type == ''new'' }}'
+  - condition: template
+    value_template: '{{ ''person'' in trigger.payload_json.after.data.objects }}'
+  - condition: template
+    value_template: '{{ ''property'' in (trigger.payload_json.after.entered_zones
+      | default([])) }}'
+  actions:
+  - action: notify.mobile_app_tims_iphone
+    data:
+      title: Security Alert
+      message: '{{ message }}'
+      data:
+        tag: frigate-{{ review_id }}
+        group: frigate-{{ camera }}
+        image: '{{ thumbnail_url }}'
+        clickAction: '{{ clip_url }}'
+        push:
+          interruption-level: time-sensitive
+          sound: alarm.caf
+        actions:
+        - action: URI
+          title: View Clip
+          uri: '{{ clip_url }}'
+        - action: URI
+          title: View Snapshot
+          uri: '{{ snapshot_url }}'
+    enabled: false
+  - action: downloader.download_file
+    data:
+      url: '{{ thumbnail_url }}'
+      filename: frigate_alert_{{ review_id }}.jpg
+      overwrite: true
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 2
+      milliseconds: 0
+  - action: notify.pushover_tim
+    data:
+      title: Security Alert
+      message: '{{ objects | join('', '') | title }} detected on {{ camera_name }}
+        camera'
+      data:
+        attachment: /config/www/cameras/frigate_alert_{{ review_id }}.jpg
+        priority: 1
+      target: tim-iphone,mac-studio
+  - delay:
+      minutes: 5
+  - action: shell_command.delete_frigate_image
+    data:
+      filename: frigate_alert_{{ review_id }}.jpg
+    enabled: false
+  mode: parallel
+  variables:
+    camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+    camera_name: '{{ camera | replace(''_'', '' '') | title }}'
+    review_id: '{{ trigger.payload_json[''after''][''id''] }}'
+    objects: '{{ trigger.payload_json[''after''][''data''][''objects''] }}'
+    severity: '{{ trigger.payload_json[''after''][''severity''] }}'
+    base_url: https://homeassistant.timparsons.nz:8443
+    client_id: ''
+    thumbnail_url: '{{ base_url }}/api/frigate{{ client_id }}/notifications/{{ trigger.payload_json[''after''][''data''][''detections''][0]
+      }}/thumbnail.jpg'
+    clip_url: '{{ base_url }}/api/frigate{{ client_id }}/notifications/{{ trigger.payload_json[''after''][''data''][''detections''][0]
+      }}/{{ camera }}/clip.mp4'
+    snapshot_url: '{{ base_url }}/api/frigate{{ client_id }}/notifications/{{ trigger.payload_json[''after''][''data''][''detections''][0]
+      }}/snapshot.jpg'
+    title: Security Alert
+    message: '{{ objects | join('', '') | title }} detected on {{ camera_name }} camera'
+- id: '1750548357553'
+  alias: 'Front End - Sidebar/Navbar ON 1hr: Turn OFF'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.sidebar_toggle
+    to: 'on'
+    for:
+      hours: 1
+      minutes: 0
+      seconds: 0
+  - trigger: state
+    entity_id:
+    - input_boolean.navbar_toggle
+    to: 'on'
+    for:
+      hours: 1
+      minutes: 0
+      seconds: 0
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - input_boolean.sidebar_toggle
+      - input_boolean.navbar_toggle
+  mode: single
+- id: auto_theme_switcher
+  alias: Front End - Auto Theme Switcher
+  description: Automatically switch between Catppuccin Latte and Mocha based on sun
+  triggers:
+  - event: sunrise
+    offset: 00:30:00
+    trigger: sun
+  - event: sunset
+    offset: -00:30:00
+    trigger: sun
+  - event: start
+    trigger: homeassistant
+  actions:
+  - data:
+      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
+        else %}\n  Catppuccin Mocha\n{% endif %}\n"
+    action: frontend.set_theme
+  mode: single
+- id: auto_theme_switcher
+  alias: Auto Theme Switcher
+  description: Automatically switch between Catppuccin Latte and Mocha based on sun
+  triggers:
+  - event: sunrise
+    offset: 00:30:00
+    trigger: sun
+  - event: sunset
+    offset: -00:30:00
+    trigger: sun
+  - event: start
+    trigger: homeassistant
+  actions:
+  - data:
+      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
+        else %}\n  Catppuccin Mocha\n{% endif %}\n"
+    action: frontend.set_theme
+  mode: single
+- id: auto_theme_switcher
+  alias: Auto Theme Switcher
+  description: Automatically switch between Catppuccin Latte and Mocha based on sun
+  triggers:
+  - event: sunrise
+    offset: 00:30:00
+    trigger: sun
+  - event: sunset
+    offset: -00:30:00
+    trigger: sun
+  - event: start
+    trigger: homeassistant
+  actions:
+  - data:
+      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
+        else %}\n  Catppuccin Mocha\n{% endif %}\n"
+    action: frontend.set_theme
+  mode: single
+- id: '1750550589757'
+  alias: Front End - Set Default Theme
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunrise
+    offset: 00:30:00
+  - trigger: sun
+    event: sunrise
+    offset: -00:30:00
+  - trigger: homeassistant
+    event: start
+  conditions: []
+  actions:
+  - action: frontend.set_theme
+    metadata: {}
+    data:
+      name: Catppuccin Latte
+  - if:
+    - condition: sun
+      before: sunset
+      after: sunrise
+    then:
+    - action: frontend.set_theme
+      metadata: {}
+      data:
+        name: Catppuccin Latte
+    else:
+    - action: frontend.set_theme
+      metadata: {}
+      data:
+        name: Catppuccin Mocha
+  mode: single
+- id: '1750754835490'
+  alias: 'Power Outage – Power OFF 0min: Set Flag'
+  description: On loss of power, set input boolean for tracking and send notification.
+    Notification will fail at Calliope because fibre will be done.
+  triggers:
+  - trigger: state
+    entity_id: sensor.calliope_ups_status_data
+    to:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+    from:
+    - OL
+    - OL CHRG
+    - FSD OL CHRG
+  conditions: []
+  actions:
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.ups_power_outage
+  mode: single
+- id: '1751152560728'
+  alias: 'Power Outage – Power OFF 2min: Shutdown LXCs'
+  description: After 2 minutes of power outage, shutdown multiple Proxmox LXCs to
+    conserve UPS battery.
+  triggers:
+  - entity_id: input_boolean.ups_power_outage
+    to: 'on'
+    for:
+      minutes: '{{ shutdown_delay_minutes }}'
+    trigger: state
+  - entity_id:
+    - input_boolean.ups_power_outage
+    to: 'on'
+    from: 'off'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: sensor.calliope_ups_status_data
+    state:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  actions:
+  - variables:
+      running_lxcs: []
+      stopped_lxcs: []
+  - repeat:
+      for_each: '{{ lxcs_to_shutdown }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''on'') }}'
+        then:
+        - variables:
+            running_lxcs: '{{ running_lxcs + [repeat.item.friendly_name] }}'
+        else:
+        - variables:
+            stopped_lxcs: '{{ stopped_lxcs + [repeat.item.friendly_name] }}'
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: 'Power still out after {{ shutdown_delay_minutes }} minutes.
+
+        {% if running_lxcs | length > 0 %}Shutting down: {{ running_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if stopped_lxcs | length > 0 %}Already stopped: {{ stopped_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if running_lxcs | length == 0 and stopped_lxcs | length == 0 %} No LXCs
+        found to check. {% endif %}'
+    target:
+      entity_id: input_text.ups_last_event
+  - action: rest_command.ups_beeper_disable
+    metadata: {}
+    data: {}
+    enabled: true
+  - repeat:
+      for_each: '{{ lxcs_to_shutdown }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''on'') }}'
+        then:
+        - action: button.press
+          metadata: {}
+          data: {}
+          target:
+            entity_id: '{{ repeat.item.entity_id }}'
+        - action: input_boolean.turn_on
+          metadata: {}
+          data: {}
+          target:
+            entity_id: input_boolean.{{ repeat.item.name }}_shutdown_by_ups
+        - delay:
+            seconds: 5
+    enabled: true
+  - action: notify.pushover_servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: Calliope Power Outage
+      message: 'Power still out after {{ shutdown_delay_minutes }} minutes.
+
+        {% if running_lxcs | length > 0 %}Shutting down: {{ running_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if stopped_lxcs | length > 0 %}Already stopped: {{ stopped_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if running_lxcs | length == 0 and stopped_lxcs | length == 0 %} No LXCs
+        found to check. {% endif %}'
+      data:
+        priority: 1
+    enabled: true
+  variables:
+    shutdown_delay_minutes: 2
+    lxcs_to_shutdown:
+    - name: adguard
+      friendly_name: Adguard
+      entity_id: button.lxc_adguard_123_shutdown
+      status_entity: binary_sensor.lxc_frigate_128_status
+    - name: frigate
+      friendly_name: Frigate
+      entity_id: button.lxc_frigate_128_shutdown
+      status_entity: binary_sensor.lxc_adguard_123_status
+    - name: plex
+      friendly_name: Plex
+      entity_id: button.lxc_plex_142_shutdown
+      status_entity: binary_sensor.lxc_plex_142_status
+    - name: immich
+      friendly_name: Immich
+      entity_id: button.lxc_immich_148_shutdown
+      status_entity: binary_sensor.lxc_immich_148_status
+  mode: single
+- id: '1751153995192'
+  alias: 'Power Outage – Power OFF 5min: Shutdown Synology'
+  description: After 5 minutes of power outage, shutdown Synology (calliope) to conserve
+    UPS battery.
+  triggers:
+  - enabled: false
+    entity_id: input_boolean.ups_power_outage
+    for:
+      minutes: '{{ shutdown_delay_minutes }}'
+    to: 'on'
+    trigger: state
+  - entity_id:
+    - input_boolean.ups_power_outage
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    from: 'off'
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: sensor.calliope_ups_status_data
+    state:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  actions:
+  - action: input_text.set_value
+    data:
+      value: Power still out after {{ shutdown_delay_minutes }} mins. Shutting down
+        Synology and JoyInc Mac Mini.
+    metadata: {}
+    target:
+      entity_id: input_text.ups_last_event
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 01M0VWE7YZ02EK5QHQBMM5A4MQ
+  - delay: 00:00:05
+  - action: button.press
+    data: {}
+    target:
+      entity_id: button.calliope_shut_down
+  - action: shell_command.shutdown_mac_mini
+    data: {}
+    metadata: {}
+  - action: notify.pushover_servers
+    continue_on_error: true
+    data:
+      data:
+        priority: 1
+      message: 'Power still out after {{ shutdown_delay_minutes }} mins.
+
+        Shutting down Synology and JoyInc Mac Mini.'
+      target: tim-iphone,mac-studio
+      title: Calliope Power Outage
+    enabled: true
+    metadata: {}
+  mode: single
+  variables:
+    shutdown_delay_minutes: 5
+- id: '1751158671299'
+  alias: Power Outage – Update UPS Shutdown Delay
+  description: Execute REST command when UPS shutdown delay input number changes
+  triggers:
+  - entity_id: input_number.ups_shutdown_delay
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      delay: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_shutdown_delay
+- id: '1751165048831'
+  alias: 'Power Outage – Power OFF 0min: Log Start Time, Send Notification'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.ups_power_outage
+    to: 'on'
+    from: 'off'
+  conditions: []
+  actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: Power went off at {{ now().strftime('%H:%M on %B %d') }}.
+    target:
+      entity_id: input_text.ups_last_event
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      datetime: '{{ now() }}'
+    target:
+      entity_id: input_datetime.ups_last_outage_start
+  - action: notify.pushover_servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: Calliope Power Outage
+      message: Power went off at {{ now().strftime('%H:%M on %B %d') }}.
+      data:
+        priority: 1
+  mode: single
+- id: '1751178723868'
+  alias: Power Outage – Update UPS Battery Low Setpoint
+  description: Execute REST command when UPS Battery Low Setpoint input number changes
+  triggers:
+  - entity_id:
+    - input_number.ups_battery_low_setpoint
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      value: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_battery_charge_low
+  mode: single
+- id: '1751179036038'
+  alias: Power Outage – Update UPS Low Runtime Setpoint
+  description: Execute REST command when UPS shutdown delay input number changes
+  triggers:
+  - entity_id: input_number.ups_low_runtime_setpoint
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      value: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_battery_runtime_low
+  mode: single
+- id: '1751770911298'
+  alias: 'Power Outage – Power ON: Wake Synology, Start LXCs, Notification'
+  description: When power is restored, wake Synology and start up LXCs that were shutdown
+    during the power outage.
+  triggers:
+  - event: start
+    trigger: homeassistant
+  - trigger: state
+    entity_id: sensor.calliope_ups_status_data
+    to:
+    - OL
+    - OL CHRG
+    - FSD OL CHRG
+    from:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  conditions:
+  - condition: state
+    state: 'on'
+    entity_id: input_boolean.ups_power_outage
+    enabled: true
+  actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: 'Power restored at {{ now().strftime(''%H:%M on %B %d'') }}. Outage duration:
+        {% set hours = states(''sensor.ups_last_outage_duration'') | float %} {%-
+        if hours >= 1 -%}   {{ (hours | int) }} hour{{ ''s'' if hours | int != 1 else
+        '''' }} {{ ((hours % 1) * 60) | round }} minute{{ ''s'' if ((hours % 1) *
+        60) | round != 1 else '''' }} {%- else -%}   {{ (hours * 60) | round }} minute{{
+        ''s'' if (hours * 60) | round != 1 else '''' }} {%- endif -%} {% if lxcs_to_start
+        | length > 0 %}Starting up: {{ lxcs_to_start | join('', '') }}{% endif %}
+        {% if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
+        | join('', '') }}{% endif %}'
+    target:
+      entity_id: input_text.ups_last_event
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.wake_on_lan_90_09_d0_6a_5f_e4
+  - variables:
+      lxcs_to_start: []
+      lxcs_already_running: []
+  - repeat:
+      for_each: '{{ lxcs_to_startup }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
+        then:
+        - variables:
+            lxcs_to_start: '{{ lxcs_to_start + [repeat.item.friendly_name] }}'
+        else:
+        - variables:
+            lxcs_already_running: '{{ lxcs_already_running + [repeat.item.friendly_name]
+              }}'
+  - repeat:
+      sequence:
+      - delay: 30
+      while:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.internet_connectivity
+          state: 'on'
+  - action: notify.pushover_servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: 'Calliope Power Outage: Power Restored'
+      message: "Power restored at {{ now().strftime('%H:%M on %B %d') }}. Outage duration:
+        {% set hours = states('sensor.ups_last_outage_duration') | float %} {%- if
+        hours >= 1 -%}\n  {{ (hours | int) }} hour{{ 's' if hours | int != 1 else
+        '' }} {{ ((hours % 1) * 60) | round }} minute{{ 's' if ((hours % 1) * 60)
+        | round != 1 else '' }}\n{%- else -%}\n  {{ (hours * 60) | round }} minute{{
+        's' if (hours * 60) | round != 1 else '' }}\n{%- endif -%} {% if lxcs_to_start
+        | length > 0 %}Starting up: {{ lxcs_to_start | join(', ') }}{% endif %} {%
+        if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
+        | join(', ') }}{% endif %}"
+      data:
+        priority: 1
+  - delay:
+      hours: 0
+      minutes: 2
+      seconds: 0
+      milliseconds: 0
+  - repeat:
+      for_each: '{{ lxcs_to_startup }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
+        then:
+        - action: button.press
+          metadata: {}
+          data: {}
+          target:
+            entity_id: '{{ repeat.item.start_entity_id }}'
+        - delay:
+            seconds: '{{ lxc_startup_delay }}'
+    enabled: true
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.ups_power_outage
+  - action: rest_command.ups_beeper_enable
+    metadata: {}
+    data: {}
+  variables:
+    proxmox_startup_delay: 60
+    lxc_startup_delay: 10
+    lxcs_to_startup:
+    - name: adguard
+      friendly_name: Adguard
+      start_entity_id: button.lxc_adguard_123_start
+      status_entity: binary_sensor.lxc_adguard_123_status
+    - name: frigate
+      friendly_name: Frigate
+      start_entity_id: button.lxc_frigate_128_start
+      status_entity: binary_sensor.lxc_frigate_128_status
+    - name: plex
+      friendly_name: Plex
+      start_entity_id: button.lxc_plex_142_start
+      status_entity: binary_sensor.lxc_plex_142_status
+    - name: immich
+      friendly_name: Immich
+      start_entity_id: button.lxc_immich_148_start
+      status_entity: binary_sensor.lxc_immich_148_status
+  mode: single
+- id: '1751779500530'
+  alias: Simple Frigate Logbook Logger
+  description: Log Frigate events to logbook via helper entity
+  triggers:
+  - trigger: mqtt
+    topic: frigate/reviews
+  actions:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.frigate_last_event
+    data:
+      value: '{{ now().strftime(''%H:%M:%S'') }} - {{ trigger.payload_json.type |
+        upper }} -  {{ trigger.payload_json.after.camera }} -  {{ trigger.payload_json.after.data.objects
+        | join('', '') }} -  {{ trigger.payload_json.after.data.zones | join('', '')
+        }}'
+  mode: parallel
+- id: '1751922414629'
+  alias: Detailed Frigate Event Logger
+  description: Log Frigate events with more detail about what triggered
+  triggers:
+  - trigger: mqtt
+    topic: frigate/reviews
+  actions:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.frigate_last_event
+    data:
+      value: '{{ now().strftime(''%H:%M:%S'') }} - {{ trigger.payload_json.type |
+        upper }} -  {{ trigger.payload_json.after.camera }} -  {{ trigger.payload_json.after.data.objects
+        | join('', '') }} -  {{ trigger.payload_json.after.data.zones | join('', '')
+        }} {% if trigger.payload_json.after.entered_zones is defined %} - ENTERED:
+        {{ trigger.payload_json.after.entered_zones | join('', '') }} {% endif %}
+        {% if trigger.payload_json.after.exited_zones is defined %} - EXITED: {{ trigger.payload_json.after.exited_zones
+        | join('', '') }} {% endif %}'
+  - action: system_log.write
+    data:
+      message: 'FRIGATE DETAILED EVENT: Type: {{ trigger.payload_json.type }} Camera:
+        {{ trigger.payload_json.after.camera }} Objects: {{ trigger.payload_json.after.data.objects
+        }} Zones: {{ trigger.payload_json.after.data.zones }} {% if trigger.payload_json.after.entered_zones
+        is defined %} Entered Zones: {{ trigger.payload_json.after.entered_zones }}
+        {% endif %} {% if trigger.payload_json.after.exited_zones is defined %} Exited
+        Zones: {{ trigger.payload_json.after.exited_zones }} {% endif %} Severity:
+        {{ trigger.payload_json.after.severity }} Full Payload: {{ trigger.payload
+        }}'
+      level: info
+  mode: parallel
+- id: '1752472726875'
+  alias: Frigate Notification Blueprint
+  description: ''
+  use_blueprint:
+    path: SgtBatten/Stable.yaml
+    input:
+      presence_filter:
+      - ''
+      camera:
+      - camera.front
+      notify_device: 1b08b2ea0552554cb3449d1d8477199b
+      base_url: https://homeassistant.timparsons.nz/
+      title: Blueprint Test
+      message: '{{ label }} detected - {{ camera_name }} at {{event[''after''][''start_time'']|timestamp_custom(''%H:%M'')}}'
+      zones:
+      - property
+      labels:
+      - person
+      attachment: '{{base_url}}/api/frigate{{client_id}}/notifications/{{id}}/snapshot.jpg?bbox=1'
+      ios_live_view: camera.front
+      zone_filter: true
+- id: '1762654936071'
+  alias: 'Irrigation - Zone Valve CHANGE: Master Valve FOLLOW'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - switch.watervalve_sprayzone_state
+    to:
+  - trigger: state
+    entity_id:
+    - switch.watervalve_vegezone_state
+    to:
+  conditions: []
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.watervalve_dripzone_state
+  - action: timer.start
+    metadata: {}
+    data:
+      duration: 00:60
+    target:
+      entity_id: timer.irrigation_timer_dripzone
+  - if:
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: switch.watervalve_sprayzone_state
+        state: 'on'
+      - condition: state
+        entity_id: switch.watervalve_vegezone_state
+        state: 'on'
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.watervalve_dripzone_state
+    else:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.watervalve_dripzone_state
+  mode: single
+- id: '1763459524192'
+  alias: 'Master Bedroom – Timer FINISH, Lamp OFF: Turn OFF'
+  description: 'Per lamp (Tim and Sonya): when that lamp''s timer finishes, turn the
+    lamp off. When the lamp is turned off any other way, cancel its timer. Uses the
+    timer.finished event (not active->idle) so that cancelling a timer, e.g. from
+    the bedside controller, does NOT turn the lamp off. Parallel mode so both lamps
+    can time out at the same moment.'
+  triggers:
+  - entity_id:
+    - light.bedside_tim
+    from: 'on'
+    id: tim_lamp_off
+    to: 'off'
+    trigger: state
+  - event_data:
+      entity_id: timer.bedroom_lamp_tim
+    event_type: timer.finished
+    id: tim_timer_finished
+    trigger: event
+  - entity_id:
+    - light.bedside_sonya
+    from: 'on'
+    id: sonya_lamp_off
+    to: 'off'
+    trigger: state
+  - event_data:
+      entity_id: timer.bedroom_lamp_sonya
+    event_type: timer.finished
+    id: sonya_timer_finished
+    trigger: event
+  conditions: []
+  actions:
+  - choose:
+    - alias: 'Tim: turn lamp off, cancel timer'
+      conditions:
+      - condition: trigger
+        id:
+        - tim_lamp_off
+        - tim_timer_finished
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.bedside_tim
+      - action: timer.cancel
+        target:
+          entity_id: timer.bedroom_lamp_tim
+    - alias: 'Sonya: turn lamp off, cancel timer'
+      conditions:
+      - condition: trigger
+        id:
+        - sonya_lamp_off
+        - sonya_timer_finished
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.bedside_sonya
+      - action: timer.cancel
+        target:
+          entity_id: timer.bedroom_lamp_sonya
+  mode: parallel
+- id: '1763497860039'
+  alias: Irrigation - Evening Irrigation Sequence
+  description: Sequential irrigation of all zones starting one hour before sunset
+  triggers:
+  - event: sunset
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_vegezone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_vegezone
+      state: Evening
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_vegezone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_vegezone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_vegezone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_vegezone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_vegezone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_vegezone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Vege irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              }}%. **Will try again tomorrow.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_sprayzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_sprayzone
+      state: Evening
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_sprayzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_sprayzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_sprayzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_sprayzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_sprayzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_sprayzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Spray irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              }}%. **Will try again tomorrow.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_dripzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_dripzone
+      state: Evening
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_dripzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_dripzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_dripzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_dripzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_dripzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_dripzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_dripzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_dripzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_dripzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Drip irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_dripzone')
+              }}%. **Will try again tomorrow.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_dripzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_lawnzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_lawnzone
+      state: Evening
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_lawnzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_lawnzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_lawnzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_lawnzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_lawnzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_lawnzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_lawnzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_lawnzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_lawnzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Lawn irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_lawnzone')
+              }}%. **Will try again tomorrow.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_lawnzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
+              }}'
+          action: counter.set_value
+    enabled: true
+  mode: single
+- id: '1763499148645'
+  alias: Irrigation - Morning Irrigation Sequence
+  description: Sequential irrigation of all zones starting one hour before sunrise
+  triggers:
+  - event: sunrise
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_vegezone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_vegezone
+      state: Morning
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_vegezone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_vegezone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_vegezone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_vegezone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_vegezone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_vegezone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Vege irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              }}%. **Will try again today.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_sprayzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_sprayzone
+      state: Morning
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_sprayzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_sprayzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_sprayzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_sprayzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_sprayzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_sprayzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Spray irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              }}%. **Will try again today.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_dripzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_dripzone
+      state: Morning
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_dripzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_dripzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_dripzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_dripzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_dripzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_dripzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_dripzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_dripzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_dripzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Drip irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_dripzone')
+              }}%. **Will try again today.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_dripzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
+              }}'
+          action: counter.set_value
+  - if:
+    - condition: numeric_state
+      entity_id: counter.irrigation_daysuntilnext_lawnzone
+      below: 1
+    - condition: state
+      entity_id: input_select.irrigation_mode_lawnzone
+      state: Morning
+    then:
+    - choose:
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_lawnzone
+          state: 'on'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
+            state: 'off'
+          - condition: template
+            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+              | float < states('input_number.irrigation_moisturetrigger_lawnzone')
+              | float \n}}"
+        sequence:
+        - data:
+            title: Irrigation
+            message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
+              | round }} mins
+            target: tim-iphone
+          action: notify.pushover_tim
+        - target:
+            entity_id: timer.irrigation_timer_lawnzone
+          data:
+            duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'')
+              | float * 60) | round }}'
+          action: timer.start
+        - target:
+            entity_id:
+            - switch.watervalve_lawnzone_state
+          action: switch.turn_on
+          data: {}
+        - wait_for_trigger:
+          - entity_id:
+            - timer.irrigation_timer_lawnzone
+            from: active
+            to: idle
+            trigger: state
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_lawnzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
+              }}'
+          action: counter.set_value
+        - target:
+            entity_id: input_datetime.irrigation_last_lawnzone
+          data:
+            datetime: '{{ now().isoformat() }}'
+          action: input_datetime.set_datetime
+      - conditions:
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_lawnzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
+          state: 'on'
+        - condition: template
+          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
+            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
+            | float >= states('input_number.irrigation_moisturetrigger_lawnzone')
+            | float \n}}"
+        sequence:
+        - data:
+            title: "Irrigation Skipped \U0001F4A7"
+            message: Lawn irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
+              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_lawnzone')
+              }}%. **Will try again today.**
+            target: tim-iphone
+          action: notify.pushover_tim
+      REDACTED
+        sequence:
+        - target:
+            entity_id: counter.irrigation_daysuntilnext_lawnzone
+          data:
+            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
+              }}'
+          action: counter.set_value
+    enabled: true
+  mode: single
+- id: '1764449015687'
+  alias: Location - Sonya left home
+  description: ''
+  triggers:
+  - device_id: f6833d2e56b8cf5afee1c7b248fb78af
+    domain: device_tracker
+    entity_id: 647d1c5c57102ce6a8e6224ba51ab17e
+    type: leaves
+    trigger: device
+    zone: zone.home
+    enabled: false
+  - trigger: state
+    entity_id:
+    - person.sonya
+    from: home
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Sonya has left home
+    action: notify.mobile_app_tims_iphone
+  mode: single
+- id: '1766741305484'
+  alias: 'Proxmox – Player Timeout: Stop LXC'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.lxc_player_144_status
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.lxc_player_144_status
+    state: 'on'
+  actions:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - button.lxc_player_144_shutdown
+  - action: notify.pushover_servers
+    metadata: {}
+    data:
+      message: Shutting down Player
+      target: tim-iphone,mac-studio
+  mode: single
+- id: '1772237924661'
+  alias: 'Dogwalk – Timer FINISH: Notification'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - timer.dogwalk_timer
+    to:
+    - idle
+    from:
+    - active
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      state:
+      - home
+      entity_id: person.tim
+    enabled: true
+  actions:
+  - metadata: {}
+    data:
+      message: '{{ now().strftime(''%H:%M'') }} You''ve been at the park for one hour!
+
+        '
+    action: notify.mobile_app_tims_iphone
+  mode: single
+- id: '1772962374237'
+  alias: 'Entertainment – Playstation OFF: Turn OFF Projector'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - media_player.playstation_4
+    to:
+    - 'off'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.projector_status
+    state: 'on'
+    enabled: true
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.appletv
+      state:
+      - playing
+  actions:
+  - data: {}
+    action: shell_command.projector_off
+  - metadata: {}
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.entertainment_lamp_red_timer_start
+    action: automation.trigger
+  mode: single
+- id: '1774428459352'
+  alias: 'Network – AdGuard disabled for 2hrs: Re-enable protection'
+  description: Monitors AdGuard Home protection switch. If it has been disabled for
+    more than 2 hours, automatically turns protection back on.
+  triggers:
+  - entity_id: switch.adguard_home_protection
+    to: 'off'
+    for:
+      hours: 2
+    trigger: state
+  actions:
+  - target:
+      entity_id: switch.adguard_home_protection
+    action: switch.turn_on
+  - data:
+      title: AdGuard Protection Re-enabled
+      message: AdGuard Home protection was disabled for over 2 hours and has been
+        automatically turned back on.
+      target: tim-iphone,mac-studio
+    action: notify.pushover_tim
+  - data:
+      title: AdGuard Protection Re-enabled
+      message: AdGuard Home protection was disabled for over 2 hours and has been
+        automatically turned back on.
+      notification_id: adguard_protection_restored
+    action: persistent_notification.create
+  mode: single
+- id: downstairs_hallway_master_lighting_control
+  alias: Downstairs – Hallway – Motion Lighting
+  description: Consolidates motion-on, timer-off, and time-off logic into a single
+    automation.
+  triggers:
+  - entity_id:
+    - binary_sensor.crow_alarm_sensors_downstairs_hallway
+    - binary_sensor.crow_alarm_doors_back_door
+    - binary_sensor.motion_stairwell_occupancy
+    id: motion_detected
+    platform: state
+    to: 'on'
+  - event_type: timer.finished
+    id: timer_finished
+    platform: event
+    event_data:
+      entity_id: timer.downstairs_hallway_lights_timer
+  - id: turn_off_at_10pm
+    at: '22:00:00'
+    platform: time
+  actions:
+  - choose:
+    - sequence:
+      - target:
+          entity_id: switch.downstairs_hallway_switch_0
+        action: switch.turn_on
+      - REDACTED
+        - data:
+            duration: 00:00:30
+          target:
+            entity_id: timer.downstairs_hallway_lights_timer
+          action: timer.start
+        choose:
+        - sequence:
+          - target:
+              entity_id: timer.downstairs_hallway_lights_timer
+            action: timer.start
+            data:
+              duration: 00:00:20
+          conditions:
+          - state: playing
+            condition: state
+            entity_id: media_player.playstation_4
+      conditions:
+      - id: motion_detected
+        condition: trigger
+      - state: 'off'
+        condition: state
+        entity_id: input_boolean.silence_doorbell
+      - entity_id: input_boolean.downstairs_hallway_manual_mode
+        condition: state
+        state: 'off'
+      - condition: or
+        conditions:
+        - before: sunrise
+          condition: sun
+          before_offset: 01:00:00
+          after: sunset
+          after_offset: -01:00:00
+        - entity_id: sensor.lux_office_illuminance_lux
+          below: 200
+          condition: numeric_state
+    - sequence:
+      - target:
+          entity_id: switch.downstairs_hallway_switch_0
+        action: switch.turn_off
+      conditions:
+      - condition: trigger
+        id: timer_finished
+    - conditions:
+      - condition: trigger
+        id: turn_off_at_10pm
+      sequence:
+      - target:
+          entity_id: switch.downstairs_hallway_switch_0
+        action: switch.turn_off
+  mode: restart
+- id: downstairs_hallway_manual_control
+  alias: Downstairs – Hallway – Manual Control
+  description: Sets a manual override for 30 minutes when the light is turned on manually.
+    Resets the override when the light is turned off.
+  triggers:
+  - platform: state
+    entity_id: switch.downstairs_hallway_switch_0
+    for:
+      seconds: 1
+    id: manual_on
+    to: 'on'
+    from: 'off'
+  - id: turned_off
+    to: 'off'
+    entity_id: switch.downstairs_hallway_switch_0
+    platform: state
+  actions:
+  - REDACTED
+    - target:
+        entity_id: input_boolean.downstairs_hallway_manual_mode
+      action: input_boolean.turn_off
+    choose:
+    - sequence:
+      - target:
+          entity_id: input_boolean.downstairs_hallway_manual_mode
+        action: input_boolean.turn_on
+      - delay:
+          minutes: 30
+      - target:
+          entity_id: switch.downstairs_hallway_switch_0
+        action: switch.turn_off
+      conditions:
+      - condition: trigger
+        id: manual_on
+  mode: restart
+- id: '1777842658776'
+  alias: 'Bathroom – Weekday: Bathroom Door Alert ON'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_select.shower_status
+    to:
+    - active
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    after: 06:15:00
+    before: 09:00:00
+  - condition: state
+    entity_id: input_boolean.bathroom_door_alert_triggered
+    state:
+    - 'off'
+  actions:
+  - action: input_boolean.turn_on
+    metadata: {}
+    target:
+      entity_id: input_boolean.bathroom_door_alert
+    data: {}
+  mode: single
+- id: '1777843908800'
+  alias: 'Bathroom – 6AM: Door Alert Triggered OFF'
+  description: ''
+  triggers:
+  - trigger: time
+    at: 06:00:00
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    metadata: {}
+    target:
+      entity_id: input_boolean.bathroom_door_alert_triggered
+    data: {}
+  mode: single
+- id: '1780566429467'
+  alias: 'Kitchen – Dishwasher: Stamp last completed time'
+  description: When the dishwasher operation state reaches Finished, stamp the dishwasher_last_completed
+    helper with the current datetime.
+  triggers:
+  - platform: state
+    entity_id: sensor.bosch_dishwasher_operation_state
+    to: Finished
+    from:
+    - Run
+    - Pause
+    - ActionRequired
+    id: cycle_finished
+  conditions: []
+  actions:
+  - target:
+      entity_id: input_datetime.dishwasher_last_completed
+    data:
+      datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
+    action: input_datetime.set_datetime
+  mode: single
+- id: '1787452895745'
+  alias: Maintenance – Frigate Offline or Disk Full – Notification
+  description: Alerts if camera.front (Frigate) stops recording for over 1 hour, OR
+    if the Frigate recordings disk usage climbs above 90% (a full disk silently stops
+    recording without camera.front going unavailable).
+  triggers:
+  - entity_id: camera.front
+    for:
+      hours: 1
+      minutes: 0
+      seconds: 0
+    id: camera_offline
+    to: unavailable
+    trigger: state
+  - above: 90
+    entity_id: sensor.frigate_recordings_disk_usage_percent
+    for:
+      minutes: 5
+      seconds: 0
+    id: disk_full
+    trigger: numeric_state
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - camera_offline
+      sequence:
+      - action: notify.pushover_tim
+        data:
+          data:
+            expire: 3600
+            priority: 2
+            retry: 60
+            sound: alien
+          message: camera.front has not been recording for over 1 hour.
+          target: tim-iphone
+          title: Frigate Camera Offline
+    - conditions:
+      - condition: trigger
+        id:
+        - disk_full
+      sequence:
+      - action: notify.pushover_tim
+        data:
+          data:
+            expire: 3600
+            priority: 2
+            retry: 60
+            sound: alien
+          message: Frigate recordings disk usage is above 90% ({{ states('sensor.frigate_recordings_disk_usage_percent')
+            }}% used, {{ states('sensor.frigate_recordings_free_space') }} GB free).
+            Recording may stop soon or silently.
+          target: tim-iphone
+          title: Frigate Disk Almost Full
+  mode: single
+- id: '1788419320837'
+  alias: Bathroom door CLOSED
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.door_bathroom_contact
+    to:
+    - 'off'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.bathroom_door_alert
+    state: 'on'
+    enabled: false
+  actions:
+  - data:
+      title: Bathroom
+      message: The bathroom door has CLOSED
+      data:
+        priority: 1
+      target: tim-iphone
+    action: notify.pushover_tim
+  mode: single
+- id: '1791261015217'
+  alias: IKEA Bilresa - High-Performance Wheel Control (SLZB Custom Topic)
+  description: 'Bedside controller for light.bedside_tim. The button alternates on/off
+    payloads on its own, so both are treated as one press acting on the real lamp
+    state: lamp on with timer.bedroom_lamp_tim running (motion-started) -> cancel
+    timer, lamp flashes twice to confirm and stays on; lamp off -> on; lamp on with
+    no timer -> off. Wheel steps brightness 10% on each bedside lamp that is on (Tim''s
+    and Sonya''s); if both are off it steps Tim''s lamp only. DOUBLE press (action
+    on_double/off_double) -> toggle BOTH bedside lamps via script.master_bedroom_bedside_lamps_toggle_both.'
+  triggers:
+  - topic: zigbee2mqtt_slzb/controller_ikea_bedside1
+    trigger: mqtt
+  actions:
+  - variables:
+      payload: '{{ trigger.payload_json }}'
+  - variables:
+      action_val: '{{ payload.action if ''action'' in payload else '''' }}'
+      has_level: '{{ payload.action_level is defined and payload.action_level is not
+        none }}'
+  - choose:
+    - alias: 'Double press: toggle both lamps'
+      conditions:
+      - condition: template
+        value_template: '{{ action_val in [''on_double'', ''off_double''] }}'
+      sequence:
+      - action: script.master_bedroom_bedside_lamps_toggle_both
+    - alias: 'Button, lamp on via motion: cancel timer, keep on'
+      conditions:
+      - condition: template
+        value_template: '{{ action_val in [''on'', ''off''] }}'
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_tim
+        state: active
+      sequence:
+      - action: timer.cancel
+        target:
+          entity_id: timer.bedroom_lamp_tim
+      - action: light.turn_on
+        alias: Flash lamp twice to confirm timer cancelled
+        data:
+          effect: okay
+        target:
+          entity_id: light.bedside_tim
+    - alias: 'Button, lamp off: turn on'
+      conditions:
+      - condition: template
+        value_template: '{{ action_val in [''on'', ''off''] }}'
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'off'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.bedside_tim
+    - alias: 'Button, lamp on (manual): turn off'
+      conditions:
+      - condition: template
+        value_template: '{{ action_val in [''on'', ''off''] }}'
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'on'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.bedside_tim
+    - conditions:
+      - condition: template
+        value_template: '{{ action_val == ''brightness_move_to_level'' or has_level
+          }}'
+      sequence:
+      - variables:
+          level: '{{ payload.action_level | int(128) }}'
+      - variables:
+          is_up: '{{ level > 128 or payload.action_brightness_delta | default(0) >
+            0 }}'
+      - variables:
+          wheel_targets: '{% set on = [''light.bedside_tim'', ''light.bedside_sonya'']
+            | select(''is_state'', ''on'') | list %}{{ on if on else [''light.bedside_tim'']
+            }}'
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ is_up }}'
+          sequence:
+          - action: light.turn_on
+            data:
+              brightness_step_pct: 10
+              transition: 0.1
+            target:
+              entity_id: '{{ wheel_targets }}'
+        - conditions:
+          - condition: template
+            value_template: '{{ not is_up }}'
+          sequence:
+          - action: light.turn_on
+            data:
+              brightness_step_pct: -10
+              transition: 0.1
+            target:
+              entity_id: '{{ wheel_targets }}'
+  - delay:
+      milliseconds: 30
+  mode: restart
+- id: '1791268308278'
+  alias: 'Master Bedroom – Phone CHARGING after 2200: SLEEP Mode ON'
+  description: When Tim's iPhone starts charging between 22:00 and 05:00, turn on
+    Adaptive Lighting sleep mode for the master bedroom. Sleep mode is turned off
+    again 1 hour before sunrise (same as the Lounge dawn automation).
+  triggers:
+  - entity_id: sensor.tims_iphone_battery_state
+    from: Not Charging
+    id: charging
+    to:
+    - Charging
+    - Full
+    trigger: state
+  - event: sunrise
+    id: dawn
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: charging
+      - after: '22:00:00'
+        before: 05:00:00
+        condition: time
+      sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.adaptive_lighting_sleep_mode_master_bedroom
+    - conditions:
+      - condition: trigger
+        id: dawn
+      sequence:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.adaptive_lighting_sleep_mode_master_bedroom
+  mode: single
+- id: '1791768681284'
+  alias: 'Master Bedroom – Sonya Bedside Button PRESS: Toggle Lamp'
+  description: 'Sonya''s bedside controller (controller_ikea_bedside2, dual button;
+    either button does the same). DOUBLE press -> toggle BOTH bedside lamps (script.master_bedroom_bedside_lamps_toggle_both).
+    SINGLE press -> acts on Sonya''s lamp state: lamp on with timer.bedroom_lamp_sonya
+    running (motion-started) -> cancel timer, lamp dips twice to confirm and stays
+    on; lamp off -> on; lamp on with no timer -> off. Long press and long-release
+    are ignored. The confirmation is a brightness dip rather than an effect because
+    these bulbs expose no effects in Home Assistant, and the lamp never turns off
+    during it so the timer-finish automation is not triggered.'
+  triggers:
+  - entity_id:
+    - event.controller_ikea_bedside2a
+    - event.controller_ikea_bedside2b
+    not_from:
+    - unavailable
+    not_to:
+    - unavailable
+    - unknown
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.attributes.event_type in [''multi_press_1'',
+      ''multi_press_2''] }}'
+  actions:
+  - choose:
+    - alias: 'Double press: toggle both lamps'
+      conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.attributes.event_type == ''multi_press_2''
+          }}'
+      sequence:
+      - action: script.master_bedroom_bedside_lamps_toggle_both
+    - alias: 'Button, lamp on via motion: cancel timer, keep on, dip twice'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_sonya
+        state: active
+      sequence:
+      - action: timer.cancel
+        target:
+          entity_id: timer.bedroom_lamp_sonya
+      - variables:
+          orig_brightness: '{{ state_attr(''light.bedside_sonya'', ''brightness'')
+            | int(255) }}'
+      - repeat:
+          count: 2
+          sequence:
+          - action: light.turn_on
+            data:
+              brightness: 1
+              transition: 0.15
+            target:
+              entity_id: light.bedside_sonya
+          - delay:
+              milliseconds: 400
+          - action: light.turn_on
+            data:
+              brightness: '{{ orig_brightness }}'
+              transition: 0.15
+            target:
+              entity_id: light.bedside_sonya
+          - delay:
+              milliseconds: 400
+    - alias: 'Button, lamp off: turn on'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'off'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.bedside_sonya
+    - alias: 'Button, lamp on (manual): turn off'
+      conditions:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'on'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.bedside_sonya
+  mode: restart
+- id: '1792352004105'
+  alias: 'Master Bedroom – No Motion 45min, Lamp ON (manual): Warn and Turn OFF'
+  description: 'Auto-off for bedside lamps that were turned on (or kept on) by hand,
+    i.e. lamp on with its motion timer (timer.bedroom_lamp_tim / timer.bedroom_lamp_sonya)
+    idle. When the master bedroom sensor has seen no motion for 45 minutes, the lamp
+    dips twice as a warning; if there is still no motion 1 minute later it turns off.
+    Motion during that minute keeps it on for another 45 minutes. Motion-started lamps
+    are left to their 3-minute timer. Note: a button press during the warning turns
+    the lamp off (normal single-press behaviour for a manually-on lamp).'
+  triggers:
+  - entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+    for:
+      minutes: 45
+    to: 'off'
+    trigger: state
+  - entity_id:
+    - light.bedside_tim
+    - light.bedside_sonya
+    for:
+      minutes: 45
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+    for:
+      minutes: 45
+    state: 'off'
+  actions:
+  - parallel:
+    - alias: 'Tim: warn, then turn off if still no motion'
+      sequence:
+      - condition: state
+        entity_id: light.bedside_tim
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_tim
+        state: idle
+      - variables:
+          orig_brightness: '{{ state_attr(''light.bedside_tim'', ''brightness'') |
+            int(255) }}'
+      - repeat:
+          count: 2
+          sequence:
+          - action: light.turn_on
+            data:
+              brightness: 1
+              transition: 0.15
+            target:
+              entity_id: light.bedside_tim
+          - delay:
+              milliseconds: 400
+          - action: light.turn_on
+            data:
+              brightness: '{{ orig_brightness }}'
+              transition: 0.15
+            target:
+              entity_id: light.bedside_tim
+          - delay:
+              milliseconds: 400
+      - continue_on_timeout: true
+        timeout:
+          minutes: 1
+        wait_for_trigger:
+        - entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+          to: 'on'
+          trigger: state
+      - if:
+        - condition: state
+          entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+          for:
+            minutes: 1
+          state: 'off'
+        then:
+        - action: light.turn_off
+          target:
+            entity_id: light.bedside_tim
+    - alias: 'Sonya: warn, then turn off if still no motion'
+      sequence:
+      - condition: state
+        entity_id: light.bedside_sonya
+        state: 'on'
+      - condition: state
+        entity_id: timer.bedroom_lamp_sonya
+        state: idle
+      - variables:
+          orig_brightness: '{{ state_attr(''light.bedside_sonya'', ''brightness'')
+            | int(255) }}'
+      - repeat:
+          count: 2
+          sequence:
+          - action: light.turn_on
+            data:
+              brightness: 1
+              transition: 0.15
+            target:
+              entity_id: light.bedside_sonya
+          - delay:
+              milliseconds: 400
+          - action: light.turn_on
+            data:
+              brightness: '{{ orig_brightness }}'
+              transition: 0.15
+            target:
+              entity_id: light.bedside_sonya
+          - delay:
+              milliseconds: 400
+      - continue_on_timeout: true
+        timeout:
+          minutes: 1
+        wait_for_trigger:
+        - entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+          to: 'on'
+          trigger: state
+      - if:
+        - condition: state
+          entity_id: binary_sensor.crow_alarm_sensors_master_bedroom
+          for:
+            minutes: 1
+          state: 'off'
+        then:
+        - action: light.turn_off
+          target:
+            entity_id: light.bedside_sonya
+  mode: single

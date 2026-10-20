@@ -1,0 +1,67 @@
+blueprint:
+  name: IKEA Bilresa - High-Performance Wheel Control
+  description: Optimized control for the IKEA Bilresa wheel focusing on speed and
+    MG24/Ember stability.
+  domain: automation
+  input:
+    controller_name:
+      name: Remote MQTT Name
+      description: The name of the device in Zigbee2MQTT (e.g., Bilresa_Wheel)
+      REDACTED Bilresa Wheel
+    action_on:
+      name: 'On'
+      description: Action to perform when the top button is pressed.
+      REDACTED []
+      REDACTED
+        action: {}
+    action_off:
+      name: 'Off'
+      description: Action to perform when the bottom button is pressed.
+      REDACTED []
+      REDACTED
+        action: {}
+    action_right:
+      name: Turn Right
+      description: 'Action for clockwise rotation. Recommended: light.turn_on with
+        brightness_step_pct: 10 and transition: 0.1'
+      REDACTED []
+      REDACTED
+        action: {}
+    action_left:
+      name: Turn Left
+      description: 'Action for counter-clockwise rotation. Recommended: light.turn_on
+        with brightness_step_pct: -10 and transition: 0.1'
+      REDACTED []
+      REDACTED
+        action: {}
+  source_url: https://gist.githubusercontent.com/patt110/4eda20da78422b8989b3b6686264e2ac/raw/REDACTED-LONG/Bilresa_Scrollwheel_Z2M_en.yaml
+mode: restart
+trigger:
+- platform: mqtt
+  topic: zigbee2mqtt/{{ (controller_name if controller_name else 'Bilresa Wheel')
+    }}
+action:
+- variables:
+    payload: '{{ trigger.payload_json }}'
+    action_val: '{{ payload.action if ''action'' in payload else '''' }}'
+- choose:
+  - conditions: '{{ action_val == ''on'' }}'
+    sequence: !input action_on
+  - conditions: '{{ action_val == ''off'' }}'
+    sequence: !input action_off
+  - conditions: '{{ action_val == ''brightness_move_to_level'' }}'
+    sequence:
+    - variables:
+        is_max: '{{ payload.action_brightness_delta is none and payload.action_level
+          is none }}'
+        is_min: '{{ payload.action_brightness_delta == 0 and payload.action_level
+          == 1 }}'
+        delta: '{{ payload.action_brightness_delta | int(0) if payload.action_brightness_delta
+          is not none else 0 }}'
+    - choose:
+      - conditions: '{{ delta > 0 or is_max }}'
+        sequence: !input action_right
+      - conditions: '{{ delta < 0 or is_min }}'
+        sequence: !input action_left
+- delay:
+    milliseconds: 30

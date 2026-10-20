@@ -1,0 +1,147 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+
+providers:
+  openweathermap: openweathermapapikey
+  weatherapi: weatherapiapikey
+
+groupsInitiallyCollapsed: true
+useEqualHeights: true
+headerStyle: clean
+disableIndexing: true
+favicon: https://api.iconify.design/mdi/home.svg
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: true
+  showSearchSuggestions: true
+  hideVisitURL: true
+  provider: duckduckgo
+
+layout:
+
+  # HOME TAB
+  Home:
+    tab: Home
+    style: row
+    columns: 4
+    header: false
+    initiallyCollapsed: false
+
+  Chat & AI:
+    tab: Home
+    style: row
+    columns: 4
+    initiallyCollapsed: false
+
+  Interweb:
+    tab: Home
+    style: row
+    columns: 4
+    initiallyCollapsed: false
+    
+  # Joy Inc TAB
+  Office:
+    tab: Joy Inc
+    style: row
+    columns: 4
+    header: false
+    initiallyCollapsed: false    
+
+  Resources:
+    tab: Joy Inc
+    style: row
+    columns: 6
+
+  Post Production:
+    tab: Joy Inc
+    style: row
+    columns: 4
+
+  Accounts:
+    tab: Joy Inc
+    style: row
+    columns: 4
+
+
+  # HomeLab TAB
+  Home Control:
+    tab: HomeLab
+    style: row
+    columns: 4
+    header: false
+    initiallyCollapsed: false
+    
+  Automation & Ai:
+    tab: HomeLab
+    style: row
+    columns: 4
+    initiallyCollapsed: false
+
+  System Management:
+    tab: HomeLab
+    style: row
+    columns: 4
+    initiallyCollapsed: true
+  
+
+
+  Network:
+    tab: HomeLab
+    style: row
+    columns: 4
+
+
+
+  Cameras & Security:
+    tab: HomeLab
+    style: row
+    columns: 4
+    initiallyCollapsed: true
+
+  Smart Devices:
+    tab: HomeLab
+    style: row
+    columns: 4
+    initiallyCollapsed: true
+    
+  Halcyon:
+    tab: HomeLab
+    style: row
+    columns: 5
+    initiallyCollapsed: true
+
+  Documentation:
+    tab: HomeLab
+    style: row
+    columns: 4
+
+  # MEDIA TAB
+  Media Streaming:
+    tab: Media
+    style: row
+    columns: 4
+    header: false
+    initiallyCollapsed: false
+    
+  Media Management:
+    tab: Media
+    style: row
+    columns: 4
+
+  Download Clients:
+    tab: Media
+    style: row
+    columns: 4
+
+  Media Sources:
+    tab: Media
+    style: row
+    columns: 4
+
+
+
+
+
+

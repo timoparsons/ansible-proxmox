@@ -1,0 +1,99 @@
+# Projector Volume Light
+- light:
+    - name: "Projector Volume"
+      unique_id: projector_volume_templatelight
+      state: "{{ states('sensor.projector_volume') != '0' }}"
+      level: "{{ (states('sensor.projector_volume') | int(default=0) / 50) * 255 }}"
+      turn_on:
+        action: script.projector_mute_toggle
+      turn_off:
+        action: script.projector_mute_toggle
+      set_level:
+        action: script.projector_volume_slider_level
+        data:
+          brightness: "{{ brightness }}"
+
+# TV Room Volume Light
+- light:
+    - name: "TV Room Volume"
+      unique_id: tv_room_volume_templatelight
+      state: "{{ not state_attr('media_player.tv_room', 'is_volume_muted') and state_attr('media_player.tv_room', 'volume_level') | float(0) > 0 }}"
+      level: "{{ (state_attr('media_player.tv_room', 'volume_level') | float(0) * 255) | int }}"
+      turn_on:
+        action: media_player.volume_mute
+        data:
+          entity_id: media_player.tv_room
+          is_volume_muted: false
+      turn_off:
+        action: media_player.volume_mute
+        data:
+          entity_id: media_player.tv_room
+          is_volume_muted: true
+      set_level:
+        action: media_player.volume_set
+        data:
+          entity_id: media_player.tv_room
+          volume_level: "{{ brightness / 255 }}"
+
+# Convert Uptime Sensor to a duration showing how long Home Assistant has been running
+- sensor:
+  - default_entity_id: sensor.uptime_minutes
+    name: Uptime Minutes
+    state: '{{ (as_timestamp(now()) - as_timestamp(states(''sensor.uptime''))) //
+      60| round (0)  }}'
+
+
+
+- sensor:
+  - default_entity_id: sensor.next_tide1
+    icon: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide < low_tide %}\n  mdi:waves\n{% else %}\n  mdi:wave\n{% endif
+      %}"
+    name: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide < low_tide %}\n  Next tide: HIGH\n{% else %}\n  Next tide: LOW\n{%
+      endif %}"
+    state: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide < low_tide %}\n  {{ states('sensor.metservice_north_shore_next_high_tide')
+      }}\n{% else %}\n  {{ states('sensor.metservice_north_shore_next_low_tide') }}\n{%
+      endif %}"
+
+- sensor:
+  - default_entity_id: sensor.next_tide2
+    icon: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide > low_tide %}\n  mdi:waves\n{% else %}\n  mdi:wave\n{% endif
+      %}"
+    name: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide > low_tide %}\n  Next high tide\n{% else %}\n  Next low tide\n{%
+      endif %}"
+    state: "{% set high_tide = states('sensor.metservice_north_shore_next_high_tide')
+      %} {% set low_tide = states('sensor.metservice_north_shore_next_low_tide') %}
+      {% if high_tide > low_tide %}\n  {{ states('sensor.metservice_north_shore_next_high_tide')
+      }}\n{% else %}\n  {{ states('sensor.metservice_north_shore_next_low_tide') }}\n{%
+      endif %}"
+
+- sensor:
+  - default_entity_id: sensor.ups_status_readable
+    icon: "{% set status = states('sensor.calliope_ups_status_data') %} {% set battery_level
+      = states('sensor.calliope_ups_battery_charge') | int %} {% if status == 'OL'
+      %}\n  mdi:power-plug\n{% elif status == 'OL CHRG' %}\n  {% if battery_level
+      >= 90 %}\n    mdi:battery-charging-100\n  {% elif battery_level >= 80 %}\n    mdi:battery-charging-90\n
+      \ {% elif battery_level >= 70 %}\n    mdi:battery-charging-80\n  {% elif battery_level
+      >= 60 %}\n    mdi:battery-charging-70\n  {% elif battery_level >= 50 %}\n    mdi:battery-charging-60\n
+      \ {% elif battery_level >= 40 %}\n    mdi:battery-charging-50\n  {% elif battery_level
+      >= 30 %}\n    mdi:battery-charging-40\n  {% elif battery_level >= 20 %}\n    mdi:battery-charging-30\n
+      \ {% elif battery_level >= 10 %}\n    mdi:battery-charging-20\n  {% else %}\n
+      \   mdi:battery-charging-10\n  {% endif %}\n{% elif status == 'OB' %}\n  mdi:battery-alert\n{%
+      elif status == 'OB DISCHRG' %}\n  mdi:battery-alert\n{% else %}\n  mdi:power\n{%
+      endif %}"
+    name: UPS Status Readable
+    state: "{% set status = states('sensor.calliope_ups_status_data') %} {% if status
+      == 'OL' %}\n  ONLINE\n{% elif status == 'OL CHRG' %}\n  CHARGING\n{% elif status
+      == 'OB' %}\n  ON BATTERY\n{% elif status == 'LB' %}\n  LOW BATTERY\n{% elif
+      status == 'RB' %}\n  REPLACE BATTERY\n{% elif status == 'OB DISCHRG' %}\n  DISCHARGING\n{%
+      else %}\n  {{ status }}\n{% endif %}"
+

@@ -1,0 +1,39 @@
+# Template Light to treat Projector volume as a light
+- platform: template
+  lights:
+    projector_volume_templatelight:
+      friendly_name: "Projector Volume"
+      level_template: "{{ (states('sensor.projector_volume') | int(default=0) / 50) * 255 }}"
+      value_template: "{{ states('sensor.projector_volume') != '0' }}"
+      turn_on:
+        service: script.projector_mute_toggle
+      turn_off:
+        service: script.projector_mute_toggle
+      set_level:
+        service: script.projector_volume_slider_level
+        data:
+          brightness: "{{ brightness }}"
+
+
+# Template Light to treat TV Room volume as a light
+- platform: template
+  lights:
+    tv_room_volume_templatelight:
+      friendly_name: "TV Room Volume"
+      level_template: "{{ (state_attr('media_player.tv_room', 'volume_level') | float(0) * 255) | int }}"
+      value_template: "{{ not state_attr('media_player.tv_room', 'is_volume_muted') and state_attr('media_player.tv_room', 'volume_level') | float(0) > 0 }}"
+      turn_on:
+        service: media_player.volume_mute
+        data:
+          entity_id: media_player.tv_room
+          is_volume_muted: false
+      turn_off:
+        service: media_player.volume_mute
+        data:
+          entity_id: media_player.tv_room
+          is_volume_muted: true
+      set_level:
+        service: media_player.volume_set
+        data_template:
+          entity_id: media_player.tv_room
+          volume_level: "{{ brightness / 255 }}"

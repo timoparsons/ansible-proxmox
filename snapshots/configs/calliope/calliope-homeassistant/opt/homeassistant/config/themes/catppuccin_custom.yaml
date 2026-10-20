@@ -1,0 +1,110 @@
+latte_custom:
+  __extend: catppuccin-latte
+  # Padding at bootom for nav-bar-card
+  card-mod-theme: Catppuccin Latte
+  card-mod-root-yaml: |
+    .: |
+      @media (min-width: 768px) {
+        hui-sections-view {
+          padding-bottom: 120px !important;
+        }
+      }
+      @media (max-width: 767px) {
+        :not(.edit-mode) > hui-view:after {
+          content: "";
+          display: block;
+          height: 80px;
+          width: 100%;
+          background-color: transparent;
+        }
+      }
+
+
+  ha-card-border-width: 0px
+
+
+frappe_custom:
+  __extend: catppuccin-frappe
+
+  #########################################
+  # Custom Section - Replace after update #
+  #########################################
+
+  # Padding at bootom for nav-bar-card
+  card-mod-theme: Catppuccin Frappe
+  card-mod-root-yaml: |
+    .: |
+      @media (min-width: 768px) {
+        hui-sections-view {
+          padding-bottom: 120px !important;
+        }
+      }
+      @media (max-width: 767px) {
+        :not(.edit-mode) > hui-view:after {
+          content: "";
+          display: block;
+          height: 80px;
+          width: 100%;
+          background-color: transparent; 
+        }
+      }
+
+  ha-card-border-width: 0px
+
+
+
+macchiato_custom:
+  __extend: catppuccin-macchiato
+
+  #########################################
+  # Custom Section - Replace after update #
+  #########################################
+
+  card-mod-theme: Catppuccin Macchiato
+  card-mod-root-yaml: |
+    .: |
+      @media (min-width: 768px) {
+        hui-sections-view {
+          padding-bottom: 120px !important;
+        }
+      }
+      @media (max-width: 767px) {
+        :not(.edit-mode) > hui-view:after {
+          content: "";
+          display: block;
+          height: 80px;
+          width: 100%;
+          background-color: transparent; 
+        }
+      }
+
+  ha-card-border-width: 0px
+
+
+
+mocha_custom:
+  __extend: catppuccin-mocha
+
+  #########################################
+  # Custom Section - Replace after update #
+  #########################################
+
+  card-mod-theme: Catppuccin Mocha
+  card-mod-root-yaml: |
+    .: |
+      @media (min-width: 768px) {
+        hui-sections-view {
+          padding-bottom: 120px !important;
+        }
+      }
+      @media (max-width: 767px) {
+        :not(.edit-mode) > hui-view:after {
+          content: "";
+          display: block;
+          height: 280px;
+          width: 100%;
+          background-color: transparent; 
+        }
+      }
+
+  ha-card-border-width: 0px

@@ -1,0 +1,234 @@
+# Unified Arr Stack + Custom Services
+# Consolidated from YAMS + custom extensions
+# Author: Self-managed migration
+# Last updated: June 2026
+#
+# Usage:
+#   docker compose up -d              # Start all services
+#   docker compose logs -f sonarr     # Follow logs
+#   docker compose down               # Stop all services
+#
+# Environment variables are loaded from .env
+# See .env.example for reference
+
+
+services:
+
+  # ============================================================================
+  # VPN FOUNDATION - All torrent services route through this
+  # ============================================================================
+  # Gluetun provides a VPN tunnel for safe torrenting
+  # qBittorrent and SABnzbd use this as their network interface
+  gluetun:
+    image: qmcgaw/gluetun:v3
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp # HTTP proxy
+      - 8388:8388/tcp # Shadowsocks
+      - 8388:8388/udp # Shadowsocks
+      - 8003:8000/tcp # Admin
+      - 8080:8080/tcp # gluetun
+      - 8081:8081/tcp # gluetun
+    environment:
+      - TZ=${TZ}
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE}
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD}
+#      - OPENVPN_CIPHERS=AES-256-GCM
+      - OPENVPN_CIPHERS=AES-256-CBC
+      - PORT_FORWARD_ONLY=off
+      - VPN_PORT_FORWARDING=off
+#      - FREE_ONLY=yes #for protonvpn free plan
+      - FIREWALL=off
+    restart: unless-stopped
+
+  # ============================================================================
+  # DOWNLOAD CLIENTS - Route through gluetun VPN
+  # ============================================================================
+
+  # qBittorrent: Torrent client with a modern web UI
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8081
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+      #- ${MEDIA_DIRECTORY}/downloads:/downloads 
+      - ${INSTALL_DIRECTORY}/config/qbittorrent:/config
+    restart: unless-stopped
+#    ports:
+#      - 8081:8081       # Web UI
+#      - 8999:8999       # TCP peer port
+#      - 8999:8999/udp   # UDP peer port  
+#    network_mode: host
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+
+  # SABnzbd: Usenet client (alternative to torrents)
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ} 
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+#      - ${MEDIA_DIRECTORY}/downloads:/downloads
+      - ${INSTALL_DIRECTORY}/config/sabnzbd:/config
+    #ports: # sabnzbd
+    #  - 8080:8080 # sabnzbd
+    restart: unless-stopped
+#    network_mode: host
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+
+  # ============================================================================
+  # ARR STACK - Torrent/Usenet Automation (TV, Movies, Music, Books, Subtitles)
+  # ============================================================================
+
+  # Prowlarr: Torrent/Usenet indexer hub (Sonarr/Radarr use this as their source)
+  prowlarr:
+    #image: lscr.io/linuxserver/prowlarr # Original
+    image: bitlessbyte/prowlarr:latest # Supports AudioBookBay
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${INSTALL_DIRECTORY}/config/prowlarr:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  # Sonarr: TV show management (queries, downloads, renames)
+  sonarr:
+    image: lscr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+      - ${INSTALL_DIRECTORY}/config/sonarr:/config
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  # Radarr: Movie management (queries, downloads, renames)
+  radarr:
+    image: lscr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+      - ${INSTALL_DIRECTORY}/config/radarr:/config
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+
+  # Lidarr: Music management (queries, downloads, renames)
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+      - ${INSTALL_DIRECTORY}/config/lidarr:/config
+    ports:
+      - 8686:8686
+    restart: unless-stopped
+
+
+  # Bazarr: Subtitle management (auto-download subtitles for your media)
+  bazarr:
+    image: lscr.io/linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${MEDIA_DIRECTORY}:/data
+      - ${INSTALL_DIRECTORY}/config/bazarr:/config
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+
+  # ============================================================================
+  # CUSTOM SERVICES - Non-standard extensions
+  # ============================================================================
+
+  # Overseerr: Request management - replaces overseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # - LOG_LEVEL=debug
+      - PORT=5055                  #optional
+    ports:
+      - 5055:5055
+    volumes:
+      - ${INSTALL_DIRECTORY}/config/overseer:/app/config  # Using YAMS's config location
+    restart: unless-stopped
+
+
+  # ReadMeABook: Advanced audiobook management with metadata
+  readmeabook:
+    image: ghcr.io/kikootwo/readmeabook:latest
+    container_name: readmeabook
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    volumes:
+      - ./config:/app/config
+      - ./cache:/app/cache
+      - ${MEDIA_DIRECTORY}/downloads:/downloads        # Your download client's path
+      - ${MEDIA_DIRECTORY}/books:/media                # Your audiobook library
+      - ./pgdata:/var/lib/postgresql/data
+      - ./redis:/var/lib/redis
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ} 
+
+# ============================================================================
+# NETWORKING
+# ============================================================================
+# Most services communicate over the default bridge network
+# Some containers (qbittorrent, sabnzbd) use the gluetun network for VPN access
+# Everything shares ${MEDIA_DIRECTORY} for media files and ${INSTALL_DIRECTORY} for config
+
+networks:
+  default:
+    name: arr-stack

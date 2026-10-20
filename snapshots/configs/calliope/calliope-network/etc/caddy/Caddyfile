@@ -1,0 +1,174 @@
+# Global options
+{
+    #auto_https off
+}
+
+# Core Services
+
+unifi.timparsons.nz {
+    tls internal
+    reverse_proxy https://10.1.1.1 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+        header_up Host 10.1.1.1
+        header_up Origin https://10.1.1.1
+    }
+}
+
+proxmox.timparsons.nz {
+    tls internal
+    reverse_proxy https://10.1.1.20:8006 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+pbs.timparsons.nz {
+    tls internal
+    reverse_proxy https://10.1.1.21:8007 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+# All other services - use http:// for internal access
+http://resilio.calliope {
+    reverse_proxy 10.1.1.10:28888 {
+        header_up Authorization "Basic REDACTED-LONG=="
+    }
+}
+
+http://calliope.synology {
+    reverse_proxy 10.1.1.10:5500
+}
+
+http://norwich.synology {
+    reverse_proxy 10.1.1.12:5500
+}
+
+http://homeassistant.timparsons.nz {
+    reverse_proxy 10.1.1.22:8443
+}
+
+http://homepage.timparsons.nz {
+    reverse_proxy 10.1.1.50:3000
+}
+
+http://frigate.timparsons.nz {
+    reverse_proxy 10.1.1.28:5000
+}
+
+http://gatus.timparsons.nz {
+    reverse_proxy 10.1.1.30:8080
+}
+
+http://go2rtc.timparsons.nz {
+    reverse_proxy 10.1.1.28:1984
+}
+
+http://matter.timparsons.nz {
+    reverse_proxy 10.1.1.22:5580
+}
+
+http://resolve.timparsons.nz {
+    reverse_proxy 10.1.1.55:3001
+}
+
+http://zigbee.timparsons.nz {
+    reverse_proxy 10.1.1.26:8080
+}
+
+http://adguard.timparsons.nz {
+    reverse_proxy 10.1.1.23
+}
+
+http://n8n.timparsons.nz {
+    reverse_proxy 10.1.1.31:5678
+}
+
+http://pricebuddy.timparsons.nz {
+    reverse_proxy 10.1.1.31:8080
+}
+
+
+# Media
+
+http://audiobook.timparsons.nz {
+    reverse_proxy 10.1.1.46:13378
+}
+
+photo.timparsons.nz {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    reverse_proxy 10.1.1.48:2283 {
+        flush_interval -1
+    }
+}
+
+music.timparsons.nz {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    reverse_proxy 10.1.1.45:4533 {
+        flush_interval -1
+    }
+}
+
+http://plex.timparsons.nz {
+    reverse_proxy 10.1.1.42:32400 {
+        flush_interval -1
+    }
+}
+
+
+
+stash.timparsons.nz {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+    }
+    reverse_proxy 10.1.1.44:9999 {
+        flush_interval -1
+    }
+}
+
+# ARR Stack 
+
+http://radarr.timparsons.nz {
+    reverse_proxy 10.1.1.51:7878
+}
+
+http://sonarr.timparsons.nz {
+    reverse_proxy 10.1.1.51:8989
+}
+
+http://lidarr.timparsons.nz {
+    reverse_proxy 10.1.1.51:8686
+}
+
+http://prowlarr.timparsons.nz {
+    reverse_proxy 10.1.1.51:9696
+}
+
+http://bazarr.timparsons.nz {
+    reverse_proxy 10.1.1.51:6767
+}
+
+http://overseer.timparsons.nz {
+    reverse_proxy 10.1.1.51:5055
+}
+
+http://sabnzbd.timparsons.nz {
+    reverse_proxy 10.1.1.51:8080
+}
+
+http://torrent.timparsons.nz {
+    reverse_proxy 10.1.1.51:8081
+}
+
+http://readmeabook.timparsons.nz {
+    reverse_proxy 10.1.1.51:3030
+}

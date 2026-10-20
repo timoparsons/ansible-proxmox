@@ -1,0 +1,8 @@
+services:
+  REDACTED-server:
+    volumes:
+      - ${UPLOAD_LOCATION}:/data
+      - /etc/localtime:/etc/localtime:ro
+#      - /mnt/pictures/Library:/mnt/pictures/Library:ro
+      - /mnt/pictures/Library/Family:/mnt/family:rw
+

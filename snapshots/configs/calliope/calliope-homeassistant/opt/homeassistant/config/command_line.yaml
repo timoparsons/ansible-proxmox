@@ -1,0 +1,22 @@
+# Playstation 4 State Detection
+- binary_sensor:
+    name: Playstation Status
+    command: '/config/python_scripts/ps4.py 10.1.1.82' #HAOS VERSION #IP address changed Jul2024 – should fix it but afraid this might break ps config
+    scan_interval: 60
+
+- switch:
+    name: "Mac Studio WiFi Control"
+    unique_id: mac_studio_wifi_control
+    command_on: 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_ed25519 tim@10.1.1.200 "/usr/sbin/networksetup -setairportpower en1 on"'
+    command_off: 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_ed25519 tim@10.1.1.200 "/usr/sbin/networksetup -setairportpower en1 off"'
+    command_state: 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /root/.ssh/id_ed25519 tim@10.1.1.200 "networksetup -getairportpower en1"'
+    value_template: >-
+      {{ "On" in value }}
+    scan_interval: 60
+
+- sensor:
+    name: Projector Volume
+    command: '/config/python_scripts/get_projector_volume.py'  #HAOS VERSION
+    value_template: "{{ value | replace('\"', '') }}"
+    scan_interval: 315360000 # update every 10 years - force manual update only
+

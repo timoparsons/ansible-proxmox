@@ -1,0 +1,115 @@
+# rest.yaml
+# Sensor monitoring - ONLY sensors go in this file 
+# REST commands CANNOT be in rest.yaml - they must be in configuration.yaml
+- resource: "http://10.1.1.20:8080/"
+  scan_interval: 30
+  timeout: 10
+  sensor:
+    - name: "Mac Mini CPU Temperature"
+      value_template: "{{ value_json.cpu_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:thermometer
+      
+    - name: "Mac Mini Fan Speed"
+      value_template: "{{ value_json.fan_speed }}"
+      unit_of_measurement: "RPM"
+      state_class: measurement
+      icon: mdi:fan
+      
+    - name: "Mac Mini NVMe Temperature"
+      value_template: "{{ value_json.nvme_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:harddisk
+      
+    - name: "Mac Mini PCH Temperature"
+      value_template: "{{ value_json.pch_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:chip
+      
+    - name: "Mac Mini Network PHY Temperature"
+      value_template: "{{ value_json.net_phy_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:ethernet
+      
+    - name: "Mac Mini Network MAC Temperature"
+      value_template: "{{ value_json.net_mac_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:ethernet
+      
+    - name: "Mac Mini CPU Usage"
+      value_template: "{{ value_json.cpu_usage_percent }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:cpu-64-bit
+      
+    - name: "Mac Mini Memory Usage"
+      value_template: "{{ value_json.memory_usage_percent }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:memory
+      
+    - name: "Mac Mini Load Average 1min"
+      value_template: "{{ value_json.load_1min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      
+    - name: "Mac Mini Load Average 5min"
+      value_template: "{{ value_json.load_5min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      
+    - name: "Mac Mini Load Average 15min"
+      value_template: "{{ value_json.load_15min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      
+    - name: "Mac Mini Network Link Speed"
+      value_template: "{{ value_json.link_speed }}"
+      unit_of_measurement: "Mbps"
+      state_class: measurement
+      icon: mdi:speedometer
+      
+    - name: "Mac Mini Network Status"
+      value_template: "{{ value_json.link_status }}"
+      icon: mdi:network
+
+- resource: https://api.open-meteo.com/v1/forecast?latitude=-36.8287&longitude=174.7896&past_days=1&hourly=precipitation&timezone=Pacific/Auckland
+  scan_interval: 3600  # refresh every hour
+  sensor:
+    - name: "Rain last 24h"
+      unit_of_measurement: "mm"
+      value_template: >
+        {% set data = value_json.hourly.precipitation %}
+        {% if data is defined %}
+          {% set total = data[-24:] | sum %}
+          {{ total | round(1) }}
+        {% else %}
+          unknown
+        {% endif %}
+- resource: "http://10.1.1.28:5000/api/stats"
+  scan_interval: 300
+  timeout: 10
+  sensor:
+    - name: "Frigate Recordings Free Space"
+      value_template: "{{ (value_json.service.storage['/media/frigate/recordings'].free / 1024) | round(1) }}"
+      unit_of_measurement: "GB"
+      state_class: measurement
+      icon: mdi:harddisk
+
+    - name: "Frigate Recordings Disk Usage Percent"
+      value_template: >
+        {% set s = value_json.service.storage['/media/frigate/recordings'] %}
+        {{ ((s.used / s.total) * 100) | round(1) }}
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:harddisk

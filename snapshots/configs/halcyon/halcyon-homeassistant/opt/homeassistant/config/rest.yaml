@@ -1,0 +1,87 @@
+# Note: REST commands CANNOT be in rest.yaml - they must be in configuration.yaml
+
+# rest.yaml
+# N100 Sensor monitoring - ONLY sensors go in this file
+- resource: "http://10.2.1.20:8080/"
+  scan_interval: 30
+  timeout: 10
+  sensor:
+    - name: "N100 CPU Temperature"
+      value_template: "{{ value_json.cpu_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:thermometer
+      availability: "{{ value_json.cpu_temp != null }}"
+           
+    - name: "N100 NVMe Temperature"
+      value_template: "{{ value_json.nvme_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      icon: mdi:harddisk
+      availability: "{{ value_json.nvme_temp != null }}"
+           
+    - name: "N100 CPU Usage"
+      value_template: "{{ value_json.cpu_usage_percent }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:cpu-64-bit
+      availability: "{{ value_json.cpu_usage_percent != null }}"
+           
+    - name: "N100 Memory Usage"
+      value_template: "{{ value_json.memory_usage_percent }}"
+      unit_of_measurement: "%"
+      state_class: measurement
+      icon: mdi:memory
+      availability: "{{ value_json.memory_usage_percent != null }}"
+           
+    - name: "N100 Load Average 1min"
+      value_template: "{{ value_json.load_1min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      availability: "{{ value_json.load_1min != null }}"
+           
+    - name: "N100 Load Average 5min"
+      value_template: "{{ value_json.load_5min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      availability: "{{ value_json.load_5min != null }}"
+           
+    - name: "N100 Load Average 15min"
+      value_template: "{{ value_json.load_15min }}"
+      state_class: measurement
+      icon: mdi:chart-line
+      availability: "{{ value_json.load_15min != null }}"
+           
+    - name: "N100 Network Link Speed"
+      value_template: "{{ value_json.link_speed }}"
+      unit_of_measurement: "Mbps"
+      state_class: measurement
+      icon: mdi:speedometer
+      availability: "{{ value_json.link_speed != null and value_json.link_speed > 0 }}"
+           
+    - name: "N100 Network Status"
+      value_template: "{{ value_json.link_status }}"
+      icon: mdi:network
+      availability: "{{ value_json.link_status != null }}"
+
+    - name: "N100 Network Interface"
+      value_template: "{{ value_json.network_interface }}"
+      icon: mdi:ethernet
+      availability: "{{ value_json.network_interface != null }}"
+
+    # Memory details (optional - useful for monitoring)
+    - name: "N100 Memory Total"
+      value_template: "{{ (value_json.memory_total_kb | float / 1024 / 1024) | round(1) }}"
+      unit_of_measurement: "GB"
+      state_class: measurement
+      icon: mdi:memory
+      availability: "{{ value_json.memory_total_kb != null }}"
+
+    - name: "N100 Memory Available"
+      value_template: "{{ (value_json.memory_available_kb | float / 1024 / 1024) | round(1) }}"
+      unit_of_measurement: "GB"
+      state_class: measurement
+      icon: mdi:memory
+      availability: "{{ value_json.memory_available_kb != null }}"

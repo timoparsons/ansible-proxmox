@@ -1,0 +1,86 @@
+# Reference copy of Frigate's config. Home Assistant does not read this file.
+# The logins are placeholders; the real values live in /root/frigate.env on CT 128.
+
+mqtt:
+  enabled: True
+  host: 10.2.1.126
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
+  user: "{FRIGATE_MQTT_USER}"
+  password: REDACTED
+
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+detectors:
+  ov:
+    type: openvino
+    device: AUTO
+    model:
+      path: /openvino-model/ssdlite_mobilenet_v2.xml
+
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+objects:
+  track:
+    - person
+  filters:
+    person:
+      min_area: 5000
+      max_area: 100000
+
+record: # how long to record before and after motion
+    enabled: True
+    events:
+        pre_capture: 3
+        post_capture: 10
+        retain:
+            mode: active_objects
+            default: 10  #days
+
+   # retain: # uncomment this section to record this camera 24/7
+   #     days: 7
+   #     mode: all
+
+
+rtmp:
+    enabled: False
+
+detect:
+  width: 640
+  height: 360
+  fps: 4
+
+
+snapshots:
+    enabled: True
+    retain:
+        default: 10
+
+cameras:
+
+  Driveway:
+    enabled: True
+    ffmpeg:
+      inputs:
+        # High Resolution Stream
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.20.51:554/h264Preview_01_main
+          roles:
+            - record
+        # Low Resolution Stream
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.20.51:554/h264Preview_01_sub
+          roles:
+            - detect
+
+
+
+go2rtc:
+  streams:
+    Driveway:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.20.51:554/h264Preview_01_main

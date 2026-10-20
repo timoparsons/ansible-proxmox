@@ -1,0 +1,500 @@
+blueprint:
+  name: IKEA E2490 BILRESA Scroll Wheel (Zigbee2MQTT + ZHA)
+  description: 'Unified controller blueprint for IKEA E2490 BILRESA scroll wheel working
+    with Zigbee2MQTT and ZHA.
+
+    - Buttons: on, off, on_double, off_double
+
+    - Scroll: brightness_move_to_level with action_level from Zigbee2MQTT main topic,
+    or ZHA move_to_level args
+
+    Supports light brightness, media_player volume, light color_temp, light hue.
+
+    Version: 2026-01-18
+
+    '
+  domain: automation
+  input:
+    controller_device:
+      name: Controller Device (Zigbee2MQTT or ZHA)
+      description: Select the E2490 device integrated via Zigbee2MQTT or ZHA.
+      REDACTED
+        device:
+          filter:
+          - integration: mqtt
+          - integration: zha
+          REDACTED
+    scroll_target:
+      name: Scroll wheel target entity (light)
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - light
+          REDACTED
+          reorder: false
+    scroll_mode:
+      name: Default scroll mode
+      description: Default mode when automation starts or after auto-reset timeout
+      REDACTED brightness
+      REDACTED
+        select:
+          mode: dropdown
+          options:
+          - label: Brightness (light)
+            value: brightness
+          - label: Volume (media_player)
+            value: volume
+          - label: Color temperature (light)
+            value: color_temp
+          - label: Hue (light)
+            value: hue
+          REDACTED
+          custom_value: false
+          sort: false
+    volume_target:
+      name: Volume target (media_player)
+      REDACTED
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - media_player
+          REDACTED
+          reorder: false
+    color_temp_target:
+      name: Color temperature target (light)
+      REDACTED
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - light
+          REDACTED
+          reorder: false
+    hue_target:
+      name: Hue target (light)
+      REDACTED
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - light
+          REDACTED
+          reorder: false
+    scroll_mode_helper:
+      name: (Optional) Scroll mode helper (input_select)
+      description: 'Provide an input_select to allow cycling scroll modes at runtime
+        with double ON. Must have options: brightness, volume, color_temp, hue (in
+        that order)'
+      REDACTED
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - input_select
+          REDACTED
+          reorder: false
+    last_activity_helper:
+      name: (Optional) Last activity helper (input_datetime)
+      description: Provide an input_datetime to enable auto-reset after inactivity.
+        Works with scroll mode helper and reset timeout.
+      REDACTED
+      REDACTED
+        entity:
+          filter:
+          - domain:
+            - input_datetime
+          REDACTED
+          reorder: false
+    reset_timeout:
+      name: (Optional) Auto-reset timeout (seconds)
+      description: Time in seconds of inactivity before resetting to default scroll
+        mode. Set to 0 to disable auto-reset. Requires both scroll mode helper and
+        last activity helper.
+      REDACTED 60
+      REDACTED
+        number:
+          min: 0.0
+          max: 3600.0
+          step: 1.0
+          unit_of_measurement: seconds
+          mode: box
+    volume_max:
+      name: (Optional) Max volume
+      description: Upper limit for volume mode (0.0 - 1.0). Values from the wheel
+        will be clamped to this maximum.
+      REDACTED 1.0
+      REDACTED
+        number:
+          min: 0.0
+          max: 1.0
+          step: 0.01
+          mode: slider
+    button_on_short:
+      name: Button ON - short press (optional)
+      REDACTED []
+      REDACTED
+        action: {}
+    button_off_short:
+      name: Button OFF - short press (optional)
+      REDACTED []
+      REDACTED
+        action: {}
+    button_on_double:
+      name: Button ON - double press (optional)
+      REDACTED []
+      REDACTED
+        action: {}
+    button_off_double:
+      name: Button OFF - double press (optional)
+      REDACTED []
+      REDACTED
+        action: {}
+  source_url: https://gist.github.com/mcinnes01/399132520034291b89a82659653b2893
+alias: IKEA E2490 BILRESA Scroll Wheel (Zigbee2MQTT + ZHA)
+variables:
+  controller_device: !input controller_device
+  friendly_name: '{{ device_attr(controller_device, ''name'') | default('''') }}'
+  z2m_topic: zigbee2mqtt/{{ friendly_name }}
+  scroll_mode: !input scroll_mode
+  scroll_mode_helper: !input scroll_mode_helper
+  last_activity_helper: !input last_activity_helper
+  reset_timeout: !input reset_timeout
+  effective_mode: '{{ states(scroll_mode_helper) if scroll_mode_helper is not none
+    and states(scroll_mode_helper) != '''' else scroll_mode }}'
+  brightness_target: !input scroll_target
+  volume_target: !input volume_target
+  color_temp_target: !input color_temp_target
+  hue_target: !input hue_target
+  volume_max: !input volume_max
+  available_modes: '{% set modes = [] %} {% if brightness_target is not none %}{%
+    set modes = modes + [''brightness''] %}{% endif %} {% if volume_target is not
+    none %}{% set modes = modes + [''volume''] %}{% endif %} {% if color_temp_target
+    is not none %}{% set modes = modes + [''color_temp''] %}{% endif %} {% if hue_target
+    is not none %}{% set modes = modes + [''hue''] %}{% endif %} {{ modes }}
+
+    '
+  button_on_short_seq: !input button_on_short
+  button_off_short_seq: !input button_off_short
+  button_on_double_seq: !input button_on_double
+  button_off_double_seq: !input button_off_double
+trigger:
+- platform: device
+  id: z2m-on
+  domain: mqtt
+  device_id: !input controller_device
+  type: action
+  subtype: 'on'
+- platform: device
+  id: z2m-off
+  domain: mqtt
+  device_id: !input controller_device
+  type: action
+  subtype: 'off'
+- platform: device
+  id: z2m-on-double
+  domain: mqtt
+  device_id: !input controller_device
+  type: action
+  subtype: on_double
+- platform: device
+  id: z2m-off-double
+  domain: mqtt
+  device_id: !input controller_device
+  type: action
+  subtype: off_double
+- platform: mqtt
+  id: z2m-payload
+  topic: zigbee2mqtt/#
+- platform: event
+  id: zha-on
+  event_type: zha_event
+  event_data:
+    device_id: !input controller_device
+    command: 'on'
+- platform: event
+  id: zha-off
+  event_type: zha_event
+  event_data:
+    device_id: !input controller_device
+    command: 'off'
+- platform: event
+  id: zha-level
+  event_type: zha_event
+  event_data:
+    device_id: !input controller_device
+    command: move_to_level
+condition: []
+action:
+- if:
+  - condition: template
+    value_template: "{{ scroll_mode_helper is not none \n   and last_activity_helper
+      is not none \n   and reset_timeout > 0\n   and states(last_activity_helper)
+      not in ['unknown', 'unavailable', ''] \n   and (now() - (states(last_activity_helper)
+      | as_datetime)).total_seconds() > reset_timeout }}\n"
+  then:
+  - service: input_select.select_option
+    target:
+      entity_id: '{{ scroll_mode_helper }}'
+    data:
+      option: '{{ scroll_mode }}'
+- choose:
+  - conditions:
+    - condition: template
+      value_template: "{{ trigger.id == 'z2m-payload' \n   and trigger.topic == z2m_topic
+        \n   and trigger.payload_json is defined \n   and trigger.payload_json.action
+        == 'brightness_move_to_level' }}\n"
+    sequence:
+    - variables:
+        lvl: '{{ trigger.payload_json.action_level | default(none) }}'
+        trans: '{{ trigger.payload_json.action_transition_time | default(0) }}'
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ effective_mode == ''brightness'' and brightness_target
+            is not none }}'
+        sequence:
+        - service: light.turn_on
+          target:
+            entity_id: '{{ brightness_target }}'
+          data:
+            brightness: '{% if lvl is none %}255{% else %}{{ ((lvl|float/241.0)*255.0)|round(0)|int
+              }}{% endif %}
+
+              '
+            transition: '{{ trans }}'
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+      - conditions:
+        - condition: template
+          value_template: '{{ effective_mode == ''volume'' and volume_target is not
+            none }}'
+        sequence:
+        - service: media_player.volume_set
+          target:
+            entity_id: '{{ volume_target }}'
+          data:
+            volume_level: "{% if lvl is none %}\n  {{ volume_max }}\n{% else %}\n
+              \ {{ ((lvl|float/241.0) * volume_max)|round(3) }}\n{% endif %}\n"
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+      - conditions:
+        - condition: template
+          value_template: '{{ effective_mode == ''color_temp'' and color_temp_target
+            is not none }}'
+        sequence:
+        - variables:
+            min_mireds: '{{ state_attr(color_temp_target, ''min_mireds'') | default(153)
+              }}'
+            max_mireds: '{{ state_attr(color_temp_target, ''max_mireds'') | default(500)
+              }}'
+        - service: light.turn_on
+          target:
+            entity_id: '{{ color_temp_target }}'
+          data:
+            color_temp: "{% set minm = min_mireds|int %} {% set maxm = max_mireds|int
+              %} {% if lvl is none %}\n  {{ maxm }}\n{% else %}\n  {% set ratio =
+              ((lvl|float - 1.0)/240.0) %}\n  {{ (minm + ratio*(maxm-minm))|round(0)|int
+              }}\n{% endif %}\n"
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+      - conditions:
+        - condition: template
+          value_template: '{{ effective_mode == ''hue'' and hue_target is not none
+            }}'
+        sequence:
+        - variables:
+            current_hs: '{{ state_attr(hue_target, ''hs_color'') | default([0, 100])
+              }}'
+            current_sat: '{{ current_hs[1] if current_hs is sequence and current_hs|length
+              > 1 else 100 }}'
+            hue_val: '{% if lvl is none %}360{% else %}{{ ((lvl|float/241.0)*360.0)|round(0)|int
+              }}{% endif %}
+
+              '
+        - service: light.turn_on
+          target:
+            entity_id: '{{ hue_target }}'
+          data:
+            hs_color: '[ {{ hue_val }}, {{ current_sat }} ]'
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.id == ''zha-level'' }}'
+    sequence:
+    - variables:
+        lvl: '{% set a = trigger.event.data.args | default([]) %} {% if a is sequence
+          and a|length > 0 %}{{ a[0] }}{% else %}{{ none }}{% endif %}
+
+          '
+        trans: '{% set a = trigger.event.data.args | default([]) %} {% if a is sequence
+          and a|length > 1 %}{{ a[1] }}{% else %}0{% endif %}
+
+          '
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ effective_mode == ''brightness'' and brightness_target
+            is not none }}'
+        sequence:
+        - service: light.turn_on
+          target:
+            entity_id: '{{ brightness_target }}'
+          data:
+            brightness: '{% if lvl is none %}255{% else %}{{ (lvl|int)|min(255)|max(1)
+              }}{% endif %}
+
+              '
+            transition: '{{ trans }}'
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.id in [''z2m-on'',''zha-on''] }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ button_on_short_seq | length > 0 }}'
+        sequence: !input button_on_short
+      REDACTED
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ effective_mode == ''volume'' and volume_target is
+              not none }}'
+          sequence:
+          - service: media_player.turn_on
+            target:
+              entity_id: '{{ volume_target }}'
+        - conditions: []
+          sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input scroll_target
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.id in [''z2m-off'',''zha-off''] }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ button_off_short_seq | length > 0 }}'
+        sequence: !input button_off_short
+      REDACTED
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ effective_mode == ''volume'' and volume_target is
+              not none }}'
+          sequence:
+          - service: media_player.turn_off
+            target:
+              entity_id: '{{ volume_target }}'
+        - conditions: []
+          sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input scroll_target
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.id == ''z2m-on-double'' }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ scroll_mode_helper is not none }}'
+        sequence:
+        - variables:
+            current_mode: '{{ states(scroll_mode_helper) }}'
+            modes_list: '{{ available_modes }}'
+            current_index: '{{ modes_list.index(current_mode) if current_mode in modes_list
+              else 0 }}'
+            next_index: '{{ (current_index + 1) % (modes_list | length) }}'
+            next_mode: '{{ modes_list[next_index] if modes_list | length > 0 else
+              ''brightness'' }}'
+        - service: input_select.select_option
+          target:
+            entity_id: '{{ scroll_mode_helper }}'
+          data:
+            option: '{{ next_mode }}'
+        - if:
+          - condition: template
+            value_template: '{{ last_activity_helper is not none }}'
+          then:
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: '{{ last_activity_helper }}'
+            data:
+              timestamp: '{{ now().timestamp() }}'
+        - choose:
+          - conditions:
+            - condition: template
+              value_template: '{{ button_on_double_seq | length > 0 }}'
+            sequence: !input button_on_double
+      - conditions: []
+        sequence:
+        - choose:
+          - conditions:
+            - condition: template
+              value_template: '{{ button_on_double_seq | length > 0 }}'
+            sequence: !input button_on_double
+          - conditions: []
+            sequence:
+            - service: light.turn_on
+              target:
+                entity_id: !input scroll_target
+              data:
+                brightness: 255
+  - conditions:
+    - condition: template
+      value_template: '{{ trigger.id == ''z2m-off-double'' }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ button_off_double_seq | length > 0 }}'
+        sequence: !input button_off_double
+      REDACTED
+      - service: light.turn_off
+        target:
+          entity_id: !input scroll_target
+mode: restart
+max_exceeded: silent

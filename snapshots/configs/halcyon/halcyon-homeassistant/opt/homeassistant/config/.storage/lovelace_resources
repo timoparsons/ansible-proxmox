@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "REDACTED",
+  "data": {
+    "items": [
+      {
+        "id": "bb761a0e20b845d1a893f90fcc207286",
+        "url": "/hacsfiles/frigate-hass-card/frigate-hass-card.js?hacstag=394082552520",
+        "type": "module"
+      },
+      {
+        "id": "fc6f01125a044a678fb3b4fb9f9bfe91",
+        "url": "/webrtc/webrtc-camera.js?v=v3.6.1",
+        "type": "module"
+      },
+      {
+        "id": "51cf54cf64ff40c3b92bffb827a17c4b",
+        "url": "/hacsfiles/button-card/button-card.js?hacstag=146194325600",
+        "type": "module"
+      },
+      {
+        "id": "9eb83fb1bf074858b8b9637614fe79c4",
+        "url": "/hacsfiles/REDACTED-layout-card/layout-card.js?hacstag=156434866247",
+        "type": "module"
+      },
+      {
+        "id": "660ed569ebde40bc8fdd23a113576c2e",
+        "url": "/hacsfiles/stack-in-card/stack-in-card.js?hacstag=248954055020",
+        "type": "module"
+      },
+      {
+        "id": "272390f4e9244f05b34063a419578ccc",
+        "url": "/hacsfiles/timer-bar-card/timer-bar-card.js?hacstag=3769045171291",
+        "type": "module"
+      },
+      {
+        "id": "a8c41784ae0e49a58c30bd0146c008ce",
+        "url": "/hacsfiles/REDACTED-slider-entity-row/slider-entity-row.js?hacstag=1448997001741",
+        "type": "module"
+      },
+      {
+        "id": "3bdc28d4e3994fc7b831ea5224ad76a5",
+        "url": "/hacsfiles/mini-graph-card/mini-graph-card-bundle.js?hacstag=1512800620130",
+        "type": "module"
+      },
+      {
+        "id": "104a04632d454fce92011fdc412b7aa0",
+        "url": "/hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=3940825527191",
+        "type": "module"
+      },
+      {
+        "id": "ed689b2677de437085cca8e52aff5e65",
+        "url": "/hacsfiles/REDACTED-card-mod/card-mod.js?hacstag=190927524346",
+        "type": "module"
+      },
+      {
+        "id": "b5d5bba61d974224a26f82ebe640c0c9",
+        "url": "/hacsfiles/flex-horseshoe-card/flex-horseshoe-card.js?hacstag=20729272512",
+        "type": "module"
+      },
+      {
+        "id": "ab1da3ce44e14c08a4bd990302967b2b",
+        "url": "/hacsfiles/REDACTED-mushroom/mushroom.js?hacstag=444350375508",
+        "type": "module"
+      },
+      {
+        "id": "4aa39d2d701b4a56bb361bc2719345b4",
+        "url": "/hacsfiles/Bubble-Card/bubble-card.js?hacstag=680112919304",
+        "type": "module"
+      },
+      {
+        "id": "ffa2e6c150cd42a2bfbac3e79f7e0a50",
+        "url": "/hacsfiles/device-card/device-card.js?hacstag=9467337080150",
+        "type": "module"
+      },
+      {
+        "id": "d8f9a0eadb3049ca86b9d6bc64e17201",
+        "url": "/hacsfiles/decluttering-card/decluttering-card.js?hacstag=188686483100",
+        "type": "module"
+      },
+      {
+        "id": "2a724460999b4952a05540f970331d8f",
+        "url": "/hacsfiles/config-template-card/config-template-card.js?hacstag=172177543136",
+        "type": "module"
+      }
+    ]
+  }
+}

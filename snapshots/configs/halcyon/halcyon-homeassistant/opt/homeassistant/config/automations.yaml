@@ -1,0 +1,1273 @@
+- id: shellies_announce_gen2
+  alias: Backend - Shellies Announce Gen2
+  description: ''
+  triggers:
+  - event: start
+    trigger: homeassistant
+  actions:
+  - repeat:
+      for_each: '{{ device_ids }}'
+      sequence:
+      - data:
+          topic: '{{ repeat.item }}/rpc'
+          payload: '{{ device_info_payload }}'
+        action: mqtt.publish
+  variables:
+    device_info_payload: '{{ {''id'': 1, ''src'':''shellies_discovery'', ''method'':''Shelly.GetConfig''}
+      | to_json }}'
+    device_ids:
+    - shellyplus1-a8032aba31a8
+    - shelly
+- id: shellies_discovery_gen2
+  alias: Backend - Shellies Discovery Gen2
+  description: ''
+  triggers:
+  - topic: shellies_discovery/rpc
+    trigger: mqtt
+  actions:
+  - data:
+      id: '{{ trigger.payload_json.src }}'
+      device_config: '{{ trigger.payload_json.result }}'
+    action: python_script.shellies_discovery_gen2
+  - data:
+      topic: '{{ trigger.payload_json.result.mqtt.topic_prefix }}/command'
+      payload: status_update
+    action: mqtt.publish
+  mode: queued
+  max: 999
+- id: '1707122074655'
+  alias: 'Driveway - Detected Occupancy: Lights ON'
+  description: ''
+  triggers:
+  - entity_id:
+    - binary_sensor.driveway_all_occupancy
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  - condition: state
+    entity_id: timer.driveway_lights_timer
+    state: idle
+  - condition: state
+    entity_id: light.security_lights
+    state: 'off'
+  - condition: time
+    after: 05:00:00
+    before: '23:59:00'
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: timer.driveway_lights_timer
+    enabled: true
+    action: timer.start
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.security_lights
+    action: light.turn_on
+  mode: single
+- id: '1707122500093'
+  alias: 'Driveway - Timer FINISH and Occupancy CLEAR: Lights OFF'
+  description: ''
+  triggers:
+  - entity_id:
+    - timer.driveway_lights_timer
+    from: active
+    to: idle
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.halcyon_driveway_floodlight
+    action: light.turn_off
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: switch.front_security_light_relay_0
+    action: switch.turn_off
+  mode: single
+- id: '1707124283631'
+  alias: 'Security - Notifications DISABLED: Timer START'
+  description: ''
+  triggers:
+  - entity_id:
+    - input_boolean.driveway_silence_detection
+    to: 'on'
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      duration: '{{ states(''input_number.security_notifications_mute_duration'')
+        | int * 3600}}'
+    target:
+      entity_id: timer.security_notifications_mute
+    action: timer.start
+  mode: single
+- id: '1707126544330'
+  alias: 'Driveway - Lights ON: Timer START'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - light.security_lights
+    to: 'on'
+    from: 'off'
+  condition: []
+  action:
+  - service: timer.start
+    metadata: {}
+    data:
+      duration: '{{ states(''input_number.driveway_lights_timer_duration_camera'')
+        | int * 60}}'
+    target:
+      entity_id: timer.driveway_lights_timer
+  mode: single
+- id: '1707126775016'
+  alias: 'Driveway - Lights OFF: Timer CANCEL'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - light.security_lights
+    to: 'off'
+  condition:
+  - condition: state
+    entity_id: timer.driveway_lights_timer
+    state: active
+  action:
+  - service: timer.cancel
+    metadata: {}
+    data: {}
+    target:
+      entity_id: timer.driveway_lights_timer
+  mode: single
+- id: '1707295712032'
+  alias: 'Driveway - Event Detected: Send iOS Notification'
+  description: ''
+  trigger:
+  - platform: mqtt
+    topic: frigate/events
+    id: frigate-event
+    payload: Driveway
+    value_template: '{{ value_json[''after''][''camera''] }}'
+    variables:
+      after_zones: '{{ trigger.payload_json[''after''][''entered_zones''] }}'
+      before_zones: '{{ trigger.payload_json[''before''][''entered_zones''] }}'
+      camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+      camera_label: '{{ trigger.payload_json[''after''][''camera''] | replace(''_'',
+        '' '') | title }}'
+      id: '{{ trigger.payload_json[''after''][''id''] }}'
+      label: '{{ trigger.payload_json[''after''][''label''] }}'
+      score: '{{ trigger.payload_json[''after''][''score''] }}'
+      time_clip_start: '{{ trigger.payload_json[''after''][''start_time''] - 10.0
+        }}'
+  condition:
+  - condition: template
+    value_template: '{{ trigger.payload_json[''type''] == ''new'' }}'
+    enabled: true
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+  action:
+  - service: script.send_dynamic_notification_tims_iphone
+    metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera_label }}'
+      message: '{{ label }} detected on {{ id }}'
+      url: /REDACTED/recordings
+      importance: time-sensitive
+      image: /api/frigate/notifications/{{ id }}/snapshot.jpg
+  mode: single
+  max: 10
+- id: '1707379084052'
+  alias: 'Driveway - Event Detected: Send Pushover Notification'
+  description: ''
+  trigger:
+  - platform: mqtt
+    topic: frigate/events
+    id: frigate-event
+    payload: Driveway
+    value_template: '{{ value_json[''after''][''camera''] }}'
+    variables:
+      after_zones: '{{ trigger.payload_json[''after''][''entered_zones''] }}'
+      before_zones: '{{ trigger.payload_json[''before''][''entered_zones''] }}'
+      camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+      camera_label: '{{ trigger.payload_json[''after''][''camera''] | replace(''_'',
+        '' '') | title }}'
+      id: '{{ trigger.payload_json[''after''][''id''] }}'
+      label: '{{ trigger.payload_json[''after''][''label''] | title }}'
+      score: '{{ trigger.payload_json[''after''][''score''] }}'
+      time_clip_start: '{{ trigger.payload_json[''after''][''start_time''] - 10.0
+        }}'
+  condition:
+  - condition: template
+    value_template: '{{ trigger.payload_json[''type''] == ''new'' }}'
+    enabled: true
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+    enabled: true
+  - condition: state
+    state: idle
+    entity_id: timer.security_notifications_debounce
+  action:
+  - service: shell_command.frigate_capture_stream_snapshot
+    metadata: {}
+    data:
+      camera_name: driveway
+      output_folder: /config/www
+    enabled: false
+  - service: script.send_dynamic_notification_tims_iphone
+    metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: /REDACTED/recordings
+      importance: active
+      image: /api/frigate/notifications/{{ id }}/snapshot.jpg
+    enabled: false
+  - service: timer.start
+    metadata: {}
+    data:
+      duration: '{{ states(''input_number.security_notifications_debounce_duration'')
+        | int * 60 }}'
+    target:
+      entity_id: timer.security_notifications_debounce
+  - service: shell_command.frigate_download_notification_snapshot
+    metadata: {}
+    data:
+      event_id: '{{ id }}'
+      output_folder: /config/www
+    enabled: true
+  - service: script.send_dynamic_pushover_notification
+    metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_snapshot.jpg
+  mode: single
+  max: 10
+- id: '1707437885966'
+  alias: 'Driveway - Motion DETECTED: Pushover Notification'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.halcyon_driveway_motion
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+    enabled: true
+  - platform: state
+    entity_id:
+    - binary_sensor.driveway_motion
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    enabled: false
+  condition:
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+    enabled: false
+  - condition: sun
+    before: sunrise
+    after: sunset
+    enabled: true
+  action:
+  - service: shell_command.frigate_capture_stream_snapshot
+    metadata: {}
+    data:
+      camera_name: driveway
+      output_folder: /config/www
+    enabled: true
+  - service: script.send_dynamic_notification_pushover_tim
+    data:
+      id: id
+      title: Motion detected
+      message: Reolink detection
+      url: http://halcyon.timparsons.nz/local/driveway_grab.jpg
+      url_title: hi-res image
+      priority: -1
+      image: /config/www/driveway_grab.jpg
+      target: tim-iphone
+  mode: single
+  max: 10
+- id: '1707447106784'
+  alias: 'Driveway - Event Detected: Send iOS Notification NEW'
+  description: ''
+  trigger:
+  - platform: mqtt
+    topic: frigate/events
+    id: frigate-event
+    payload: Driveway
+    value_template: '{{ value_json[''after''][''camera''] }}'
+    variables:
+      after_zones: '{{ trigger.payload_json[''after''][''entered_zones''] }}'
+      before_zones: '{{ trigger.payload_json[''before''][''entered_zones''] }}'
+      camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+      camera_label: '{{ trigger.payload_json[''after''][''camera''] | replace(''_'',
+        '' '') | title }}'
+      id: '{{ trigger.payload_json[''after''][''id''] }}'
+      label: '{{ trigger.payload_json[''after''][''label''] | title }}'
+      score: '{{ trigger.payload_json[''after''][''score''] }}'
+  condition:
+  - condition: template
+    value_template: '{{ trigger.payload_json[''type''] == ''new'' }}'
+    enabled: true
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: frigate-event
+      sequence:
+      - service: script.send_dynamic_notification_tims_iphone
+        metadata: {}
+        data:
+          id: '{{ id }}'
+          notifTag: '{{ id }}'
+          group: frigate-notification-{{ camera }}
+          title: '{{ camera_label }}'
+          message: '{{ label }} detected on {{ id }} '
+          url: /REDACTED/recordings
+          importance: time-sensitive
+          image: /api/frigate/notifications/{{ id }}/snapshot.jpg
+      - repeat:
+          until:
+          - condition: template
+            value_template: '{{ wait.trigger.payload_json[''type''] == ''end'' }}'
+          sequence:
+          - wait_for_trigger:
+            - platform: mqtt
+              topic: frigate/events
+              payload: '{{ trigger.payload_json[''after''][''id''] }}'
+              value_template: '{{ value_json[''after''][''id''] }}'
+            continue_on_timeout: false
+            timeout: 00:02:00
+          - condition: template
+            value_template: '{{ wait.trigger.payload_json[''type''] == ''end'' }}'
+          - service: script.send_dynamic_notification_tims_iphone
+            data:
+              id: '{{ id }}'
+              title: '{% if (wait.trigger.payload_json["after"]["sub_label"] != None)
+                -%} {{ (wait.trigger.payload_json["after"]["sub_label"]) | title }}
+                {%- else -%} {{ label | replace("_", " ") | title }} {%- endif %}
+                was detected in the {{ after_zones[0] | replace("_", " ") | title
+                }}'
+              message: Detected with {{ int(score | round(2) * 100) }}% confidence
+              notifTag: '{{ id }}'
+              group: frigate-notification-{{ trigger.payload_json["after"]["camera"]
+                }}
+              importance: default
+              image: /api/frigate/notifications/{{ id }}/snapshot.jpg
+          - service: shell_command.frigate_download_notification_snapshot
+            metadata: {}
+            data:
+              event_id: '{{ id }}'
+              output_folder: /config/www
+            enabled: true
+    default: []
+  mode: parallel
+  max: 10
+- id: '1707643763105'
+  alias: 'Security - Notifications UNMUTE: Timer CANCEL'
+  description: ''
+  triggers:
+  - entity_id:
+    - input_boolean.driveway_silence_detection
+    to: 'off'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: timer.security_notifications_mute
+    state: active
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: timer.security_notifications_mute
+    action: timer.cancel
+  mode: single
+- id: '1707644090469'
+  alias: 'Security - Notifications Timer FINISH, Button PRESS: Notifications ENABLE'
+  description: ''
+  triggers:
+  - entity_id:
+    - timer.security_notifications_mute
+    to: idle
+    trigger: state
+  - entity_id:
+    - input_boolean.driveway_silence_detection
+    to: 'off'
+    trigger: state
+  conditions: []
+  actions:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.driveway_silence_detection
+    action: input_boolean.turn_off
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: timer.security_notifications_mute
+    action: timer.cancel
+  mode: single
+- id: '1707644962103'
+  alias: 'Security - Sunrise: Camera COLOUR mode'
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: 01:00:00
+  condition: []
+  action:
+  - device_id: 531e27def2e8ac5a15a644ad630b7705
+    domain: select
+    entity_id: f5ed1120ce9aec05ab4f2a39204f691d
+    type: select_option
+    option: color
+  mode: single
+- id: '1707644999316'
+  alias: 'Security - Sunset: Camera B&W mode'
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: 00:00:00
+  condition: []
+  action:
+  - device_id: 531e27def2e8ac5a15a644ad630b7705
+    domain: select
+    entity_id: f5ed1120ce9aec05ab4f2a39204f691d
+    type: select_option
+    option: blackwhite
+  mode: single
+- id: '1708923687563'
+  alias: 'Driveway - Event Detected Reolink: Send Pushover Notification'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.halcyon_driveway_person
+    - binary_sensor.halcyon_driveway_animal
+    - binary_sensor.halcyon_driveway_vehicle
+    - binary_sensor.halcyon_driveway_motion
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+    enabled: false
+  - condition: state
+    state: idle
+    entity_id: timer.security_notifications_debounce
+    enabled: false
+  action:
+  - variables:
+      camera: Driveway Reolink
+      label: '{{ trigger.entity_id.replace(''binary_sensor.halcyon_driveway_'', '''')
+        | title }}'
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - service: shell_command.frigate_capture_stream_snapshot
+    metadata: {}
+    data:
+      camera_name: driveway
+      output_folder: /config/www
+    enabled: true
+  - service: timer.start
+    metadata: {}
+    data:
+      duration: '{{ states(''input_number.security_notifications_debounce_duration'')
+        | int * 60 }}'
+    target:
+      entity_id: timer.security_notifications_debounce
+    enabled: false
+  - service: script.send_dynamic_pushover_notification
+    metadata: {}
+    data:
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_grab.jpg
+    enabled: false
+  - service: script.send_dynamic_notification_pushover_tim
+    metadata: {}
+    data:
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_grab.jpg
+      priority: 0
+  mode: single
+  max: 10
+- id: '1717479932889'
+  alias: Security - Camera Toggle Color Mode
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+  - platform: sun
+    event: sunset
+    offset: 0
+  - platform: homeassistant
+    event: start
+  condition: []
+  action:
+  - if:
+    - condition: sun
+      after: sunrise
+      before: sunset
+    then:
+    - device_id: 531e27def2e8ac5a15a644ad630b7705
+      domain: select
+      entity_id: f5ed1120ce9aec05ab4f2a39204f691d
+      type: select_option
+      option: color
+    else:
+    - device_id: 531e27def2e8ac5a15a644ad630b7705
+      domain: select
+      entity_id: f5ed1120ce9aec05ab4f2a39204f691d
+      type: select_option
+      option: blackwhite
+  mode: single
+- id: '1742946467459'
+  alias: 'Driveway - Event Detected: Send Dynamic Notification'
+  description: ''
+  triggers:
+  - topic: frigate/events
+    id: frigate-event
+    payload: driveway
+    value_template: '{{ value_json[''after''][''camera''] }}'
+    variables:
+      after_zones: '{{ trigger.payload_json[''after''][''entered_zones''] }}'
+      before_zones: '{{ trigger.payload_json[''before''][''entered_zones''] }}'
+      camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+      camera_label: '{{ trigger.payload_json[''after''][''camera''] | replace(''_'',
+        '' '') | title }}'
+      id: '{{ trigger.payload_json[''after''][''id''] }}'
+      label: '{{ trigger.payload_json[''after''][''label''] | title }}'
+      score: '{{ trigger.payload_json[''after''][''score''] }}'
+      time_clip_start: '{{ trigger.payload_json[''after''][''start_time''] - 10.0
+        }}'
+    trigger: mqtt
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.payload_json[''type''] == ''new'' }}'
+    enabled: false
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+    enabled: true
+  - condition: state
+    state: idle
+    entity_id: timer.security_notifications_debounce
+    enabled: true
+  actions:
+  - metadata: {}
+    data:
+      duration: '{{ states(''input_number.security_notifications_debounce_duration'')
+        | int * 60 }}'
+    target:
+      entity_id: timer.security_notifications_debounce
+    action: timer.start
+  - metadata: {}
+    data:
+      camera_name: driveway
+      output_folder: /config/www
+    enabled: true
+    action: shell_command.frigate_capture_stream_snapshot
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 4
+      milliseconds: 0
+  - metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera | title }}'
+      message: '{{ label }} detected on the {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_grab.jpg
+    action: script.send_dynamic_pushover_notification
+    enabled: true
+  - metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera | title }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_grab.jpg
+    action: script.send_dynamic_notification_pushover_tim
+    enabled: false
+  - action: shell_command.delete_camera_grab
+    data:
+      filename: driveway_grab.jpg
+  mode: single
+  max: 10
+- &id001
+  id: add_routes_on_startup
+  alias: 'Backend - Startup: Add Calliope IP Routes'
+  description: Add static routes for Tailscale connectivity
+  triggers:
+  - event: start
+    trigger: homeassistant
+  - trigger: time
+    at: 06:00:00
+  conditions: []
+  actions:
+  - data: {}
+    action: shell_command.add_calliope_route
+  mode: single
+- *id001
+- id: '1750409779089'
+  alias: 'Security - Driveway Occupancy Frigate: Dynamic Notification TEST'
+  description: Send notifications for detected objects in driveway camera
+  triggers:
+  - entity_id:
+    - binary_sensor.driveway_person_occupancy
+    - binary_sensor.driveway_car_occupancy
+    - binary_sensor.driveway_dog_occupancy
+    - binary_sensor.driveway_cat_occupancy
+    - binary_sensor.driveway_cow_occupancy
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    state: idle
+    entity_id: timer.security_notifications_debounce
+    enabled: true
+  actions:
+  - variables:
+      object_type: "{% set mapping = {\n  'binary_sensor.driveway_person_occupancy':
+        'person',\n  'binary_sensor.driveway_car_occupancy': 'car',\n  'binary_sensor.driveway_dog_occupancy':
+        'dog',\n  'binary_sensor.driveway_cat_occupancy': 'cat',\n  'binary_sensor.driveway_cow_occupancy':
+        'cow'\n} %} {{ mapping[trigger.entity_id] }}"
+      image_entity: image.driveway_{{ object_type }}
+      timestamp: '{{ now().strftime(''%Y%m%d_%H%M%S'') }}'
+      notification_message: '{{ object_type|title }} detected in Driveway'
+      full_image_url: '{{ ''http://10.2.1.120:8443'' + state_attr(''image.driveway_''
+        + object_type, ''entity_picture'') }}'
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 2
+      milliseconds: 0
+  - action: downloader.download_file
+    data:
+      url: '{{ full_image_url }}'
+      filename: driveway_{{ object_type }}_{{ timestamp }}.jpg
+      overwrite: false
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - action: script.send_dynamic_notification_pushover_tim
+    data:
+      id: driveway_{{ object_type }}_{{ timestamp }}
+      title: Driveway Occupancy TEST
+      message: '{{ notification_message }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: View Recordings
+      image: /config/www/driveway_{{ object_type }}_{{ timestamp }}.jpg
+  - action: shell_command.delete_camera_grab
+    data:
+      filename: driveway_{{ object_type }}_{{ timestamp }}.jpg
+  mode: single
+  max: 10
+- id: '1751771670142'
+  alias: 'Power Outage – Power OFF 0min: Set Flag'
+  description: On loss of power, set input boolean for tracking and send notification.
+    Notification will fail at Halcyon because fibre will be done.
+  triggers:
+  - trigger: state
+    entity_id: sensor.halcyon_ups_status_data
+    to:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+    from:
+    - OL
+    - OL CHRG
+    - FSD OL CHRG
+  conditions: []
+  actions:
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.ups_power_outage
+  mode: single
+- id: '1751771871949'
+  alias: 'Power Outage – Power OFF 2min: Shutdown LXCs'
+  description: After 2 minutes of power outage, shutdown multiple Proxmox LXCs to
+    conserve UPS battery.
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.ups_power_outage
+    to: 'on'
+    for:
+      minutes: '{{ shutdown_delay_minutes }}'
+  - trigger: state
+    entity_id:
+    - input_boolean.ups_power_outage
+    to: 'on'
+    from: 'off'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: sensor.halcyon_ups_status_data
+    state:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  actions:
+  - variables:
+      running_lxcs: []
+      stopped_lxcs: []
+  - repeat:
+      for_each: '{{ lxcs_to_shutdown }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''on'') }}'
+        then:
+        - variables:
+            running_lxcs: '{{ running_lxcs + [repeat.item.friendly_name] }}'
+        else:
+        - variables:
+            stopped_lxcs: '{{ stopped_lxcs + [repeat.item.friendly_name] }}'
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: 'Power still out after {{ shutdown_delay_minutes }} minutes.
+
+        {% if running_lxcs | length > 0 %}Shutting down: {{ running_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if stopped_lxcs | length > 0 %}Already stopped: {{ stopped_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if running_lxcs | length == 0 and stopped_lxcs | length == 0 %} No LXCs
+        found to check. {% endif %}'
+    target:
+      entity_id: input_text.ups_last_event
+  - action: rest_command.ups_beeper_disable
+    metadata: {}
+    data: {}
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: 'Halcyon Power Outage: Power went off at {{ now().strftime(''%H:%M on
+        %B %d'') }}.'
+    target:
+      entity_id: input_text.ups_last_event
+  - repeat:
+      for_each: '{{ lxcs_to_shutdown }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''on'') }}'
+        then:
+        - action: button.press
+          metadata: {}
+          data: {}
+          target:
+            entity_id: '{{ repeat.item.entity_id }}'
+        - delay:
+            seconds: 5
+    enabled: true
+  - action: notify.servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: Halcyon Power Outage
+      message: 'Power still out after {{ shutdown_delay_minutes }} minutes.
+
+        {% if running_lxcs | length > 0 %}Shutting down: {{ running_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if stopped_lxcs | length > 0 %}Already stopped: {{ stopped_lxcs | join('',
+        '') }} {% endif %}
+
+        {% if running_lxcs | length == 0 and stopped_lxcs | length == 0 %} No LXCs
+        found to check. {% endif %}'
+      data:
+        priority: 1
+  variables:
+    shutdown_delay_minutes: 2
+    lxcs_to_shutdown:
+    - name: adguard
+      friendly_name: Frigate
+      entity_id: button.lxc_frigate_128_shutdown
+      status_entity: binary_sensor.lxc_frigate_128_status
+    - name: frigate
+      friendly_name: Adguard
+      entity_id: button.lxc_adguard_123_shutdown
+      status_entity: binary_sensor.lxc_adguard_123_status
+  mode: single
+- id: '1751771981510'
+  alias: 'Power Outage – Power OFF 5min: Shutdown Synology'
+  description: After 5 minutes of power outage, shutdown Synology to conserve UPS
+    battery.
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.ups_power_outage
+    to: 'on'
+    for:
+      minutes: '{{ shutdown_delay_minutes }}'
+    enabled: false
+  - trigger: state
+    entity_id:
+    - input_boolean.ups_power_outage
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: sensor.halcyon_ups_status_data
+    state:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: Power still out after {{ shutdown_delay_minutes }} mins. Shutting down
+        Synology.
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 31f1251ccfa2d95a1b434c3c7290dad8
+  - delay: 00:00:05
+  - action: button.press
+    target:
+      entity_id: button.halcyon_shutdown
+    data: {}
+  - action: notify.servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: Halcyon Power Outage
+      message: 'Power still out after {{ shutdown_delay_minutes }} mins.
+
+        Shutting down Synology.'
+      data:
+        priority: 1
+    enabled: true
+  mode: single
+  variables:
+    shutdown_delay_minutes: 5
+- id: '1751772098149'
+  alias: Power Outage – Update UPS Shutdown Delay
+  description: Execute REST command when UPS shutdown delay input number changes
+  triggers:
+  - entity_id: input_number.ups_shutdown_delay
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      delay: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_shutdown_delay
+- id: '1751772138112'
+  alias: 'Power Outage – Power OFF 0min: Log Start Time, Send Notification'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.ups_power_outage
+    to: 'on'
+    from: 'off'
+  conditions: []
+  actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: Power went off at {{ now().strftime('%H:%M on %B %d') }}.
+    target:
+      entity_id: input_text.ups_last_event
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      datetime: '{{ now() }}'
+    target:
+      entity_id: input_datetime.ups_last_outage_start
+  - action: notify.servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: Halcyon Power Outage
+      message: Power went off at {{ now().strftime('%H:%M on %B %d') }}.
+      data:
+        priority: 1
+  mode: single
+- id: '1751772194072'
+  alias: Power Outage – Update UPS Battery Low Setpoint
+  description: Execute REST command when UPS Battery Low Setpoint input number changes
+  triggers:
+  - entity_id:
+    - input_number.ups_battery_low_setpoint
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      value: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_battery_charge_low
+  mode: single
+- id: '1751772240307'
+  alias: Power Outage – Update UPS Low Runtime Setpoint
+  description: Execute REST command when UPS shutdown delay input number changes
+  triggers:
+  - entity_id: input_number.ups_low_runtime_setpoint
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state not in [''unknown'', ''unavailable'']
+      }}'
+  actions:
+  - data:
+      value: '{{ trigger.to_state.state | int }}'
+    action: rest_command.ups_set_battery_runtime_low
+  mode: single
+- id: '1751772306120'
+  alias: 'Power Outage – Power ON: Wake Synology, Start LXCs, Notification'
+  description: When power is restored, wake Synology and start up LXCs that were shutdown
+    during the power outage.
+  triggers:
+  - event: start
+    trigger: homeassistant
+  - trigger: state
+    entity_id: sensor.halcyon_ups_status_data
+    to:
+    - OL
+    - OL CHRG
+    - FSD OL CHRG
+    from:
+    - OB DISCHRG
+    - OB
+    - FSD OB DISCHRG
+  conditions:
+  - condition: state
+    state: 'on'
+    entity_id: input_boolean.ups_power_outage
+    enabled: true
+  actions:
+  - action: input_text.set_value
+    metadata: {}
+    data:
+      value: 'Power restored at {{ now().strftime(''%H:%M on %B %d'') }}. Outage duration:
+        {% set hours = states(''sensor.ups_last_outage_duration'') | float %} {%-
+        if hours >= 1 -%}   {{ (hours | int) }} hour{{ ''s'' if hours | int != 1 else
+        '''' }} {{ ((hours % 1) * 60) | round }} minute{{ ''s'' if ((hours % 1) *
+        60) | round != 1 else '''' }} {%- else -%}   {{ (hours * 60) | round }} minute{{
+        ''s'' if (hours * 60) | round != 1 else '''' }} {%- endif -%} {% if lxcs_to_start
+        | length > 0 %}Starting up: {{ lxcs_to_start | join('', '') }}{% endif %}
+        {% if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
+        | join('', '') }}{% endif %}'
+    target:
+      entity_id: input_text.ups_last_event
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.wake_on_lan_00_11_32_ac_27_2a
+  - variables:
+      lxcs_to_start: []
+      lxcs_already_running: []
+  - repeat:
+      for_each: '{{ lxcs_to_startup }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
+        then:
+        - variables:
+            lxcs_to_start: '{{ lxcs_to_start + [repeat.item.friendly_name] }}'
+        else:
+        - variables:
+            lxcs_already_running: '{{ lxcs_already_running + [repeat.item.friendly_name]
+              }}'
+  - repeat:
+      sequence:
+      - delay: 30
+      while:
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.internet_connectivity
+          state: 'on'
+  - action: notify.servers
+    continue_on_error: true
+    metadata: {}
+    data:
+      target: tim-iphone,mac-studio
+      title: 'Halcyon Power Outage: Power Restored'
+      message: "Power restored at {{ now().strftime('%H:%M on %B %d') }}. Outage duration:
+        {% set hours = states('sensor.ups_last_outage_duration') | float %} {%- if
+        hours >= 1 -%}\n  {{ (hours | int) }} hour{{ 's' if hours | int != 1 else
+        '' }} {{ ((hours % 1) * 60) | round }} minute{{ 's' if ((hours % 1) * 60)
+        | round != 1 else '' }}\n{%- else -%}\n  {{ (hours * 60) | round }} minute{{
+        's' if (hours * 60) | round != 1 else '' }}\n{%- endif -%} {% if lxcs_to_start
+        | length > 0 %}Starting up: {{ lxcs_to_start | join(', ') }}{% endif %} {%
+        if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
+        | join(', ') }}{% endif %}"
+      data:
+        priority: 1
+  - delay:
+      hours: 0
+      minutes: 2
+      seconds: 0
+      milliseconds: 0
+  - repeat:
+      for_each: '{{ lxcs_to_startup }}'
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
+        then:
+        - action: button.press
+          metadata: {}
+          data: {}
+          target:
+            entity_id: '{{ repeat.item.start_entity_id }}'
+        - delay:
+            seconds: '{{ lxc_startup_delay }}'
+    enabled: true
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.ups_power_outage
+  - action: rest_command.ups_beeper_enable
+    metadata: {}
+    data: {}
+  variables:
+    proxmox_startup_delay: 60
+    lxc_startup_delay: 10
+    lxcs_to_startup:
+    - name: adguard
+      friendly_name: Adguard
+      start_entity_id: button.lxc_adguard_123_start
+      status_entity: binary_sensor.lxc_adguard_123_status
+    - name: frigate
+      friendly_name: Frigate
+      start_entity_id: button.lxc_frigate_128_start
+      status_entity: binary_sensor.lxc_frigate_128_status
+  mode: single
+- id: '1752359807960'
+  alias: Notification test
+  description: ''
+  triggers:
+  - topic: frigate/events
+    id: frigate-event
+    payload: Driveway
+    value_template: '{{ value_json[''after''][''camera''] }}'
+    variables:
+      after_zones: '{{ trigger.payload_json[''after''][''entered_zones''] }}'
+      before_zones: '{{ trigger.payload_json[''before''][''entered_zones''] }}'
+      camera: '{{ trigger.payload_json[''after''][''camera''] }}'
+      camera_label: '{{ trigger.payload_json[''after''][''camera''] | replace(''_'',
+        '' '') | title }}'
+      id: '{{ trigger.payload_json[''after''][''id''] }}'
+      label: '{{ trigger.payload_json[''after''][''label''] | title }}'
+      score: '{{ trigger.payload_json[''after''][''score''] }}'
+      time_clip_start: '{{ trigger.payload_json[''after''][''start_time''] - 10.0
+        }}'
+    trigger: mqtt
+  - trigger: state
+    entity_id:
+    - sensor.latest_frigate_event
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.payload_json[''type''] == ''new'' }}'
+    enabled: false
+  - condition: state
+    entity_id: input_boolean.driveway_silence_detection
+    state: 'off'
+    enabled: true
+  - condition: state
+    state: idle
+    entity_id: timer.security_notifications_debounce
+    enabled: true
+  actions:
+  - metadata: {}
+    data:
+      duration: '{{ states(''input_number.security_notifications_debounce_duration'')
+        | int * 60 }}'
+    target:
+      entity_id: timer.security_notifications_debounce
+    action: timer.start
+  - metadata: {}
+    data:
+      camera_name: driveway
+      output_folder: /config/www
+    enabled: false
+    action: shell_command.frigate_capture_stream_snapshot
+  - metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: /REDACTED/recordings
+      importance: active
+      image: /api/frigate/notifications/{{ id }}/snapshot.jpg
+    enabled: false
+    action: script.send_dynamic_notification_tims_iphone
+  - metadata: {}
+    data:
+      event_id: '{{ id }}'
+      output_folder: /config/www
+    enabled: true
+    action: shell_command.frigate_download_notification_snapshot
+  - metadata: {}
+    data:
+      id: '{{ id }}'
+      title: '{{ camera }}'
+      message: '{{ label }} detected on {{ camera }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+      image: /config/www/driveway_snapshot.jpg
+    action: script.send_dynamic_pushover_notification
+  - data:
+      title: '{{ camera }} - {{ label }} detected'
+      message: A {{ label }} was detected on {{ camera }}
+      data:
+        image: /config/www/driveway_snapshot.jpg
+        url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+    action: notify.mobile_app_dick_iphone
+    enabled: false
+  - data:
+      title: '{{ camera }} - {{ label }} detected'
+      message: A {{ label }} was detected on {{ camera }}
+      data:
+        image: /config/www/driveway_snapshot.jpg
+        url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+    action: notify.mobile_app_tims_iphone
+    enabled: false
+  - action: notify.mobile_app_tims_iphone
+    metadata: {}
+    data:
+      message: Movement detected on Driveway
+  mode: single
+  max: 10
+- id: '1752400590430'
+  alias: 'Security - Driveway Occupancy Frigate: Entity Picture Trigger'
+  description: Send notifications when driveway detection image updates
+  triggers:
+  - entity_id:
+    - image.driveway_person
+    - image.driveway_car
+    - image.driveway_dog
+    - image.driveway_cat
+    - image.driveway_cow
+    attribute: entity_picture
+    trigger: state
+  conditions: []
+  actions:
+  - variables:
+      object_type: "{% set mapping = {\n  'image.driveway_person': 'person',\n  'image.driveway_car':
+        'car',\n  'image.driveway_dog': 'dog',\n  'image.driveway_cat': 'cat',\n  'image.driveway_cow':
+        'cow'\n} %} {{ mapping[trigger.entity_id] }}"
+      timestamp: '{{ now().strftime(''%Y%m%d_%H%M%S'') }}'
+      notification_message: '{{ object_type|title }} detected in Driveway'
+      full_image_url: '{{ ''http://10.2.1.120:8443'' + trigger.to_state.attributes.entity_picture
+        }}'
+  - action: downloader.download_file
+    data:
+      url: '{{ full_image_url }}'
+      filename: driveway_{{ object_type }}_{{ timestamp }}.jpg
+      overwrite: false
+  - delay: 00:00:03
+  - action: script.send_dynamic_notification_pushover_tim
+    data:
+      id: driveway_{{ object_type }}_{{ timestamp }}
+      title: Driveway Occupancy
+      message: '{{ notification_message }}'
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: View Recordings
+      image: /local/driveway_{{ object_type }}_{{ timestamp }}.jpg
+  mode: single
+  max: 10
+- id: '1752471621255'
+  alias: Frigate Blueprint Notification
+  description: ''
+  use_blueprint:
+    path: SgtBatten/Stable.yaml
+    input:
+      presence_filter:
+      - ''
+      camera:
+      - camera.driveway
+      notify_device: 2bfd992d8cbee28c5a23735574adcdad
+      base_url: https://halcyon.timparsons.nz/
+      cooldown: 60
+      title: Blueprint
+- id: '1757199116032'
+  alias: 'Security – Camera Unavailable 30min: Restart Frigate LXC'
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - camera.driveway
+    to: unavailable
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+  conditions: []
+  actions:
+  - action: script.backend_restart_lxc_container
+    metadata: {}
+    data:
+      lxc_name: frigate_128
+  - metadata: {}
+    data:
+      title: Halcyon Camera Unavailable
+      message: Restarting Frigate LXC
+      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url_title: Open in Home Assistant
+    action: script.send_dynamic_notification_pushover_tim
+    enabled: true
+  mode: single

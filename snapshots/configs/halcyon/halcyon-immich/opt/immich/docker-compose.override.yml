@@ -1,0 +1,4 @@
+services:
+  REDACTED-server:
+    volumes:
+      - /mnt/photos/helen:/mnt/photos/helen:ro

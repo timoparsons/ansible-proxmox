@@ -1,0 +1,13 @@
+frigate_capture_stream_snapshot: bash /config/scripts/frigate_capture_stream_snapshot.sh {{camera_name}} {{output_folder}}
+frigate_download_notification_snapshot: bash /config/scripts/frigate_download_notification_snapshot.sh {{ event_id }} {{ output_folder }}
+delete_camera_grab: rm /config/www/{{ filename }}
+
+#add_calliope_route2: "ip route add 10.1.1.0/24 via 10.2.1.100; ip route add 100.64.0.0/10 via 10.2.1.100"
+add_calliope_route: bash /config/scripts/add_calliope_route.sh
+
+set_ups_shutdown_delay: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upsrw -s ups.delay.shutdown={{ states('input_number.ups_shutdown_delay') | int }} -u homeassistant -p REDACTED halcyon_ups@localhost'"
+ups_load_off_delay: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upscmd -u homeassistant -p REDACTED halcyon_ups@localhost load.off.delay'"
+ups_load_off: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upscmd -u homeassistant -p REDACTED halcyon_ups@localhost load.off'"
+ups_beeper_mute: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upscmd -u homeassistant -p REDACTED halcyon_ups@localhost beeper.mute'"
+set_ups_shutdown_delay_dynamic: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upsrw -s ups.delay.shutdown={{ delay_value }} -u homeassistant -p REDACTED halcyon_ups@localhost'"
+set_ups_shutdown_test: "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ssh root@10.2.1.20 'upsrw -s ups.delay.shutdown=400 -u homeassistant -p REDACTED halcyon_ups@localhost'"

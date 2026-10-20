@@ -1,0 +1,245 @@
+alerting:
+  pushover:
+    application-token: "${PUSHOVER_TOKEN}"
+    user-key: "${PUSHOVER_USER}"
+    device: "tim-iphone,mac-studio"
+    REDACTED-alert:
+      enabled: true
+      failure-threshold: 3
+      success-threshold: 2
+      send-on-resolved: true
+      priority: 0  # Respects quiet hours
+
+
+######################################
+# TEMPLATES
+######################################
+
+# No Alert
+.noalert_template: &no-alert
+  interval: 1m
+  conditions:
+    - "[STATUS] == 200"
+  alerts: []
+
+
+# For Local Services (Calliope) - Faster feedback
+.local_template: &local-poll
+  interval: 1m
+  conditions:
+    - "[STATUS] == 200"
+  alerts:
+    - type: pushover
+      failure-threshold: 2 # Notify after 2 minutes of downtime
+
+# For Remote Services (Halcyon) - Slower to save bandwidth
+.remote_template: &remote-slow-poll
+  interval: 5m
+  conditions:
+    - "[STATUS] == 200"
+  alerts: []
+  #  - type: pushover
+  #    failure-threshold: 3 # More forgiving for Tailscale latency
+
+######################################
+# ENDPOINTS
+######################################
+
+
+endpoints:
+  # --- Calliope Services ---
+  - name: "Proxmox Host"
+    group: "Calliope"
+    url: "https://REDACTED:8006"
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
+    <<: *local-poll
+
+  - name: "Proxmox Backup Server"
+    group: "Calliope"
+    url: "https://10.1.1.21:8007"
+    client:
+      insecure: true
+    <<: *local-poll
+
+  - name: "AdGuard DNS"
+    group: "Calliope"
+    url: "REDACTED"
+    <<: *local-poll
+
+  - name: "Home Assistant"
+    group: "Calliope"
+    url: "http://10.1.1.22:8443" 
+    <<: *local-poll
+
+  - name: "Frigate"
+    group: "Calliope"
+    url: "http://10.1.1.28:5000"
+    <<: *local-poll
+
+  - name: "Homepage"
+    group: "Calliope"
+    url: "http://10.1.1.50:3000"
+    <<: *local-poll
+
+  - name: "Go2RTC"
+    group: "Calliope"
+    url: "http://10.1.1.28:1984"
+    <<: *local-poll
+
+  - name: "Matter Server"
+    group: "Calliope"
+    url: "http://10.1.1.22:5580"
+    <<: *local-poll
+
+  - name: "DaVinci Resolve Database Server"
+    group: "Calliope"
+    url: "tcp://10.1.1.55:5432"
+    interval: 1m
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: pushover
+        failure-threshold: 2
+
+  - name: "Mosquitto MQTT"
+    group: "Calliope"
+    url: "tcp://10.1.1.25:1883"
+    interval: 1m
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: pushover
+        failure-threshold: 2
+
+  - name: "Zigbee2MQTT"
+    group: "Calliope"
+    url: "http://10.1.1.26:8080"
+    <<: *local-poll
+
+  - name: "Synology - Calliope"
+    group: "Calliope"
+    url: "http://REDACTED0:5500"
+    <<: *local-poll
+
+  # --- CALLIOPE - Media ---
+  - name: "Audiobookshelf"
+    group: "Calliope - Media"
+    url: "http://10.1.1.46:13378"
+    <<: *local-poll
+
+  - name: "Immich"
+    group: "Calliope - Media"
+    url: "http://10.1.1.48:2283"
+    <<: *local-poll
+
+  - name: "Navidrome Music"
+    group: "Calliope - Media"
+    url: "http://10.1.1.45:4533"
+    <<: *local-poll
+
+  - name: "Plex"
+    group: "Calliope - Media"
+    url: "http://10.1.1.42:32400"
+    conditions:
+      - "[STATUS] == 401"
+    <<: *local-poll
+
+#  - name: "Jellyfin"
+#    group: "Calliope - Media"
+#    url: "http://10.1.1.44:9000"
+#    <<: *no-alert
+
+#  - name: "Stash"
+#    group: "Calliope - Media"
+#    url: "http://10.1.1.44:9999"
+#    <<: *no-alert
+
+  # --- Calliope - Media ARR Stack ---
+  - name: "Radarr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:7878"
+    <<: *no-alert
+
+  - name: "Sonarr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:8989"
+    <<: *no-alert
+
+  - name: "Lidarr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:8686"
+    <<: *no-alert
+
+  - name: "Prowlarr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:9696"
+    <<: *no-alert
+
+  - name: "Bazarr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:6767"
+    <<: *no-alert
+
+  - name: "Overseerr"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:5055"
+    <<: *no-alert
+
+  - name: "SABnzbd"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:8080"
+    <<: *no-alert
+
+#  - name: "Portainer"
+#    group: "Calliope - Media ARR"
+#    url: "http://10.1.1.51:9000"
+#    <<: *no-alert
+
+  - name: "qBittorrent"
+    group: "Calliope - Media ARR"
+    url: "http://10.1.1.51:8081"
+    <<: *no-alert
+
+#  - name: "Shelfmark"
+#    group: "Calliope - Media ARR"
+#    url: "http://10.1.1.51:8084"
+#    <<: *no-alert
+
+  # --- HALCYON ---
+
+  - name: "Proxmox - Halcyon"
+    group: "Halcyon"
+    url: "https://10.2.1.20:8006"
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
+    <<: *remote-slow-poll
+
+  - name: "Home Assistant - Halcyon"
+    group: "Halcyon"
+    url: "https://halcyon.timparsons.nz"
+    <<: *remote-slow-poll
+
+  - name: "AdGuard - Halcyon"
+    group: "Halcyon"
+    url: "REDACTED"
+    <<: *remote-slow-poll
+
+  - name: "Synology - Halcyon"
+    group: "Halcyon"
+    url: "http://10.2.1.10:5500"
+    <<: *remote-slow-poll
+
+  - name: "Frigate - Halcyon"
+    group: "Halcyon"
+    url: "http://10.2.1.28:5000"
+    <<: *remote-slow-poll
+
+  - name: "Immich - Halcyon"
+    group: "Halcyon"
+    url: "https://halcyonphotos.timparsons.nz"
+    <<: *remote-slow-poll

@@ -1,0 +1,51 @@
+host: 10.1.30.51
+port: 5002
+keepalive_interval: 30
+timeout: 20
+areas:
+  1:
+    name: 'Alarm'
+    code_arm_required: false
+zones:
+  1:
+    name: 'Front Door'
+    type: 'door'
+  2:
+    name: 'Front Hallway'
+    type: 'motion'
+  3:
+    name: 'Master Bedroom'
+    type: 'motion'
+  4:
+    name: 'Kitchen'
+    type: 'motion'
+  5:
+    name: 'Hallway Smoke'
+    type: 'smoke'
+  6:
+    name: 'Downstairs Hallway'
+    type: 'motion'
+  7:
+    name: 'Downstairs Lounge'
+    type: 'motion'
+  8:
+    name: 'Basement'
+    type: 'motion'
+  9:
+    name: 'Guest Bedroom Window'
+    type: 'window'
+  10:
+    name: 'Office Side Window'
+    type: 'window'
+  11:
+    name: 'Office Rear Window'
+    type: 'window'
+  12:
+    name: 'Back Door'
+    type: 'door'
+  13:
+    name: 'Basement Door'
+    type: 'door'
+  14:
+    name: 'Front Bedroom'
+    type: 'motion'

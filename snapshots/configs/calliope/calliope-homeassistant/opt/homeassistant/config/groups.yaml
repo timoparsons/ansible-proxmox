@@ -1,0 +1,9 @@
+
+# Create a group for all people – ON if anyone is home
+persons:
+  name: Any People
+  entities:
+    - person.tim
+    - person.sonya
+    - person.celeste
+    - person.eve

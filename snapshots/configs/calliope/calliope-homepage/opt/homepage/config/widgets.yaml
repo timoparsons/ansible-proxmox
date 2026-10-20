@@ -1,0 +1,19 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/info-widgets/
+
+#- resources:
+#    cpu: true
+#    memory: true
+#    disk: /
+
+#- search:
+#    provider: duckduckgo
+#    target: _blank
+
+- datetime:
+    text_size: md
+    format:
+        dateStyle: long
+        timeStyle: short
+        hour12: false

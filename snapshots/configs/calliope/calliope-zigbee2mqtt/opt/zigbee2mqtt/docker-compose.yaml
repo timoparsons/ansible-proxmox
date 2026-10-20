@@ -1,0 +1,15 @@
+services:
+    zigbee2mqtt:
+        container_name: zigbee2mqtt
+        image: ghcr.io/koenkk/zigbee2mqtt
+        restart: unless-stopped
+        volumes:
+            - ./data:/app/data
+            - /run/udev:/run/udev:ro
+        ports:
+            - 8080:8080
+        environment:
+            - TZ=Pacific/Auckland
+        #devices:
+            #- /dev/zigbee:/dev/ttyACM0
+

@@ -1,0 +1,560 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+
+# ==============================================================================
+# HOMEPAGE ICON REFERENCE
+# ==============================================================================
+# 1. Dashboard Icons (default, no prefix): "jellyfin.png", "sonarr"
+#    Browse: https://dashboardicons.com
+#
+# 2. Simple Icons (prefix 'si-'): "si-docker", "si-github-#181717"
+#    Browse: https://simpleicons.org
+#
+# 3. selfh.st Icons (prefix 'sh-'): "sh-immich", "sh-authelia.svg"
+#    Browse: https://selfh.st/icons/
+#
+# 4. Material Design Icons (prefix 'mdi-'): "mdi-server", "mdi-shield-lock-#4CAF50"
+#    Browse: https://pictogrammers.com/library/mdi/
+#
+# 5. Local Icons: "/icons/my-app.png"
+#    Mount path: ./icons:/app/public/icons
+# ==============================================================================
+
+# Home tab
+- Home:
+    - Home Assistant:
+        href: http://homeassistant.timparsons.nz
+        description: Smart home control
+        icon: home-assistant.png
+    - Gmail:
+        href: https://mail.google.com/mail/u/1
+        description: timoparsons@gmail.com
+        icon: gmail.png
+        
+    - Drive:
+        href: https://drive.google.com/drive/home/u/1
+        description: Google Drive
+        icon: google-drive.png
+
+    - Calendar:
+        href: https://calendar.google.com/calendar/u/1
+        description: Google Calendar
+        icon: google-calendar.png
+   
+
+- Chat & AI:
+    - Claude:
+        href: https://claude.ai
+        description: Anthropic
+        icon: https://api.iconify.design/simple-icons/anthropic.svg?color=%23CC785C
+        
+    - Gemini:
+        href: https://gemini.google.com/u/0
+        description: Google AI
+        icon: google-gemini.png
+
+    - ChatGPT:
+        href: https://chatgpt.com/
+        description: OpenAI
+        icon: chatgpt.png
+        
+    - Deepseek:
+        href: https://chat.deepseek.com/
+        description: AI Chat
+        icon: deepseek.png
+
+    - Openwebui:
+        href: http://10.1.1.200:8080/
+        description: Local AI GUI
+        icon: https://img.logo.dev/openwebui.com?token=REDACTED&retina=true
+        
+    - ComfyUI:
+        href: http://127.0.0.1:8188/
+        description: AI Image Generation
+        icon: comfyui.png
+
+    - Midjourney:
+         href: https://www.midjourney.com/
+         description: AI Image Generation
+         icon: midjourney.png
+
+    - Fal.ai:
+        href: https://fal.ai/
+        description: Image Generation
+        icon: https://raw.githubusercontent.com/fal-ai/fal-assets/refs/heads/main/C1/Logo%20Square%20C1.svg
+
+
+- Interweb:
+    - The Guardian:
+        href: https://www.theguardian.com/football
+        description: Football
+        icon: https://img.logo.dev/theguardian.com?token=REDACTED&retina=true
+
+    - Reddit:
+        href: https://www.reddit.com
+        description: Social
+        icon: reddit.png
+
+    - Pricebuddy:
+        href: http://pricebuddy.timparsons.nz
+        description: Price Tracking
+        icon: price-buddy.png
+
+
+- Resources:
+    - Artlist:
+        href: https://artlist.io/
+        description: Post Production Assets
+        icon: https://img.logo.dev/artlist.io?token=REDACTED&retina=true    
+    - Extreme:
+        href: https://www.extrememusic.com/
+        description: Music
+        icon: https://img.logo.dev/extrememusic.com?token=REDACTED&retina=true    
+    - Universal:
+        href: https://www.universalproductionmusic.com/en-au
+        description: Music
+        icon: https://img.logo.dev/universalproductionmusic.com?token=REDACTED&retina=true 
+    - Audio Network:
+        href: https://www.audionetwork.com/
+        description: Music
+        icon: https://img.logo.dev/audionetwork.com?token=REDACTED&retina=true
+
+
+
+- Post Production:
+    - Frame.io:
+        href: https://app.frame.io/
+        description: Video collaboration
+        icon: https://img.logo.dev/frame.io?token=REDACTED
+
+    - Resilio:
+        href: http://resilio.calliope/gui/
+        description: Sync
+        icon: https://img.logo.dev/name/resilio?token=REDACTED&retina=true   
+        
+    - DaVinci Resolve Server:
+        href: http://resolve.timparsons.nz
+        description: Calliope Database
+        icon: https://api.iconify.design/mdi/database.svg?color=%23999999
+        
+    - Blackmagic Cloud:
+        href: https://apps.cloud.blackmagicdesign.com/apps
+        description: Cloud storage
+        icon: https://api.iconify.design/mdi/cloud.svg?color=%23999999
+        
+
+
+
+
+# Smart Home
+- Home Control:
+    - Home Assistant:
+        href: http://homeassistant.timparsons.nz
+        description: Remote
+        icon: home-assistant.png
+           
+    - Proxmox:
+        href: http://proxmox.timparsons.nz
+        description: Main hypervisor
+        icon: proxmox.png
+        
+    - Calliope:
+        href: http://calliope.synology
+        description: Synology NAS
+        icon: synology.png
+
+    - Norwich:
+        href: http://norwich.synology
+        description: Synology NAS
+        icon: synology.png
+
+
+- Automation & Ai:
+    - n8n:
+        href: https://n8n.timparsons.nz
+        description: Workflow Automation
+        icon: n8n.png
+
+    - Bifrost:
+        href: http://localhost:8085/
+        description: AI Server
+        icon: https://www.getmaxim.ai/brand-assets/bifrost-icon-primary.svg
+
+    - Open WebUI:
+        href: http://10.1.1.31:3000
+        description: Local Ai GUI
+        icon: https://img.logo.dev/openwebui.com?token=REDACTED&retina=true
+
+    - Papra:
+        href: http://10.1.1.41:1221/
+        description: Documents
+        icon: papra.png
+
+
+
+- System Management:
+    - HA Internal:
+        href: http://10.1.1.22:8443
+        description: Local
+        icon: home-assistant.png
+
+    - Proxmox Backup:
+        href: http://pbs.timparsons.nz
+        description: Backup server
+        icon: proxmox.png
+
+    - Gatus:
+        href: http://gatus.timparsons.nz
+        description: Monitoring
+        icon: gatus.png
+
+#    - Portainer:
+#        href: http://portainer.timparsons.nz
+#        description: Docker
+#        icon: portainer.png
+
+    - Pushover:
+        href: https://pushover.net/login
+        description: Push notifications
+        icon: pushover.png
+
+    - Zigbee2MQTT:
+        href: http://zigbee.timparsons.nz
+        description: Device gateway
+        icon: zigbee2mqtt.png
+        
+    - SMLight Zigbee:
+        href: http://slzb-06m.local
+        description: Zigbee coordinator
+        icon: zigbee2mqtt.png
+        
+    - Matter Server:
+        href: http://matter.timparsons.nz
+        description: Matter protocol
+        icon: matter.png
+
+- Network:
+    - UniFi Controller:
+        href: http://unifi.timparsons.nz
+        description: UDM
+        icon: unifi.png
+             
+    - Orbi Router:
+        href: http://10.1.1.4/index.htm
+        description: Secondary router
+        icon: netgear.png
+        
+    - Netgear 10G:
+        href: http://10.1.1.6
+        description: 10G switch
+        icon: netgear.png
+        
+    - TP-Link 4 Port:
+        href: http://10.1.1.3
+        description: Network switch
+        icon: tp-link.png
+
+    - Cloudflare:
+        href: https://dash.cloudflare.com/1aaecef1cbbd694ca7849b621c3b5c33/home/overview
+        description: Tunnels
+        icon: cloudflare.png
+
+    - Tailscale:
+        href: https://login.tailscale.com/admin
+        description: Admin Console
+        icon: tailscale.png
+                
+    - AdGuard Home:
+        href: http://adguard.timparsons.nz
+        description: DNS & Ad blocking
+        icon: adguard-home.png
+
+
+
+
+
+- Cameras & Security:
+    - Frigate NVR:
+        href: http://frigate.timparsons.nz
+        description: NVR system
+        icon: frigate.png
+        
+    - Go2RTC:
+        href: http://go2rtc.timparsons.nz
+        description: Frigate streams
+        icon: go2rtc.png
+    
+        
+    - Hikvision Camera:
+        href: http://10.1.20.51/
+        description: IP camera
+        icon: hikvision.png
+
+
+- Smart Devices:
+    - Bathroom 2:
+        href: http://10.1.1.73/#/
+        description: Shelly device
+        icon: shelly.png
+        
+    - Bathroom Towel Rail:
+        href: http://10.1.1.76/
+        description: Shelly device
+        icon: shelly.png
+        
+    - Downstairs Hallway:
+        href: http://10.1.1.78
+        description: Shelly device
+        icon: shelly.png
+        
+    - Hallway Dimmer:
+        href: http://10.1.1.75/
+        description: Shelly device
+        icon: shelly.png
+        
+    - Patio:
+        href: http://10.1.1.74/#
+        description: Shelly device
+        icon: shelly.png
+        
+    - Shelly Side Path:
+        href: http://10.1.1.72/#/
+        description: Outdoor light
+        icon: shelly.png
+        
+    - LilyGO OMG 433:
+        href: http://10.1.1.16/
+        description: RF gateway
+        icon: https://api.iconify.design/mdi/signal-variant.svg?color=%23999999
+
+    - ESPresense Office:
+        href: http://10.1.1.17/
+        description: Presence detection
+        icon: https://api.iconify.design/mdi/bluetooth.svg?color=%23999999
+
+- Documentation:
+    - Network Topology:
+        href: https://docs.google.com/spreadsheets/d/REDACTED/edit?gid=1313637001#gid=1313637001
+        description: Network map
+        icon: google-sheets.png
+        
+    - Proxmox:
+        href: https://community-scripts.github.io/ProxmoxVE/
+        description: Community scripts
+        icon: proxmox.png
+        
+
+
+# Halcyon (Remote Site)
+- Halcyon:
+    - Home Assistant:
+        href: https://halcyon.timparsons.nz
+        description: Remote access
+        icon: home-assistant.png
+
+    - Home Assistant:
+        href: http://10.2.1.22:8443
+        description: Direct access
+        icon: home-assistant.png
+
+    - Proxmox:
+        href: https://10.2.1.20:8006
+        description: Halcyon
+        icon: proxmox.png
+
+    - Synology:
+        href: http://10.2.1.10:5500
+        description: NAS
+        icon: synology.png
+
+    - Router:
+        href: http://10.2.1.1
+        description: TP-Link Deco
+        icon: tp-link.png
+
+    - AdGuard Halcyon:
+        href: http://10.2.1.23/
+        description: DNS & Ad blocking
+        icon: adguard-home.png
+
+    - Frigate:
+        href: http://10.2.1.28:5000
+        description: Driveway camera
+        icon: frigate.png
+
+    - Go2rtc:
+        href: http://10.2.1.28:1984
+        description: Camera streams
+        icon: go2rtc.png
+
+    - Immich:
+        href: https://halcyonphotos.timparsons.nz
+        description: Photos
+        icon: immich.png
+        
+    - Shelly:
+        href: http://10.2.1.52
+        description: Security light
+        icon: shelly.png
+
+
+
+
+
+
+
+# Media tab
+- Media Streaming:
+    - Immich:
+        href: http://photo.timparsons.nz
+        description: Photo management
+        icon: immich.png
+    - Plex:
+        href: http://plex.timparsons.nz
+        description: Media server
+        icon: plex.png
+        
+    - Navidrome:
+        href: http://music.timparsons.nz
+        description: Music streaming
+        icon: navidrome.png
+
+    - Audiobookshelf:
+        href: http://audiobook.timparsons.nz
+        description: Audiobooks
+        icon: audiobookshelf.png
+
+
+        
+
+
+- Media Management:
+    - Overseerr:
+        href: http://overseer.timparsons.nz
+        description: Request management
+        icon: overseerr.png
+        
+    - ReadMeABook:
+        href: http://readmeabook.timparsons.nz
+        description: Audiobook manager
+        icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/readmeabook.webp
+
+    - Prowlarr:
+        href: http://prowlarr.timparsons.nz
+        description: Indexer manager
+        icon: prowlarr.png
+
+    - Audiomuse:
+        href: http://10.1.1.45:8000
+        description: Music manager
+        icon: audiomuse-ai.png
+
+    - Radarr:
+        href: http://radarr.timparsons.nz
+        description: Movies
+        icon: radarr.png
+        
+    - Sonarr:
+        href: http://sonarr.timparsons.nz
+        description: TV Shows
+        icon: sonarr.png
+        
+    - Lidarr:
+        href: http://lidarr.timparsons.nz
+        description: Music
+        icon: lidarr.png
+        
+    - Stash:
+        href: http://stash.timparsons.nz
+        description: Media organizer
+        icon: stash.png        
+
+    - Bazarr:
+        href: http://bazarr.timparsons.nz
+        description: Subtitles
+        icon: bazarr.png
+        
+
+
+
+
+
+
+
+
+- Download Clients:
+    - SABnzbd:
+        href: http://sabnzbd.timparsons.nz
+        description: Usenet downloader
+        icon: sabnzbd.png
+        
+    - qBittorrent:
+        href: http://torrent.timparsons.nz
+        description: VPN
+        icon: qbittorrent.png
+        
+    - qBittorrent:
+        href: http://10.1.1.52:8081
+        description: Direct (No VPN)
+        icon: qbittorrent.png
+
+- Media Sources:
+    - NZBFinder:
+        href: https://nzbfinder.ws/
+        description: Usenet indexer
+        icon: https://api.iconify.design/mdi/cloud-download.svg?color=%23999999
+        
+    - Althub:
+        href: https://althub.co.za/
+        description: Usenet indexer
+        icon: https://api.iconify.design/mdi/cloud-download.svg?color=%23999999
+
+
+- Office:
+    - Gmail:
+        href: https://mail.google.com/mail/u/0/
+        description: tim@joy.inc
+        icon: gmail.png
+
+    - Drive:
+        href: https://drive.google.com/drive/home/u/0
+        description: Google Drive
+        icon: google-drive.png
+
+    - Calendar:
+        href: https://calendar.google.com/calendar/u/0/
+        description: Google Calendar
+        icon: google-calendar.png    
+
+    - ClickUp:
+        href: https://app.clickup.com/
+        description: Project Management
+        icon: clickup.png    
+        
+
+- Accounts:
+    - Google Admin:
+        href: https://admin.google.com/
+        description: Workspace admin
+        icon: google.png
+ 
+    - Google Ai Studio:
+        href: https://aistudio.google.com/
+        description: Google AI Studio
+        icon: google-gemini.png
+
+    - Google Cloud:
+        href: https://console.cloud.google.com/
+        description: GCP Console
+        icon: https://api.iconify.design/simple-icons/googlecloud.svg?color=%234285F4
+
+    - Tailscale:
+        href: https://login.tailscale.com/admin
+        description: Admin Console
+        icon: tailscale.png
+
+    - Slack API:
+        href: https://api.slack.com/apps/
+        description: Slack API
+        icon: slack.png

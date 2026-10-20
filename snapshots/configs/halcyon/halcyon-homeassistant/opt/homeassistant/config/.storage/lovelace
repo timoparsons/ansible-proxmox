@@ -1,0 +1,2392 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "REDACTED",
+  "data": {
+    "config": {
+      "decluttering_templates": {
+        "basic_entity_card": {
+          "card": {
+            "type": "entity",
+            "entity": "[[entity]]",
+            "name": "[[name]]"
+          }
+        },
+        "graph_controls": {
+          "card": {
+            "type": "horizontal-stack",
+            "cards": [
+              {
+                "type": "custom:mushroom-number-card",
+                "entity": "input_number.minigraph_hours_to_show",
+                "name": "Hours",
+                "icon": "mdi:clock-outline",
+                "card_mod": {
+                  "style": "ha-card {\n  --control-height: 12px;\n}\n"
+                }
+              },
+              {
+                "type": "custom:mushroom-number-card",
+                "entity": "input_number.minigraph_points_per_hour",
+                "name": "Points/Hr",
+                "icon": "mdi:chart-line",
+                "card_mod": {
+                  "style": "ha-card {\n  --control-height: 12px;\n}\n"
+                }
+              }
+            ]
+          }
+        },
+        "lxc_service_button": {
+          "card": {
+            "type": "custom:bubble-card",
+            "card_type": "button",
+            "entity": "[[entity]]",
+            "show_state": true,
+            "show_last_changed": false,
+            "show_attribute": false,
+            "force_icon": false,
+            "name": "[[name]]",
+            "sub_button": [
+              {
+                "entity": "[[lxc_cpu]]",
+                "icon": "mdi:cpu-64-bit",
+                "name": "CPU",
+                "unit": "%",
+                "show_state": true,
+                "show_name": true,
+                "show_icon": false
+              },
+              {
+                "entity": "script.lxc_restart",
+                "name": "Reboot",
+                "icon": "mdi:restart",
+                "tap_action": {
+                  "action": "call-service",
+                  "service": "script.backend_restart_lxc_container",
+                  "data": {
+                    "lxc_name": "[[lxc_name]]"
+                  }
+                }
+              },
+              {
+                "entity": "script.lxc_toggle",
+                "name": "Power",
+                "icon": "mdi:power",
+                "tap_action": {
+                  "action": "call-service",
+                  "service": "script.backend_toggle_lxc_container",
+                  "data": {
+                    "lxc_name": "[[lxc_name]]"
+                  }
+                }
+              }
+            ],
+            "card_layout": "large",
+            "grid_options": {
+              "columns": "full",
+              "rows": 1
+            },
+            "show_icon": true,
+            "scrolling_effect": false,
+            "icon": "[[icon]]",
+            "button_action": {
+              "tap_action": {
+                "action": "more-info"
+              }
+            },
+            "button_type": "switch",
+            "styles": ".bubble-button-background {\n  background: var(--card-background-color) !important;\n}\n.bubble-sub-button {\n  background-color: var(--card-background-color) !important;\n}\n"
+          },
+          "default": [
+            {
+              "name": "Jellyfin"
+            },
+            {
+              "lxc_name": "jellyfin_143"
+            },
+            {
+              "icon": "mdi:jellyfish-outline"
+            },
+            {
+              "entity": "binary_sensor.lxc_jellyfin_143_status"
+            },
+            {
+              "lxc_cpu": "sensor.lxc_jellyfin_143_cpu_used"
+            },
+            {
+              "lxc_reboot": "button.lxc_jellyfin_143_reboot"
+            }
+          ],
+          "grid_options": {
+            "columns": 12,
+            "rows": "auto"
+          }
+        },
+        "templated_mini_graph_binarysensor": {
+          "card": {
+            "type": "custom:config-template-card",
+            "variables": {
+              "HOURS": "states['[[hours_entity]]'].state",
+              "POINTS": "states['[[points_entity]]'].state"
+            },
+            "entities": [
+              "[[hours_entity]]",
+              "[[points_entity]]"
+            ],
+            "card": {
+              "type": "custom:mini-graph-card",
+              "name": "[[card_name]]",
+              "icon": "[[icon]]",
+              "entities": "[[graph_entities]]",
+              "state_map": [
+                {
+                  "value": "off",
+                  "label": "[[off_label]]"
+                },
+                {
+                  "value": "on",
+                  "label": "[[on_label]]"
+                }
+              ],
+              "hours_to_show": "${HOURS}",
+              "points_per_hour": "${POINTS}",
+              "line_width": 2,
+              "font_size": 75,
+              "animate": true,
+              "smoothing": false,
+              "show": {
+                "name": true,
+                "icon": true,
+                "state": true,
+                "legend": false
+              },
+              "color_thresholds": [
+                {
+                  "value": 0,
+                  "color": "[[off_color]]"
+                },
+                {
+                  "value": 1,
+                  "color": "[[on_color]]"
+                }
+              ]
+            }
+          },
+          "default": [
+            {
+              "hours_entity": "input_number.minigraph_hours_to_show"
+            },
+            {
+              "points_entity": "input_number.minigraph_points_per_hour"
+            },
+            {
+              "card_name": "Binary Sensor"
+            },
+            {
+              "icon": "mdi:toggle-switch"
+            },
+            {
+              "graph_entities": [
+                {
+                  "entity": "binary_sensor.door_bathroom_contact",
+                  "name": "Bathroom Door"
+                }
+              ]
+            },
+            {
+              "off_label": "Closed"
+            },
+            {
+              "off_color": "#0366d6"
+            },
+            {
+              "on_label": "Open"
+            },
+            {
+              "on_color": "#0366d6"
+            }
+          ]
+        },
+        "templated_mini_graph_generic": {
+          "card": {
+            "type": "custom:config-template-card",
+            "variables": {
+              "HOURS": "states['[[hours_entity]]'].state",
+              "POINTS": "states['[[points_entity]]'].state"
+            },
+            "entities": [
+              "[[hours_entity]]",
+              "[[points_entity]]"
+            ],
+            "card": {
+              "type": "custom:mini-graph-card",
+              "name": "[[card_name]]",
+              "icon": "[[icon]]",
+              "entities": "[[graph_entities]]",
+              "hours_to_show": "${HOURS}",
+              "points_per_hour": "${POINTS}",
+              "line_width": 2,
+              "font_size": 75,
+              "animate": true,
+              "show": {
+                "name": true,
+                "icon": true,
+                "state": true,
+                "legend": false
+              },
+              "color_thresholds": [
+                {
+                  "value": "[[value_low]]",
+                  "color": "[[color_low]]"
+                },
+                {
+                  "value": "[[value_high]]",
+                  "color": "[[color_high]]"
+                }
+              ]
+            }
+          },
+          "default": [
+            {
+              "hours_entity": "input_number.minigraph_hours_to_show"
+            },
+            {
+              "points_entity": "input_number.minigraph_points_per_hour"
+            },
+            {
+              "card_name": "Generic"
+            },
+            {
+              "icon": "mdi:home"
+            },
+            {
+              "value_low": 0
+            },
+            {
+              "color_low": "#3498db"
+            },
+            {
+              "value_high": 100
+            },
+            {
+              "color_high": "#3498db"
+            },
+            {
+              "graph_entities": [
+                {
+                  "entity": "sensor.temperature_lounge_humidity",
+                  "name": "Lounge"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "views": [
+        {
+          "icon": "mdi:home",
+          "type": "custom:vertical-layout",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:frigate-card",
+              "cameras": [
+                {
+                  "camera_entity": "camera.driveway",
+                  "live_provider": "go2rtc",
+                  "go2rtc": {
+                    "stream": "driveway"
+                  },
+                  "webrtc_card": {}
+                }
+              ],
+              "dimensions": {
+                "aspect_ratio": "16:9"
+              },
+              "menu": {
+                "style": "outside",
+                "position": "bottom"
+              },
+              "live": {
+                "zoomable": true
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "cards": [
+                {
+                  "type": "custom:button-card",
+                  "name": "Disable Camera Detection",
+                  "show_name": true,
+                  "show_icon": true,
+                  "color": "var(--button-card-light-color)",
+                  "hold_action": {
+                    "action": "more-info"
+                  },
+                  "tap_action": {
+                    "action": "toggle"
+                  },
+                  "entity": "input_boolean.driveway_silence_detection",
+                  "size": "40px",
+                  "styles": {
+                    "card": [
+                      {
+                        "height": "120px"
+                      },
+                      {
+                        "font-size": "12px"
+                      },
+                      {
+                        "padding": "7%"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "entity": "timer.security_notifications_mute",
+                      "state": "active"
+                    }
+                  ],
+                  "card": {
+                    "type": "custom:timer-bar-card",
+                    "entities": [
+                      "timer.security_notifications_mute"
+                    ],
+                    "bar_direction": "ltr",
+                    "invert": true,
+                    "state_color": true,
+                    "icon": "mdi:lightbulb-outline",
+                    "active_icon": "mdi:lightbulb",
+                    "bar_foreground": "orange",
+                    "bar_background": "black",
+                    "layout": "full_row",
+                    "text_width": "60px",
+                    "bar_height": "5px"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "custom:stack-in-card",
+              "cards": [
+                {
+                  "type": "tile",
+                  "entity": "light.security_lights",
+                  "name": "Security Lights",
+                  "icon": "mdi:lightbulb",
+                  "icon_tap_action": {
+                    "action": "call-service",
+                    "service": "script.driveway_security_lights_toggle",
+                    "target": {
+                      "entity_id": "script.driveway_security_lights_toggle"
+                    }
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "entity": "timer.driveway_lights_timer",
+                      "state": "active"
+                    }
+                  ],
+                  "card": {
+                    "type": "custom:timer-bar-card",
+                    "entities": [
+                      "timer.driveway_lights_timer"
+                    ],
+                    "bar_direction": "ltr",
+                    "invert": true,
+                    "state_color": true,
+                    "icon": "mdi:lightbulb-outline",
+                    "active_icon": "mdi:lightbulb",
+                    "bar_foreground": "orange",
+                    "bar_background": "black",
+                    "layout": "full_row",
+                    "text_width": "0px",
+                    "bar_height": "5px"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "path": "recordings",
+          "icon": "mdi:movie-open-play-outline",
+          "type": "custom:vertical-layout",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:frigate-card",
+              "cameras": [
+                {
+                  "camera_entity": "camera.driveway"
+                }
+              ],
+              "view": {
+                "default": "snapshot"
+              },
+              "live": {
+                "draggable": false,
+                "zoomable": false,
+                "lazy_load": false
+              },
+              "media_viewer": {
+                "draggable": false,
+                "zoomable": false,
+                "controls": {
+                  "builtin": false,
+                  "next_previous": {
+                    "style": "none"
+                  }
+                },
+                "snapshot_click_plays_clip": false
+              },
+              "image": {
+                "url": "/local/driveway_snapshot.jpg",
+                "refresh_seconds": 10
+              },
+              "menu": {
+                "style": "overlay",
+                "buttons": {
+                  "frigate": {
+                    "enabled": false
+                  },
+                  "cameras": {
+                    "enabled": false
+                  },
+                  "substreams": {
+                    "enabled": false
+                  },
+                  "live": {
+                    "enabled": false
+                  },
+                  "clips": {
+                    "enabled": false
+                  },
+                  "snapshots": {
+                    "enabled": false
+                  },
+                  "download": {
+                    "enabled": false
+                  },
+                  "camera_ui": {
+                    "enabled": false
+                  },
+                  "timeline": {
+                    "enabled": false
+                  },
+                  "media_player": {
+                    "enabled": false
+                  }
+                },
+                "position": "bottom",
+                "alignment": "left"
+              },
+              "media_gallery": {
+                "controls": {
+                  "filter": {
+                    "mode": "none"
+                  },
+                  "thumbnails": {
+                    "show_timeline_control": false
+                  }
+                }
+              }
+            },
+            {
+              "type": "custom:frigate-card",
+              "cameras": [
+                {
+                  "camera_entity": "camera.driveway"
+                }
+              ],
+              "view": {
+                "default": "snapshots"
+              },
+              "menu": {
+                "style": "outside"
+              },
+              "media_gallery": {
+                "controls": {
+                  "thumbnails": {
+                    "show_timeline_control": false,
+                    "size": 154,
+                    "show_details": false,
+                    "show_favorite_control": true
+                  },
+                  "filter": {
+                    "mode": "none"
+                  }
+                }
+              },
+              "dimensions": {
+                "aspect_ratio_mode": "unconstrained",
+                "max_height": "60vh"
+              },
+              "live": {
+                "draggable": false,
+                "zoomable": false,
+                "lazy_load": false
+              },
+              "media_viewer": {
+                "controls": {
+                  "builtin": true,
+                  "thumbnails": {
+                    "mode": "none"
+                  },
+                  "next_previous": {
+                    "style": "chevrons"
+                  },
+                  "timeline": {
+                    "mode": "none"
+                  },
+                  "title": {
+                    "mode": "none"
+                  }
+                },
+                "draggable": false,
+                "snapshot_click_plays_clip": false
+              }
+            }
+          ]
+        },
+        {
+          "path": "camera",
+          "icon": "mdi:cctv",
+          "type": "custom:vertical-layout",
+          "badges": [],
+          "cards": [
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "input_number.driveway_lights_timer_duration_camera",
+                  "name": "Camera Detection",
+                  "secondary_info": "none"
+                },
+                {
+                  "entity": "input_number.driveway_lights_timer_duration_beamcross",
+                  "name": "Beam Cross Detection"
+                }
+              ],
+              "title": "Security Light Timer Duration"
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "input_number.security_notifications_mute_duration",
+                  "name": "Mute for"
+                }
+              ],
+              "title": "Mute Notifications Timer"
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "input_number.security_notifications_debounce_duration",
+                  "name": "Silence for",
+                  "icon": "mdi:timer-edit-outline"
+                }
+              ],
+              "title": "Notification Cooldown Period"
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "binary_sensor.halcyon_driveway_motion",
+                  "name": "Motion"
+                },
+                {
+                  "entity": "binary_sensor.halcyon_driveway_vehicle",
+                  "name": "Vehicle"
+                },
+                {
+                  "entity": "binary_sensor.halcyon_driveway_person",
+                  "name": "Person"
+                },
+                {
+                  "entity": "binary_sensor.halcyon_driveway_animal",
+                  "name": "Animal"
+                }
+              ],
+              "title": "Camera Sensors",
+              "state_color": true
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "binary_sensor.driveway_all_occupancy"
+                },
+                {
+                  "entity": "binary_sensor.driveway_motion"
+                },
+                {
+                  "entity": "binary_sensor.driveway_car_occupancy"
+                },
+                {
+                  "entity": "binary_sensor.driveway_person_occupancy"
+                }
+              ],
+              "title": "Frigate Sensors",
+              "state_color": true
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "switch.driveway_detect",
+                  "name": "Detect Cars & People"
+                },
+                {
+                  "entity": "switch.driveway_motion",
+                  "name": "Detect Motion"
+                },
+                {
+                  "entity": "switch.driveway_recordings",
+                  "name": "Record Events"
+                }
+              ],
+              "title": "Frigate Controls",
+              "show_header_toggle": false,
+              "state_color": false
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "number.halcyon_driveway_motion_sensitivity",
+                  "name": "Motion Sensitivity"
+                },
+                {
+                  "entity": "number.halcyon_driveway_ai_vehicle_sensitivity",
+                  "name": "Vehilce Sensitivity"
+                },
+                {
+                  "entity": "number.halcyon_driveway_ai_person_sensitivity",
+                  "name": "Person Sensitivity"
+                },
+                {
+                  "entity": "number.halcyon_driveway_ai_animal_sensitivity",
+                  "name": "Animal Sensitivity"
+                }
+              ],
+              "title": "Camera Detection"
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "number.halcyon_driveway_zoom",
+                  "name": "Zoom"
+                },
+                {
+                  "entity": "select.halcyon_driveway_day_night_mode",
+                  "name": "Night Mode"
+                },
+                {
+                  "entity": "select.halcyon_driveway_floodlight_mode",
+                  "name": "Floodlight Mode"
+                },
+                {
+                  "entity": "light.halcyon_driveway_floodlight",
+                  "name": "Floodlight"
+                },
+                {
+                  "entity": "number.halcyon_driveway_floodlight_turn_on_brightness",
+                  "name": "Floodlight Brightness"
+                },
+                {
+                  "entity": "switch.halcyon_driveway_infra_red_lights_in_night_mode",
+                  "name": "Infra-red Lights"
+                },
+                {
+                  "entity": "switch.halcyon_driveway_record",
+                  "name": "Record on-camera"
+                },
+                {
+                  "entity": "switch.halcyon_driveway_record_audio",
+                  "name": "Record audio"
+                }
+              ],
+              "title": "Camera Controls"
+            }
+          ]
+        },
+        {
+          "path": "people",
+          "icon": "mdi:account",
+          "badges": [],
+          "cards": [
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "person.dick"
+                },
+                {
+                  "entity": "sensor.dick_notification_level"
+                },
+                {
+                  "entity": "sensor.dicks_iphone_geocoded_location",
+                  "name": "Location"
+                },
+                {
+                  "entity": "sensor.halcyon_dick_distance",
+                  "name": "Distance from Home"
+                },
+                {
+                  "entity": "sensor.dicks_iphone_ssid",
+                  "name": "WiFi Connection"
+                },
+                {
+                  "entity": "sensor.dicks_iphone_last_update_trigger",
+                  "name": "Last Update"
+                },
+                {
+                  "entity": "binary_sensor.dicks_iphone_focus",
+                  "name": "Focus Mode"
+                }
+              ],
+              "state_color": true
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "person.helen"
+                },
+                {
+                  "entity": "sensor.helen_notification_level"
+                },
+                {
+                  "entity": "sensor.helens_iphone_geocoded_location",
+                  "name": "Location"
+                },
+                {
+                  "entity": "sensor.halcyon_helen_distance",
+                  "name": "Distance from Home"
+                },
+                {
+                  "entity": "sensor.helens_iphone_ssid",
+                  "name": "WiFi Connection"
+                },
+                {
+                  "entity": "sensor.helens_iphone_last_update_trigger",
+                  "name": "Last Update"
+                },
+                {
+                  "entity": "binary_sensor.helens_iphone_focus",
+                  "name": "Focus Mode"
+                }
+              ],
+              "state_color": true
+            },
+            {
+              "type": "entities",
+              "entities": [
+                {
+                  "entity": "sensor.halcyon_nearest_device"
+                },
+                {
+                  "entity": "sensor.halcyon_dick_distance"
+                },
+                {
+                  "entity": "sensor.halcyon_dick_direction_of_travel"
+                },
+                {
+                  "entity": "sensor.halcyon_helen_distance"
+                },
+                {
+                  "entity": "sensor.halcyon_helen_direction_of_travel"
+                }
+              ],
+              "title": "Proximity"
+            },
+            {
+              "type": "map",
+              "entities": [
+                {
+                  "entity": "zone.home"
+                },
+                {
+                  "entity": "person.dick"
+                },
+                {
+                  "entity": "person.helen"
+                }
+              ],
+              "title": "Location",
+              "dark_mode": false,
+              "auto_fit": true,
+              "default_zoom": 17,
+              "hours_to_show": 0
+            }
+          ]
+        },
+        {
+          "icon": "mdi:cog",
+          "type": "sections",
+          "badges": [],
+          "cards": [],
+          "sections": [
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "custom:layout-card",
+                  "layout_type": "custom:grid-layout",
+                  "cards": [
+                    {
+                      "type": "custom:button-card",
+                      "name": "System",
+                      "styles": {
+                        "card": [
+                          {
+                            "background": "transparent"
+                          },
+                          {
+                            "height": "40px"
+                          },
+                          {
+                            "border-radius": "0px"
+                          },
+                          {
+                            "margin-right": "10px"
+                          }
+                        ],
+                        "name": [
+                          {
+                            "justify-self": "start"
+                          },
+                          {
+                            "font-size": "26px"
+                          },
+                          {
+                            "font-weight": "bold"
+                          }
+                        ]
+                      },
+                      "show_state": false,
+                      "show_name": true,
+                      "show_icon": false,
+                      "layout_options": {
+                        "grid_columns": 4,
+                        "grid_rows": 1.2
+                      }
+                    },
+                    {
+                      "view_layout": {
+                        "grid-area": "one"
+                      },
+                      "type": "custom:mushroom-chips-card",
+                      "alignment": "start",
+                      "chips": [
+                        {
+                          "type": "template",
+                          "entity": "sensor.ups_status_readable",
+                          "tap_action": {
+                            "action": "navigate",
+                            "navigation_path": "#ups"
+                          },
+                          "content": "UPS {{ states('sensor.ups_status_readable') }}",
+                          "content_info": "none",
+                          "icon": "{{ state_attr('sensor.ups_status_readable', 'icon') or 'mdi:battery-outline' }}",
+                          "icon_color": "{% if states('sensor.ups_status_readable') in ['ONLINE', 'CHARGING'] %}\n  green\n{% elif states('sensor.ups_status_readable') == 'ON BATTERY' %}\n  orange\n{% elif states('sensor.ups_status_readable') == 'LOW BATTERY' %}\n  red\n{% else %}\n  gray\n{% endif %}",
+                          "card_mod": {
+                            "style": "ha-card {\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  margin-top: var(--top_margin) !important;\n  border-radius: 2em !important;\n  justify-content: center;\n  padding-right: 3px;\n}\n"
+                          }
+                        },
+                        {
+                          "type": "template",
+                          "entity": "binary_sensor.internet_connectivity",
+                          "tap_action": {
+                            "action": "navigate",
+                            "navigation_path": "#internet"
+                          },
+                          "content": "{% if is_state(config.entity, 'on') %}\n  CONNECTED\n{% else %}\n  DISCONNECTED\n{% endif %}",
+                          "content_info": "none",
+                          "icon": "mdi:wan",
+                          "icon_color": "{% if is_state(config.entity, 'on') %}\n  green\n{% else %}\n  red\n{% endif %}",
+                          "card_mod": {
+                            "style": "ha-card {\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  margin-top: var(--top_margin) !important;\n  border-radius: 2em !important;\n  justify-content: center;\n  padding-right: 3px;\n}\n"
+                          }
+                        }
+                      ],
+                      "card_mod": {
+                        "style": "ha-card {\n  --chip-size: 30px;\n  --icon-size: 17px;\n  --top_margin: 6px;\n}            \n"
+                      }
+                    }
+                  ],
+                  "layout": {
+                    "grid-template-columns": "auto 1fr auto",
+                    "grid-template-rows": "min-content",
+                    "grid-template-areas": "\"title s one\"",
+                    "margin": "0px 0px -4px 10px",
+                    "padding": "26px 0px 0px 0px"
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n  -webkit-backdrop-filter: blur(0px); !important;\n  backdrop-filter: blur(0px); !important;\n\n}\n"
+                  }
+                },
+                {
+                  "type": "horizontal-stack",
+                  "cards": [
+                    {
+                      "type": "custom:button-card",
+                      "name": "Mute Alerts",
+                      "show_name": true,
+                      "show_icon": true,
+                      "color": "var(--button-card-light-color)",
+                      "hold_action": {
+                        "action": "more-info"
+                      },
+                      "tap_action": {
+                        "action": "toggle"
+                      },
+                      "entity": "input_boolean.driveway_silence_detection",
+                      "size": "40px",
+                      "styles": {
+                        "card": [
+                          {
+                            "height": "90px"
+                          },
+                          {
+                            "font-size": "12px"
+                          },
+                          {
+                            "padding": "10%"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "custom:button-card",
+                      "name": "Camera Floodlight",
+                      "show_name": true,
+                      "show_icon": true,
+                      "color": "var(--button-card-light-color)",
+                      "hold_action": {
+                        "action": "more-info"
+                      },
+                      "tap_action": {
+                        "action": "toggle"
+                      },
+                      "entity": "light.halcyon_driveway_floodlight",
+                      "size": "40px",
+                      "styles": {
+                        "card": [
+                          {
+                            "height": "90px"
+                          },
+                          {
+                            "font-size": "12px"
+                          },
+                          {
+                            "padding": "10%"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "custom:button-card",
+                      "name": "House Security Light",
+                      "show_name": true,
+                      "show_icon": true,
+                      "icon": "mdi:light-flood-down",
+                      "color": "var(--button-card-light-color)",
+                      "hold_action": {
+                        "action": "more-info"
+                      },
+                      "tap_action": {
+                        "action": "toggle"
+                      },
+                      "entity": "switch.front_security_light_relay_0",
+                      "size": "40px",
+                      "styles": {
+                        "card": [
+                          {
+                            "height": "90px"
+                          },
+                          {
+                            "font-size": "12px"
+                          },
+                          {
+                            "padding": "10%"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "sensor.mac_mini_cpu_temperature",
+                  "primary": "N100 Server",
+                  "icon": "mdi:server-network",
+                  "icon_color": "{% set temp = states('sensor.mac_mini_cpu_temperature') | float(0) %}\n{% if temp < 70 %}\n  green\n{% elif temp < 80 %}\n  orange\n{% else %}\n  red\n{% endif %}\n",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "#mac-server"
+                  },
+                  "secondary": "CPU: {{ states('sensor.mac_mini_cpu_usage') }}% · Temp: {{ states('sensor.mac_mini_cpu_temperature') }}°C\nFan: {{ states('sensor.mac_mini_fan_speed') }} RPM",
+                  "layout": "vertical",
+                  "fill_container": false,
+                  "multiline_secondary": true
+                },
+                {
+                  "type": "custom:mushroom-template-card",
+                  "primary": "Proxmox",
+                  "icon": "mdi:robot",
+                  "icon_color": "{% if states('binary_sensor.node_proxmox_status') in ['on'] %}\n  green\n{% else %}\n  red\n{% endif %}\n",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "#proxmox"
+                  },
+                  "layout": "vertical",
+                  "fill_container": false,
+                  "multiline_secondary": true,
+                  "entity": "binary_sensor.node_proxmox_status",
+                  "secondary": ""
+                },
+                {
+                  "type": "custom:mushroom-template-card",
+                  "primary": "Synology",
+                  "icon": "mdi:server-network",
+                  "icon_color": "{% set temp = states('sensor.calliope_temperature') | float(0) %}\n{% if temp < 50 %}\n  green\n{% elif temp < 70 %}\n  orange\n{% else %}\n  red\n{% endif %}\n",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "#synology"
+                  },
+                  "secondary": "Up: {{ states('sensor.calliope_upload_throughput') | int }} kB/s\nDown: {{ states('sensor.calliope_download_throughput') | int }} kB/s",
+                  "layout": "vertical",
+                  "fill_container": false,
+                  "multiline_secondary": true
+                },
+                {
+                  "type": "custom:mushroom-template-card",
+                  "primary": "Maintenance",
+                  "icon": "mdi:script-outline",
+                  "icon_color": "gray\n",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "#maintenance"
+                  },
+                  "secondary": "",
+                  "layout": "vertical",
+                  "fill_container": false,
+                  "multiline_secondary": true
+                }
+              ]
+            },
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#ups",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "UPS Power",
+                      "icon": "mdi:sine-wave",
+                      "width_desktop": "540px",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "type": "custom:mushroom-template-card",
+                      "entity": "sensor.ups_status_readable",
+                      "primary": "{{ states('sensor.ups_status_readable') }}",
+                      "icon": "{{ state_attr('sensor.ups_status_readable', 'icon') or 'mdi:battery-outline' }}",
+                      "icon_color": "{% if states('sensor.ups_status_readable') in ['ONLINE', 'CHARGING'] %}\n  green\n{% elif states('sensor.ups_status_readable') == 'ON BATTERY' %}\n  orange\n{% elif states('sensor.ups_status_readable') == 'LOW BATTERY' %}\n  red\n{% else %}\n  gray\n{% endif %}",
+                      "tap_action": {
+                        "action": "more-info"
+                      },
+                      "secondary": ""
+                    },
+                    {
+                      "square": false,
+                      "type": "grid",
+                      "columns": 2,
+                      "cards": [
+                        {
+                          "type": "custom:mushroom-entity-card",
+                          "entity": "sensor.halcyon_ups_low_battery_runtime",
+                          "name": "Low Runtime Point",
+                          "tap_action": {
+                            "action": "more-info",
+                            "entity": "input_number.ups_low_runtime_setpoint"
+                          },
+                          "card_mod": {
+                            "style": "ha-card {\n  margin-top: -5px;\n} \n"
+                          }
+                        },
+                        {
+                          "type": "custom:mushroom-entity-card",
+                          "entity": "sensor.halcyon_ups_low_battery_setpoint",
+                          "name": "Low Battery Set Point",
+                          "tap_action": {
+                            "action": "more-info",
+                            "entity": "input_number.ups_battery_low_setpoint"
+                          },
+                          "card_mod": {
+                            "style": "ha-card {\n  margin-top: -5px;\n} \n"
+                          }
+                        },
+                        {
+                          "type": "custom:mushroom-template-card",
+                          "entity": "sensor.halcyon_ups_ups_shutdown_delay",
+                          "primary": "Shutdown Delay",
+                          "secondary": "{% set delay = states('sensor.halcyon_ups_ups_shutdown_delay') | float(0) %} {% if delay >= 60 %}\n  {% set mins = delay / 60 %}\n  {% if mins == (mins | round(0)) %}\n    {{ mins | round(0) | int }} min\n  {% else %}\n    {{ mins | round(1) }} min\n  {% endif %}\n{% else %}\n  {{ delay | round(0) | int }} sec\n{% endif %}",
+                          "icon": "mdi:clock-time-eight-outline",
+                          "icon_color": "blue",
+                          "tap_action": {
+                            "action": "more-info",
+                            "entity": "input_number.ups_shutdown_delay"
+                          }
+                        },
+                        {
+                          "type": "custom:mushroom-template-card",
+                          "entity": "sensor.ups_last_outage_duration",
+                          "primary": "{% set duration = states('sensor.ups_last_outage_duration') | float %} Last Outage:  {% if duration >= 1 %}\n  {{ duration | round(1) }} hr\n{% else %}\n  {{ (duration * 60) | round(1) }} min\n{% endif %}",
+                          "secondary": "{{ relative_time(states.sensor.ups_last_outage_duration.last_changed) }} ago",
+                          "icon": "mdi:power-plug-off",
+                          "icon_color": "blue",
+                          "tap_action": {
+                            "action": "more-info",
+                            "entity": "sensor.ups_last_outage_duration"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "square": false,
+                      "type": "grid",
+                      "cards": [
+                        {
+                          "type": "custom:flex-horseshoe-card",
+                          "entities": [
+                            {
+                              "entity": "sensor.halcyon_ups_load",
+                              "name": "LOAD",
+                              "decimals": 0,
+                              "unit": "%",
+                              "icon": "mdi:power-plug"
+                            }
+                          ],
+                          "show": {
+                            "horseshoe_style": "colorstopgradient"
+                          },
+                          "layout": {
+                            "states": [
+                              {
+                                "id": 0,
+                                "entity_index": 0,
+                                "xpos": 51,
+                                "ypos": 39,
+                                "styles": [
+                                  {
+                                    "text-anchor": "middle"
+                                  },
+                                  {
+                                    "font-size": "3em;"
+                                  },
+                                  {
+                                    "opacity": "0.7;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "names": [
+                              {
+                                "id": 0,
+                                "entity_index": 0,
+                                "xpos": 50,
+                                "ypos": 93,
+                                "styles": [
+                                  {
+                                    "text-anchor": "middle"
+                                  },
+                                  {
+                                    "font-size": "1.3em;"
+                                  },
+                                  {
+                                    "opacity": "0.7;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "icons": [
+                              {
+                                "id": 1,
+                                "entity_index": 0,
+                                "xpos": 50,
+                                "ypos": 68,
+                                "icon_size": 3.5,
+                                "styles": [
+                                  {
+                                    "opacity": "0.3;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "hlines": [
+                              {
+                                "id": 0,
+                                "xpos": 50,
+                                "ypos": 46,
+                                "length": 55,
+                                "styles": [
+                                  {
+                                    "stroke": "var(--primary-text-color);"
+                                  },
+                                  {
+                                    "stroke-width": "1;"
+                                  },
+                                  {
+                                    "stroke-linecap": "round;"
+                                  },
+                                  {
+                                    "opacity": "0.3;"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "horseshoe_state": {
+                            "width": 20
+                          },
+                          "horseshoe_scale": {
+                            "min": 0,
+                            "max": 100
+                          },
+                          "color_stops": {
+                            "0": "green",
+                            "20": "#f1c40f",
+                            "50": "#d68910",
+                            "80": "#b03a2e"
+                          }
+                        },
+                        {
+                          "type": "custom:flex-horseshoe-card",
+                          "entities": [
+                            {
+                              "entity": "sensor.halcyon_ups_battery_charge",
+                              "name": "Battery",
+                              "decimals": 0,
+                              "unit": "%"
+                            },
+                            {
+                              "entity": "sensor.ups_status_readable",
+                              "name": "Status",
+                              "decimals": 0
+                            }
+                          ],
+                          "show": {
+                            "horseshoe_style": "colorstopgradient"
+                          },
+                          "layout": {
+                            "states": [
+                              {
+                                "id": 0,
+                                "entity_index": 0,
+                                "xpos": 51,
+                                "ypos": 39,
+                                "styles": [
+                                  {
+                                    "text-anchor": "middle"
+                                  },
+                                  {
+                                    "font-size": "3em;"
+                                  },
+                                  {
+                                    "opacity": "0.7;"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": 1,
+                                "entity_index": 1,
+                                "xpos": 51,
+                                "ypos": 93,
+                                "styles": [
+                                  {
+                                    "text-anchor": "middle"
+                                  },
+                                  {
+                                    "font-size": "1.5em;"
+                                  },
+                                  {
+                                    "opacity": "0.7;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "names": [
+                              {
+                                "id": 0,
+                                "entity_index": 0,
+                                "xpos": 50,
+                                "ypos": 93,
+                                "styles": [
+                                  {
+                                    "text-anchor": "middle"
+                                  },
+                                  {
+                                    "font-size": "1.3em;"
+                                  },
+                                  {
+                                    "opacity": "0;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "icons": [
+                              {
+                                "id": 1,
+                                "entity_index": 1,
+                                "xpos": 50,
+                                "ypos": 68,
+                                "icon_size": 3.5,
+                                "styles": [
+                                  {
+                                    "opacity": "0.3;"
+                                  }
+                                ]
+                              }
+                            ],
+                            "hlines": [
+                              {
+                                "id": 0,
+                                "xpos": 50,
+                                "ypos": 46,
+                                "length": 55,
+                                "styles": [
+                                  {
+                                    "stroke": "var(--primary-text-color);"
+                                  },
+                                  {
+                                    "stroke-width": "1;"
+                                  },
+                                  {
+                                    "stroke-linecap": "round;"
+                                  },
+                                  {
+                                    "opacity": "0.3;"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "horseshoe_state": {
+                            "width": 20
+                          },
+                          "horseshoe_scale": {
+                            "min": 0,
+                            "max": 100
+                          },
+                          "color_stops": {
+                            "0": "#b03a2e",
+                            "20": "#d68910",
+                            "50": "#f1c40f",
+                            "80": "green"
+                          }
+                        }
+                      ],
+                      "columns": 2
+                    },
+                    {
+                      "type": "logbook",
+                      "target": {
+                        "entity_id": [
+                          "input_text.ups_last_event"
+                        ]
+                      }
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": "auto"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#mac-server",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "Server",
+                      "icon": "mdi:chart-line",
+                      "width_desktop": "33%",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "square": false,
+                      "type": "grid",
+                      "columns": 2,
+                      "cards": [
+                        {
+                          "type": "custom:mushroom-number-card",
+                          "entity": "input_number.minigraph_hours_to_show",
+                          "name": "Hours",
+                          "icon": "mdi:clock-outline"
+                        },
+                        {
+                          "type": "custom:mushroom-number-card",
+                          "entity": "input_number.minigraph_points_per_hour",
+                          "name": "Points/Hr",
+                          "icon": "mdi:chart-line"
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_generic",
+                          "variables": [
+                            {
+                              "card_name": "CPU Usage"
+                            },
+                            {
+                              "icon": "mdi:cpu-64-bit"
+                            },
+                            {
+                              "value_low": 0
+                            },
+                            {
+                              "color_low": "#3498db"
+                            },
+                            {
+                              "value_high": 100
+                            },
+                            {
+                              "color_high": "#3498db"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.mac_mini_cpu_usage",
+                                  "name": "CPU Usage"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_temperature",
+                          "variables": [
+                            {
+                              "card_name": "CPU Temperature"
+                            },
+                            {
+                              "value_low": 30
+                            },
+                            {
+                              "color_low": "yellow"
+                            },
+                            {
+                              "value_high": 90
+                            },
+                            {
+                              "color_high": "red"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.mac_mini_cpu_temperature",
+                                  "name": "CPU Temperature"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_generic",
+                          "variables": [
+                            {
+                              "card_name": "Proxmox CPU"
+                            },
+                            {
+                              "icon": "mdi:cpu-64-bit"
+                            },
+                            {
+                              "value_low": 0
+                            },
+                            {
+                              "color_low": "#3498db"
+                            },
+                            {
+                              "value_high": 100
+                            },
+                            {
+                              "color_high": "#3498db"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.node_proxmox_cpu_used",
+                                  "name": "Proxmox CPU"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_generic",
+                          "variables": [
+                            {
+                              "card_name": "Fan Speed"
+                            },
+                            {
+                              "icon": "mdi:fan"
+                            },
+                            {
+                              "value_low": 1000
+                            },
+                            {
+                              "color_low": "yellow"
+                            },
+                            {
+                              "value_high": 5000
+                            },
+                            {
+                              "color_high": "red"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.mac_mini_fan_speed",
+                                  "name": "Fan Speed"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_generic",
+                          "variables": [
+                            {
+                              "card_name": "Frigate CPU"
+                            },
+                            {
+                              "icon": "mdi:cpu-64-bit"
+                            },
+                            {
+                              "value_low": 0
+                            },
+                            {
+                              "color_low": "#3498db"
+                            },
+                            {
+                              "value_high": 100
+                            },
+                            {
+                              "color_high": "#3498db"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.lxc_frigate_128_cpu_used",
+                                  "name": "Frigate CPU Usage"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_temperature",
+                          "variables": [
+                            {
+                              "card_name": "Server Room Temperature"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.temperature_server_room_temperature",
+                                  "name": "Server Room"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_generic",
+                          "variables": [
+                            {
+                              "card_name": "Home Assistant CPU"
+                            },
+                            {
+                              "icon": "mdi:cpu-64-bit"
+                            },
+                            {
+                              "value_low": 0
+                            },
+                            {
+                              "color_low": "#3498db"
+                            },
+                            {
+                              "value_high": 100
+                            },
+                            {
+                              "color_high": "#3498db"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.lxc_homeassistant_122_cpu_used",
+                                  "name": "Home Assistant LXC CPU"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "custom:decluttering-card",
+                          "template": "templated_mini_graph_temperature",
+                          "variables": [
+                            {
+                              "card_name": "Office Temperature"
+                            },
+                            {
+                              "graph_entities": [
+                                {
+                                  "entity": "sensor.temperature_downstairs_temperature",
+                                  "name": "Office"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "vertical-stack",
+                      "cards": [
+                        {
+                          "type": "entities",
+                          "title": "Mac Mini System Monitoring",
+                          "entities": [
+                            {
+                              "entity": "sensor.mac_mini_cpu_temperature",
+                              "name": "CPU Temperature"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_fan_speed",
+                              "name": "Fan Speed"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_nvme_temperature",
+                              "name": "NVMe Temperature"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_pch_temperature",
+                              "name": "PCH Temperature"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_network_phy_temperature",
+                              "name": "Network PHY Temperature"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_network_mac_temperature",
+                              "name": "Network MAC Temperature"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_cpu_usage",
+                              "name": "CPU Usage"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_memory_usage",
+                              "name": "Memory Usage"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_load_average_1min",
+                              "name": "Load Average (1min)"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_network_link_speed",
+                              "name": "Network Speed"
+                            },
+                            {
+                              "entity": "sensor.mac_mini_network_status",
+                              "name": "Network Status"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#proxmox",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "Proxmox",
+                      "icon": "mdi:robot",
+                      "width_desktop": "540px",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "button",
+                      "entity": "sensor.qemu_haos11_4_120_status",
+                      "show_state": true,
+                      "show_last_changed": false,
+                      "show_attribute": false,
+                      "force_icon": false,
+                      "name": "Home Assistant VM",
+                      "sub_button": [
+                        {
+                          "entity": "sensor.qemu_haos11_4_120_cpu_used",
+                          "icon": "mdi:cpu-64-bit",
+                          "name": "CPU",
+                          "unit": "%",
+                          "show_state": true,
+                          "show_name": true,
+                          "show_icon": false
+                        },
+                        {
+                          "name": "Reboot",
+                          "icon": "mdi:restart",
+                          "tap_action": {
+                            "action": "perform-action",
+                            "perform_action": "button.press",
+                            "target": {
+                              "entity_id": "button.qemu_haos11_4_120_reboot"
+                            }
+                          },
+                          "entity": "button.qemu_haos11_4_120_reboot"
+                        },
+                        {
+                          "name": "Power",
+                          "icon": "mdi:power",
+                          "tap_action": {
+                            "action": "perform-action",
+                            "perform_action": "script.backend_toggle_home_assistant_vm",
+                            "target": {}
+                          },
+                          "entity": "script.backend_toggle_home_assistant_vm"
+                        }
+                      ],
+                      "card_layout": "large",
+                      "grid_options": {
+                        "columns": "full",
+                        "rows": 1
+                      },
+                      "show_icon": true,
+                      "scrolling_effect": false,
+                      "icon": "mdi:home",
+                      "button_action": {
+                        "tap_action": {
+                          "action": "more-info"
+                        }
+                      },
+                      "button_type": "switch",
+                      "styles": ".bubble-button-background {\n  background: var(--card-background-color) !important;\n}\n.bubble-sub-button {\n  background-color: var(--card-background-color) !important;\n}\n"
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "lxc_service_button",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      },
+                      "variables": [
+                        {
+                          "name": "Frigate"
+                        },
+                        {
+                          "lxc_name": "frigate_128"
+                        },
+                        {
+                          "icon": "mdi:cog"
+                        },
+                        {
+                          "entity": "binary_sensor.lxc_frigate_128_status"
+                        },
+                        {
+                          "lxc_cpu": "sensor.lxc_frigate_128_cpu_used"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "lxc_service_button",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      },
+                      "variables": [
+                        {
+                          "name": "Tailscale"
+                        },
+                        {
+                          "lxc_name": "tailscale_pve_100"
+                        },
+                        {
+                          "icon": "mdi:tailwind"
+                        },
+                        {
+                          "entity": "binary_sensor.lxc_tailscale_pve_100_status"
+                        },
+                        {
+                          "lxc_cpu": "sensor.lxc_tailscale_pve_100_cpu_used"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "lxc_service_button",
+                      "variables": [
+                        {
+                          "name": "Adguard"
+                        },
+                        {
+                          "icon": "mdi:shield"
+                        },
+                        {
+                          "entity": "binary_sensor.lxc_adguard_123_status"
+                        },
+                        {
+                          "lxc_name": "adguard_123"
+                        },
+                        {
+                          "lxc_cpu": "sensor.lxc_adguard_123_cpu_used"
+                        }
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "lxc_service_button",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      },
+                      "variables": [
+                        {
+                          "name": "MQTT"
+                        },
+                        {
+                          "lxc_name": "mqtt_126"
+                        },
+                        {
+                          "icon": "mdi:comment-quote"
+                        },
+                        {
+                          "entity": "binary_sensor.lxc_mqtt_126_status"
+                        },
+                        {
+                          "lxc_cpu": "sensor.lxc_mqtt_126_cpu_used"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "lxc_service_button",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      },
+                      "variables": [
+                        {
+                          "name": "Debian LXC"
+                        },
+                        {
+                          "lxc_name": "debianlxc_164"
+                        },
+                        {
+                          "icon": "mdi:debian"
+                        },
+                        {
+                          "entity": "binary_sensor.lxc_debianlxc_164_status"
+                        },
+                        {
+                          "lxc_cpu": "sensor.lxc_debianlxc_164_cpu_used"
+                        }
+                      ]
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#synology",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "Synology",
+                      "icon": "mdi:server-network",
+                      "width_desktop": "540px",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "type": "custom:device-card",
+                      "device_id": "cfecd8b1df89a4b593691800f54d5ef1",
+                      "title": "Halcyon Synology",
+                      "preview_count": "3"
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#maintenance",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "Maintenance",
+                      "icon": "mdi:script-outline",
+                      "width_desktop": "33%",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "custom:button-card",
+                          "name": "Restart HA",
+                          "show_name": true,
+                          "show_icon": true,
+                          "color": "#005cc5",
+                          "icon": "mdi:power",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "homeassistant.restart"
+                          },
+                          "size": "40px",
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "90px"
+                              },
+                              {
+                                "font-size": "12px"
+                              },
+                              {
+                                "padding": "10%"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "custom:button-card",
+                          "name": "Shellies Announce",
+                          "show_name": true,
+                          "show_icon": true,
+                          "color": "#005cc5",
+                          "hold_action": {
+                            "action": "more-info"
+                          },
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "automation.trigger",
+                            "target": {
+                              "entity_id": "automation.shellies_announce_gen2"
+                            },
+                            "data": {
+                              "skip_condition": true
+                            }
+                          },
+                          "entity": "automation.shellies_announce_gen2",
+                          "size": "40px",
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "90px"
+                              },
+                              {
+                                "font-size": "12px"
+                              },
+                              {
+                                "padding": "10%"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "square": true,
+                      "type": "grid",
+                      "cards": [
+                        {
+                          "type": "custom:button-card",
+                          "name": "Backup",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "automation.trigger",
+                            "target": {
+                              "entity_id": "automation.backend_automatic_backups"
+                            },
+                            "data": {
+                              "skip_condition": true
+                            }
+                          },
+                          "icon": "mdi:database",
+                          "show_name": true,
+                          "show_icon": true,
+                          "show_state": false,
+                          "show_label": false,
+                          "layout_options": {
+                            "grid_columns": 1,
+                            "grid_rows": 1
+                          },
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "57px"
+                              },
+                              {
+                                "font-size": "12px"
+                              }
+                            ],
+                            "icon": [
+                              {
+                                "height": "25px"
+                              },
+                              {
+                                "padding": "13px"
+                              }
+                            ]
+                          },
+                          "grid_options": {
+                            "columns": 4,
+                            "rows": 1
+                          }
+                        },
+                        {
+                          "type": "custom:button-card",
+                          "name": "Shellies",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "automation.trigger",
+                            "target": {
+                              "entity_id": "automation.shellies_announce_both"
+                            },
+                            "data": {
+                              "skip_condition": true
+                            }
+                          },
+                          "icon": "mdi:robot",
+                          "show_name": true,
+                          "show_icon": true,
+                          "show_state": false,
+                          "show_label": false,
+                          "layout_options": {
+                            "grid_columns": 1,
+                            "grid_rows": 1
+                          },
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "57px"
+                              },
+                              {
+                                "font-size": "12px"
+                              }
+                            ],
+                            "icon": [
+                              {
+                                "height": "25px"
+                              },
+                              {
+                                "padding": "13px"
+                              }
+                            ]
+                          },
+                          "grid_options": {
+                            "columns": 4,
+                            "rows": 1
+                          }
+                        },
+                        {
+                          "type": "custom:button-card",
+                          "name": "Ferry Data",
+                          "icon": "mdi:ferry",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "script.turn_on",
+                            "service_data": {
+                              "entity_id": "script.sensor_update_download_gtfs_data"
+                            }
+                          },
+                          "show_name": true,
+                          "show_icon": true,
+                          "show_state": false,
+                          "show_label": false,
+                          "layout_options": {
+                            "grid_columns": 1,
+                            "grid_rows": 1
+                          },
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "57px"
+                              },
+                              {
+                                "font-size": "12px"
+                              }
+                            ],
+                            "icon": [
+                              {
+                                "height": "25px"
+                              },
+                              {
+                                "padding": "13px"
+                              }
+                            ]
+                          },
+                          "grid_options": {
+                            "columns": 4,
+                            "rows": 1
+                          }
+                        },
+                        {
+                          "type": "custom:button-card",
+                          "name": "iOS test",
+                          "icon": "mdi:message",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "automation.trigger",
+                            "target": {
+                              "entity_id": "automation.maintenance_ios_notification_test"
+                            }
+                          },
+                          "show_icon": true,
+                          "show_state": false,
+                          "show_label": false,
+                          "layout_options": {
+                            "grid_columns": 1,
+                            "grid_rows": 1
+                          },
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "57px"
+                              },
+                              {
+                                "font-size": "12px"
+                              }
+                            ],
+                            "icon": [
+                              {
+                                "height": "25px"
+                              },
+                              {
+                                "padding": "13px"
+                              }
+                            ]
+                          },
+                          "grid_options": {
+                            "columns": 4,
+                            "rows": 1
+                          }
+                        },
+                        {
+                          "type": "custom:button-card",
+                          "name": "Watchman report",
+                          "icon": "mdi:cog",
+                          "tap_action": {
+                            "action": "call-service",
+                            "service": "watchman.report",
+                            "data": {
+                              "create_file": true
+                            }
+                          },
+                          "show_icon": true,
+                          "show_state": false,
+                          "show_label": false,
+                          "layout_options": {
+                            "grid_columns": 1,
+                            "grid_rows": 1
+                          },
+                          "styles": {
+                            "card": [
+                              {
+                                "height": "57px"
+                              },
+                              {
+                                "font-size": "12px"
+                              }
+                            ],
+                            "icon": [
+                              {
+                                "height": "25px"
+                              },
+                              {
+                                "padding": "13px"
+                              }
+                            ]
+                          },
+                          "grid_options": {
+                            "columns": 4,
+                            "rows": 1
+                          }
+                        }
+                      ],
+                      "columns": 3
+                    },
+                    {
+                      "type": "entities",
+                      "entities": [
+                        {
+                          "entity": "update.front_security_light_firmware"
+                        },
+                        {
+                          "entity": "switch.front_security_light_relay_0"
+                        },
+                        {
+                          "entity": "button.front_security_light_restart"
+                        },
+                        {
+                          "entity": "light.front_security_light_relay_0"
+                        },
+                        {
+                          "entity": "sensor.front_security_light_last_restart"
+                        },
+                        {
+                          "entity": "binary_sensor.front_security_light_relay_0_overtemperature"
+                        },
+                        {
+                          "entity": "sensor.front_security_light_wifi_signal"
+                        },
+                        {
+                          "entity": "sensor.front_security_light_relay_0_temperature"
+                        }
+                      ]
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "pop-up",
+                      "hash": "#internet",
+                      "margin_top_mobile": "-56px",
+                      "bg_opacity": "0",
+                      "close_on_click": false,
+                      "bg_blur": "25",
+                      "name": "Internet",
+                      "icon": "mdi:web",
+                      "width_desktop": "540px",
+                      "button_type": "name",
+                      "scrolling_effect": false
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "templated_mini_graph_binarysensor",
+                      "variables": [
+                        {
+                          "hours_entity": "input_number.minigraph_hours_to_show"
+                        },
+                        {
+                          "points_entity": "input_number.minigraph_points_per_hour"
+                        },
+                        {
+                          "card_name": "Internet"
+                        },
+                        {
+                          "icon": "mdi:web"
+                        },
+                        {
+                          "graph_entities": [
+                            {
+                              "entity": "binary_sensor.internet_connectivity",
+                              "name": "Internet"
+                            }
+                          ]
+                        },
+                        {
+                          "off_label": "Disconnected"
+                        },
+                        {
+                          "off_color": "#0366d6"
+                        },
+                        {
+                          "on_label": "Connected"
+                        },
+                        {
+                          "on_color": "#0366d6"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "custom:decluttering-card",
+                      "template": "graph_controls"
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": 12,
+                    "rows": "auto"
+                  }
+                }
+              ]
+            }
+          ],
+          "max_columns": 1,
+          "path": "system",
+          "title": "System"
+        }
+      ]
+    }
+  }
+}

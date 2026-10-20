@@ -1,0 +1,664 @@
+entertainment_shutdown_all:
+  alias: Entertainment – Shutdown ALL
+  sequence:
+  - metadata: {}
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.entertainment_lamp_red_timer_start
+    action: automation.trigger
+  - if:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: media_player.appletv
+        state: standby
+    then:
+    - data: {}
+      action: script.entertainment_close_all_apps
+    - data:
+        delay_secs: 2
+        hold_secs: 1
+        command:
+        - home_hold
+        - select
+      target:
+        entity_id: remote.appletv
+      action: remote.send_command
+    - data: {}
+      target:
+        entity_id: media_player.appletv
+      action: media_player.turn_off
+    enabled: true
+  - if:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: media_player.playstation_4
+        state: standby
+    then:
+    - data: {}
+      target:
+        entity_id: media_player.playstation_4
+      action: media_player.media_stop
+    - data: {}
+      target:
+        entity_id: media_player.playstation_4
+      action: media_player.turn_off
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 3
+      milliseconds: 0
+  - data: {}
+    action: shell_command.projector_off
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - data: {}
+    action: shell_command.projector_off
+  mode: single
+  icon: mdi:television
+entertainment_playstation_power_toggle:
+  alias: Entertainment - Playstation Power TOGGLE
+  sequence:
+  - if:
+    - condition: state
+      state: standby
+      entity_id: media_player.playstation_4
+    then:
+    - service: media_player.turn_on
+      data: {}
+      target:
+        entity_id: media_player.playstation_4
+    - service: light.turn_on
+      data:
+        brightness: 255
+        effect: rainbow
+      target:
+        entity_id: light.tv_room_lights
+      enabled: false
+    else:
+    - service: media_player.turn_off
+      data: {}
+      target:
+        entity_id: media_player.playstation_4
+  mode: single
+entertainment_appletv_power_toggle:
+  alias: Entertainment - AppleTV Power TOGGLE
+  sequence:
+  - if:
+    - condition: state
+      entity_id: media_player.appletv
+      state: standby
+    then:
+    - service: media_player.turn_on
+      data: {}
+      target:
+        entity_id: media_player.appletv
+    - service: light.turn_on
+      data:
+        brightness: 255
+        effect: rainbow
+      target:
+        entity_id: light.tv_room_lights
+      enabled: false
+    else:
+    - service: script.entertainment_close_all_apps
+      data: {}
+    - service: remote.send_command
+      data:
+        delay_secs: 1
+        command:
+        - home_hold
+        - select
+      target:
+        entity_id: remote.appletv
+    - service: media_player.turn_off
+      data: {}
+      target:
+        entity_id: media_player.appletv
+  mode: single
+entertainment_close_all_apps:
+  alias: Entertainment – AppleTV – Close all Apps
+  sequence:
+  - service: remote.send_command
+    data:
+      num_repeats: 1
+      command:
+      - home
+    target:
+      entity_id: remote.appletv
+  - service: remote.send_command
+    data:
+      num_repeats: 2
+      command:
+      - home
+      delay_secs: 0.2
+    target:
+      entity_id: remote.appletv
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 500
+  - service: remote.send_command
+    data:
+      num_repeats: 1
+      command:
+      - left
+    target:
+      entity_id: remote.appletv
+  - repeat:
+      count: '4'
+      sequence:
+      - service: remote.send_command
+        data:
+          num_repeats: 2
+          command:
+          - up
+          delay_secs: 0.2
+        target:
+          entity_id: remote.appletv
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 600
+  - service: remote.send_command
+    data:
+      num_repeats: 1
+      command:
+      - home
+    target:
+      entity_id: remote.appletv
+  mode: single
+projector_volume_up:
+  alias: Entertainment – Projector – Volume UP
+  sequence:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+    then:
+    - service: shell_command.projector_volumeup
+      data: {}
+    - service: homeassistant.update_entity
+      data: {}
+      target:
+        entity_id: sensor.projector_volume
+  mode: single
+projector_volume_down:
+  alias: Entertainment – Projector – Volume DOWN
+  sequence:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+    then:
+    - service: shell_command.projector_volumedown
+      data: {}
+    - service: homeassistant.update_entity
+      data: {}
+      target:
+        entity_id: sensor.projector_volume
+  mode: single
+projector_mute_toggle:
+  alias: Entertainment – Projector – Mute Toggle
+  sequence:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+    then:
+    - variables:
+        projector_volume: '{{ states(''sensor.projector_volume'') | int }}'
+    - service: homeassistant.update_entity
+      data: {}
+      target:
+        entity_id: sensor.projector_volume
+    - if:
+      - condition: and
+        conditions:
+        - condition: numeric_state
+          entity_id: sensor.projector_volume
+          below: 1
+        - condition: state
+          entity_id: binary_sensor.projector_status
+          state: 'on'
+      then:
+      - if:
+        - condition: numeric_state
+          entity_id: input_number.projector_unmute_volume
+          above: 1
+        then:
+        - repeat:
+            count: '{{ states(''input_number.projector_unmute_volume'') | int }}'
+            sequence:
+            - service: shell_command.projector_volumeup
+              data: {}
+        else:
+        - repeat:
+            count: '25'
+            sequence:
+            - service: shell_command.projector_volumeup
+              data: {}
+      - service: homeassistant.update_entity
+        data: {}
+        target:
+          entity_id: sensor.projector_volume
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.projector_unmute_volume
+          value: '{{ projector_volume }}'
+      else:
+      - if:
+        - condition: state
+          entity_id: binary_sensor.projector_status
+          state: 'on'
+        then:
+        - service: input_number.set_value
+          data:
+            entity_id: input_number.projector_unmute_volume
+            value: '{{ projector_volume }}'
+        - repeat:
+            count: '{{ states(''input_number.projector_unmute_volume'') | int }}'
+            sequence:
+            - service: shell_command.projector_volumedown
+              data: {}
+    - service: homeassistant.update_entity
+      data: {}
+      target:
+        entity_id: sensor.projector_volume
+  mode: single
+projector_volume_slider_level:
+  alias: Projector – Volume – Slider Level
+  sequence:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.projector_status
+      state: 'on'
+    then:
+    - data:
+        entity_id:
+        - sensor.projector_volume
+      target:
+        entity_id: sensor.projector_volume
+      action: homeassistant.update_entity
+    - variables:
+        current_volume: '{{ states(''sensor.projector_volume'') | int }}'
+        volume_to_set: '{{ (brightness | float / 255 * 50) | int }}'
+    - if:
+      - condition: template
+        value_template: '{{ current_volume >  volume_to_set }}'
+      then:
+      - variables:
+          volume_difference: '{{ current_volume - volume_to_set }}'
+      - repeat:
+          count: '{{ volume_difference }}'
+          sequence:
+          - data: {}
+            action: shell_command.projector_volumedown
+    - if:
+      - condition: template
+        value_template: '{{ current_volume < volume_to_set }}'
+      then:
+      - variables:
+          volume_difference: '{{ volume_to_set - current_volume }}'
+      - repeat:
+          count: '{{ volume_difference }}'
+          sequence:
+          - data: {}
+            action: shell_command.projector_volumeup
+    - data:
+        entity_id:
+        - sensor.projector_volume
+      target:
+        entity_id: sensor.projector_volume
+      action: homeassistant.update_entity
+  mode: single
+lounge_lamps_toggle_adaptive_lighting:
+  alias: Lounge – Lamps – Toggle Adaptive Lighting
+  sequence:
+  - service: switch.toggle
+    data: {}
+    target:
+      entity_id:
+      - switch.adaptive_lighting_lounge_lighting
+  mode: single
+notify_mobile_app_devices_test:
+  alias: Notify Mobile App Devices Test
+  use_blueprint:
+    path: Grumblezz/notify_devices.yaml
+  icon: mdi:cellphone
+shellies_reconnect:
+  alias: Shellies Reconnect
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id:
+      - automation.shellies_announce_gen2
+      - automation.shellies_announce
+  mode: single
+downstairs_hallway_lights_toggle:
+  alias: Downstairs Hallway Lights – Toggle
+  sequence:
+  - data: {}
+    action: switch.toggle
+    target:
+      entity_id:
+      - switch.downstairs_hallway_switch_0
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  mode: single
+celeste_adaptive_lighting_toggle:
+  alias: Celeste – Adaptive Lighting – TOGGLE
+  sequence:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adaptive_lighting_celeste
+  mode: single
+celeste_adaptive_lighting_sleep_mode:
+  alias: Celeste – Adaptive Lighting – SLEEP MODE
+  sequence:
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_adaptive_lighting_celeste
+  - service: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_sleep_mode_adaptive_lighting_celeste
+  mode: single
+send_dynamic_notification_tims_iphone:
+  alias: send_dynamic_notification_tims_iphone
+  sequence:
+  - service: notify.mobile_app_tims_iphone
+    data:
+      message: '{{ message }}'
+      title: '{{ title }}'
+      data:
+        image: '{{ image }}'
+        url: '{{ url }}'
+        push:
+          interruption-level: '{{ importance }}'
+  mode: single
+'1715823901372':
+  alias: Sensor Update – Download GTFS Data
+  sequence:
+  - action: notify.pushover_tim
+    metadata: {}
+    data:
+      message: Downloading GTFS data
+      target: tim-iphone
+  - metadata: {}
+    data:
+      extract_from: url
+      file: akltransport
+      url: https://gtfs.at.govt.nz/gtfs.zip
+      clean_feed_info: true
+      REDACTED_location: REDACTED
+      check_source_dates: false
+      REDACTED_name: REDACTED
+    action: gtfs2.update_gtfs
+  mode: single
+master_bedroom_adaptive_lighting_toggle:
+  alias: Master Bedroom – Adaptive Lighting – TOGGLE
+  sequence:
+  - service: switch.toggle
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.adaptive_lighting_master_bedroom
+  mode: single
+downstairs_hallway_lights_toggle_gui:
+  alias: Downstairs Hallway Lights – Toggle GUI
+  sequence:
+  - data: {}
+    action: switch.toggle
+    target:
+      entity_id:
+      - switch.downstairs_hallway_switch_0
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - if:
+    - condition: state
+      entity_id: switch.downstairs_hallway_switch_0
+      state: 'on'
+    then:
+    - action: timer.start
+      metadata: {}
+      data: {}
+      target:
+        entity_id: timer.downstairs_hallway_lights_timer
+  mode: single
+  description: ''
+sonos_queue:
+  alias: Sonos Queue
+  sequence:
+  - variables:
+      sonos_player: media_player.lounge
+  - action: sonos.get_queue
+    target:
+      entity_id: '{{ sonos_player }}'
+    response_variable: queue
+  - data:
+      title: Sonos Queue Debug
+      message: "Player: {{ sonos_player }}\n{% set queue_position = state_attr(sonos_player,
+        'queue_position') | int %}\n{% set queue_size = state_attr(sonos_player, 'queue_size')
+        | int %}\n{% set start_position = (queue_position - 1) if queue_position >
+        0 else 0 %}\n{% set items = queue[sonos_player] %}\nQueue Position: {{ queue_position
+        }} of {{ queue_size }}\nQueue Contents:\n{% if items %}\n  {% for item in
+        items[start_position:start_position + 15] %}\n    {{ loop.index + start_position
+        }}. {{ item }}\n  {% endfor %}\n{% else %}\n  No items in queue\n{% endif
+        %}\n"
+    action: persistent_notification.create
+entertainment_sonos_set_source_tv:
+  alias: 'Entertainment – Sonos: Set Source: TV'
+  sequence:
+  - target:
+      entity_id: media_player.tv_room
+    data:
+      source: TV
+    action: media_player.select_source
+  description: ''
+play_spotify_playlist_on_sonos:
+  alias: Entertainment – Play Playlist on Sonos
+  sequence:
+  - variables:
+      selected_playlist: '{{ states(''input_select.entertainment_playlist_select'')
+        }}'
+      selected_player: "{% set player_map = {\n  'Lounge': 'media_player.lounge',\n
+        \ 'Office': 'media_player.master_bedroom',\n  'TV Room': 'media_player.tv_room',\n
+        \ 'Workshop': 'media_player.celeste'\n} %} {{ player_map[states('input_select.entertainment_mediaplayer_select')]
+        }}\n"
+      playlist_map:
+        Music Library:
+          type: favorite
+          uri: Music Library
+        Electronic:
+          type: genre
+          genres:
+          - A:GENRE/Electronic/
+          - A:GENRE/Electronic - Beats/
+          - A:GENRE/Electronic - Downbeat/
+          - A:GENRE/Electronic - Drum & Ba/
+          - A:GENRE/Electronic - Pop/
+          - A:GENRE/Electronic - Techno Ho/
+        Good Times:
+          type: playlist
+          uri: spotify:playlist:0vHOW0qZ03lBDpWsB8UG37
+        Swag:
+          type: playlist
+          uri: spotify:playlist:3awB0LnP4D1miO1alvuMSf
+        Dirty:
+          type: playlist
+          uri: spotify:playlist:3h4zrNvoE1guitLynsvOAV
+        Smooth:
+          type: playlist
+          uri: spotify:playlist:5EbYfyhaIdUwGCl5oKyWDq
+        Smoulder:
+          type: playlist
+          uri: spotify:playlist:2RfqqwrLPMQvouyxVBSW13
+        Tech:
+          type: playlist
+          uri: spotify:playlist:5ewADDUacBoCKNKjlAMjpE
+  - target:
+      entity_id: '{{ selected_player }}'
+    data:
+      shuffle: true
+    action: media_player.shuffle_set
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ playlist_map[selected_playlist].type == ''favorite'' }}'
+      sequence:
+      - target:
+          entity_id: '{{ selected_player }}'
+        data:
+          source: '{{ playlist_map[selected_playlist].uri }}'
+        action: media_player.select_source
+    - conditions:
+      - condition: template
+        value_template: '{{ playlist_map[selected_playlist].type == ''genre'' }}'
+      sequence:
+      - target:
+          entity_id: '{{ selected_player }}'
+        data:
+          media_content_type: genre
+          media_content_id: '{{ playlist_map[selected_playlist].genres[0] }}'
+          enqueue: replace
+        action: media_player.play_media
+      - repeat:
+          for_each: '{{ playlist_map[selected_playlist].genres[1:] }}'
+          sequence:
+          - target:
+              entity_id: '{{ selected_player }}'
+            data:
+              media_content_type: genre
+              media_content_id: '{{ repeat.item }}'
+              enqueue: add
+            action: media_player.play_media
+    - conditions:
+      - condition: template
+        value_template: '{{ playlist_map[selected_playlist].type == ''playlist'' }}'
+      sequence:
+      - target:
+          entity_id: '{{ selected_player }}'
+        data:
+          media_content_type: playlist
+          media_content_id: '{{ playlist_map[selected_playlist].uri }}'
+          enqueue: replace
+        action: media_player.play_media
+  - target:
+      entity_id: '{{ selected_player }}'
+    data:
+      media_content_type: '{{ playlist_map[selected_playlist].type }}'
+      media_content_id: '{{ playlist_map[selected_playlist].uri }}'
+      enqueue: replace
+    action: media_player.play_media
+  - target:
+      entity_id: '{{ selected_player }}'
+    action: media_player.media_play
+    data: {}
+backend_toggle_lxc_container:
+  alias: Backend – Toggle LXC Container
+  description: 'Toggle LXC container by name: start if off, stop if on.'
+  fields:
+    lxc_name:
+      description: The name part of the LXC entities, e.g., jellyfin_143
+      example: jellyfin_143
+      required: true
+  sequence:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ is_state(''binary_sensor.lxc_'' ~ lxc_name ~ ''_status'',
+          ''on'') }}
+
+          '
+      sequence:
+      - target:
+          entity_id: 'button.lxc_{{ lxc_name }}_shutdown
+
+            '
+        action: button.press
+    - conditions:
+      - condition: template
+        value_template: '{{ is_state(''binary_sensor.lxc_'' ~ lxc_name ~ ''_status'',
+          ''off'') }}
+
+          '
+      sequence:
+      - target:
+          entity_id: 'button.lxc_{{ lxc_name }}_start
+
+            '
+        action: button.press
+backend_restart_lxc_container:
+  sequence:
+  - target:
+      entity_id: 'button.lxc_{{ lxc_name }}_reboot
+
+        '
+    action: button.press
+  alias: Backend – Restart LXC Container
+  description: Restart LXC container by name
+  fields:
+    lxc_name:
+      description: The name part of the LXC entities, e.g., jellyfin_143
+      example: jellyfin_143
+      required: true
+ikea_kajplats_smart_bulb_zigbee_pairing_mode_power_cycle:
+  alias: IKEA KAJPLATS Smart Bulb Zigbee Pairing Mode Power Cycle
+  use_blueprint:
+    path: bonesderdritte/ikea_kajplats_zigbee_pairing_mode_power_cycle.yaml
+    input:
+      target_switch: switch.smartplug_office
+  description: ''
+master_bedroom_bedside_lamps_toggle_both:
+  alias: Master Bedroom – Bedside Lamps – Toggle BOTH
+  description: Toggles both bedside lamps together. If either lamp is on, turn both
+    off; if both are off, turn both on. Called by a double press on either bedside
+    controller. Turning a lamp off also cancels its motion timer via the timer-finish
+    automation.
+  icon: mdi:lamps
+  mode: single
+  sequence:
+  - choose:
+    - alias: 'Either lamp on: turn both off'
+      conditions:
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: light.bedside_tim
+          state: 'on'
+        - condition: state
+          entity_id: light.bedside_sonya
+          state: 'on'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.bedside_tim
+          - light.bedside_sonya
+    REDACTED
+    - action: light.turn_on
+      target:
+        entity_id:
+        - light.bedside_tim
+        - light.bedside_sonya

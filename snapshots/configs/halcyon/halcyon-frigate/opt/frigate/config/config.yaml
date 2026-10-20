@@ -1,0 +1,160 @@
+# Frigate v0.15 Configuration
+# 2k stream, zoom = 5
+
+mqtt:
+  enabled: true
+  host: 10.2.1.25
+  port: 1883
+  topic_prefix: REDACTED
+  client_id: REDACTED
+  user: "{FRIGATE_MQTT_USER}"
+  password: REDACTED
+
+
+logger:
+  default: info
+  logs:
+    REDACTED.motion: debug
+    REDACTED.object_processing: debug
+    REDACTED.detectors: debug
+
+
+birdseye:
+  enabled: false
+
+
+detectors:
+  ov:
+    type: openvino
+    device: GPU
+
+
+#model:
+#  width: 300
+#  height: 300
+#  input_tensor: nhwc
+#  input_pixel_format: bgr
+#  path: /openvino-model/ssdlite_mobilenet_v2.xml
+#  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+model:
+  model_type: yolonas # Inference Speed: 30ms, CPU usage: 6%, Memory Usage: 3.3%
+  width: 320 # <--- should match whatever was set in notebook
+  height: 320 # <--- should match whatever was set in notebook
+  input_tensor: nchw
+  input_pixel_format: bgr
+  path: /config/yolo_nas_s.onnx
+  labelmap_path: /labelmap/coco-80.txt
+
+
+objects:
+  track:
+    - person
+    - car
+    - motorcycle
+    - bicycle
+    - cat
+    - dog
+    - cow
+    - horse
+    - sheep
+  filters:
+    person:
+      min_area: 1500
+      mask:
+        - 401,142,403,209,357,213,360,144
+    cow:
+      mask:
+        - 0,0,640,0,640,218,386,205,386,165,0,165
+
+
+motion:
+  threshold: 30
+  contour_area: 40
+  lightning_threshold: 0.9
+  improve_contrast: true
+  mqtt_off_delay: 30
+
+
+
+snapshots:
+  enabled: true
+  quality: 100
+  retain:
+    default: 10
+
+
+ffmpeg:
+  global_args: -hide_banner -loglevel warning
+  hwaccel_args: preset-vaapi
+  #input_args: preset-rtsp-generic
+
+
+go2rtc:
+  ffmpeg:
+    # Add VAAPI hardware acceleration settings
+    vaapi: -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 
+      -hwaccel_output_format vaapi
+  streams:
+    driveway:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.1.51:554/h264Preview_01_main#media=video
+      #- "ffmpeg:rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.1.51:554/h264Preview_01_main#video=h264#hardware=vaapi"
+    driveway_sub:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.1.51:554/h264Preview_01_sub#media=video
+  webrtc:
+    candidates:
+      - 10.2.1.28:8555
+      - stun:8555
+
+
+cameras:
+  driveway:  # Lowercase camera name (v0.15 convention)
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/driveway
+        #- path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.1.51:554/h264Preview_01_main
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+        - path: rtsp://127.0.0.1:8554/driveway_sub
+        #- path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.2.1.51:554/h264Preview_01_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+      output_args:
+        record: preset-record-generic
+
+    detect:
+      width: 640
+      height: 360
+      fps: 4
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+        mode: motion
+      alerts:
+        retain:
+          days: 7
+        pre_capture: 2
+        post_capture: 7
+      detections:
+        retain:
+          days: 7
+        pre_capture: 2
+        post_capture: 7
+    live:
+      streams:
+        driveway: driveway
+    objects:
+      filters:
+        person: {}
+      mask: 
+        0.107,0.558,0.102,0.397,0.524,0.42,0.524,0.54,0.56,0.537,0.561,0.42,0.679,0.379,0.832,0.39,0.824,0.615,1,0.523,1,0,0,0,0,0.56
+    motion:
+      mask: 0,0.266,1,0.268,0.998,0.002,0,0
+version: 0.16-0
+detect:
+  enabled: true

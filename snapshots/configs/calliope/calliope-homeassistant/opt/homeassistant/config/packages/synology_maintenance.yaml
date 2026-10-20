@@ -1,0 +1,395 @@
+# Synology maintenance – monitor and pause DSM data scrubbing and Universal Search indexing.
+#
+# Talks to DSM through /config/scripts/synology_maintenance.py, logged in as the local-api DSM
+# account (password: REDACTED in secrets.yaml). The script uses the same DSM API calls
+# Storage Manager and Universal Search make, so DSM records a real pause it can resume.
+#
+# To add another NAS (e.g. norwich): add it to NAS in the script, copy the command_line and
+# template sensors below with its name, and add it to the nas options of both scripts.
+
+command_line:
+  - sensor:
+      name: NAS Calliope Scrubbing
+      unique_id: nas_calliope_scrubbing
+      icon: mdi:harddisk
+      command: python3 /config/scripts/synology_maintenance.py calliope status
+      command_timeout: 60
+      scan_interval: 300
+      value_template: "{{ value_json.scrub_state }}"
+      json_attributes:
+        - scrub_percent
+        - scrub_pools
+        - index_state
+        - index_resume_in
+        - index_raw
+        - checked
+  - sensor:
+      name: NAS Calliope Backup Tasks
+      unique_id: nas_calliope_backup_tasks
+      icon: mdi:cloud-upload-outline
+      command: python3 /config/scripts/synology_maintenance.py calliope backup_status
+      command_timeout: 60
+      scan_interval: 600
+      value_template: "{{ value_json.backup_tasks | length }}"
+      json_attributes:
+        - backup_tasks
+        - checked
+  - sensor:
+      name: NAS Calliope Throttle
+      unique_id: nas_calliope_throttle
+      icon: mdi:speedometer-slow
+      command: python3 /config/scripts/synology_maintenance.py calliope throttle_status
+      command_timeout: 60
+      scan_interval: 60
+      value_template: "{{ value_json.throttle }}"
+      json_attributes:
+        - throttle_rate
+        - throttle_devices
+        - checked
+
+template:
+  - sensor:
+      - name: NAS Calliope Indexing
+        unique_id: nas_calliope_indexing
+        icon: mdi:file-search-outline
+        state: "{{ state_attr('sensor.nas_calliope_scrubbing', 'index_state') }}"
+        availability: "{{ has_value('sensor.nas_calliope_scrubbing') }}"
+        attributes:
+          resume_in_minutes: >
+            {% set s = state_attr('sensor.nas_calliope_scrubbing', 'index_resume_in') %}
+            {{ (s / 60) | round(0) | int if s is number else none }}
+      - name: NAS Calliope Scrub Progress
+        unique_id: nas_calliope_scrub_progress
+        icon: mdi:progress-check
+        unit_of_measurement: "%"
+        state: "{{ state_attr('sensor.nas_calliope_scrubbing', 'scrub_percent') }}"
+        availability: "{{ state_attr('sensor.nas_calliope_scrubbing', 'scrub_percent') is number }}"
+      - name: Hyper Backup Production
+        unique_id: hyper_backup_production
+        icon: mdi:cloud-upload-outline
+        state: >
+          {% set m = (state_attr('sensor.nas_calliope_backup_tasks', 'backup_tasks') or []) | selectattr('id', 'eq', 2) | list %}
+          {{ m[0].status if m else 'unknown' }}
+        availability: "{{ has_value('sensor.nas_calliope_backup_tasks') }}"
+        attributes:
+          task_state: >
+            {% set m = (state_attr('sensor.nas_calliope_backup_tasks', 'backup_tasks') or []) | selectattr('id', 'eq', 2) | list %}
+            {{ m[0].state if m else 'unknown' }}
+      - name: Hyper Backup Personal
+        unique_id: hyper_backup_personal
+        icon: mdi:cloud-upload-outline
+        state: >
+          {% set m = (state_attr('sensor.nas_calliope_backup_tasks', 'backup_tasks') or []) | selectattr('id', 'eq', 1) | list %}
+          {{ m[0].status if m else 'unknown' }}
+        availability: "{{ has_value('sensor.nas_calliope_backup_tasks') }}"
+        attributes:
+          task_state: >
+            {% set m = (state_attr('sensor.nas_calliope_backup_tasks', 'backup_tasks') or []) | selectattr('id', 'eq', 1) | list %}
+            {{ m[0].state if m else 'unknown' }}
+
+  - switch:
+      - name: Hyper Backup Throttle
+        unique_id: hyper_backup_throttle
+        icon: mdi:speedometer-slow
+        state: "{{ is_state('sensor.nas_calliope_throttle', 'on') }}"
+        availability: "{{ has_value('sensor.nas_calliope_throttle') }}"
+        turn_on:
+          - action: shell_command.nas_throttle
+            data:
+              nas: calliope
+              action: throttle_on
+            response_variable: throttle_result
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.nas_calliope_throttle
+          - if: "{{ throttle_result.returncode != 0 }}"
+            then:
+              - stop: "Turning the Hyper Backup throttle on failed: {{ throttle_result.stderr }}"
+                error: true
+        turn_off:
+          - action: shell_command.nas_throttle
+            data:
+              nas: calliope
+              action: throttle_off
+            response_variable: throttle_result
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.nas_calliope_throttle
+          - if: "{{ throttle_result.returncode != 0 }}"
+            then:
+              - stop: "Turning the Hyper Backup throttle off failed: {{ throttle_result.stderr }}"
+                error: true
+
+shell_command:
+  nas_maintenance: "python3 /config/scripts/synology_maintenance.py {{ nas }} {{ action }} {{ hours | default('') }}"
+  nas_backup: "python3 /config/scripts/synology_maintenance.py {{ nas }} {{ action }} {{ task | default('') }}"
+  nas_throttle: "python3 /config/scripts/synology_maintenance.py {{ nas }} {{ action }}"
+
+script:
+  nas_maintenance_pause:
+    alias: NAS – Maintenance – Pause
+    description: Pause data scrubbing and/or Universal Search indexing on a Synology NAS.
+    icon: mdi:pause-circle-outline
+    mode: queued
+    fields:
+      nas:
+        name: NAS
+        required: true
+        REDACTED calliope
+        REDACTED
+          select:
+            options:
+              - label: Calliope
+                value: calliope
+      what:
+        name: What to pause
+        required: true
+        REDACTED both
+        REDACTED
+          select:
+            options:
+              - label: Scrubbing and indexing
+                value: both
+              - label: Data scrubbing only
+                value: scrubbing
+              - label: Indexing only
+                value: indexing
+      index_hours:
+        name: Pause indexing for
+        description: Universal Search resumes by itself after this long. "Until resumed" keeps it paused.
+        REDACTED "6"
+        REDACTED
+          select:
+            options:
+              - label: 1 hour
+                value: "1"
+              - label: 3 hours
+                value: "3"
+              - label: 6 hours
+                value: "6"
+              - label: Until resumed
+                value: "0"
+    sequence:
+      - if: "{{ what in ['both', 'scrubbing'] }}"
+        then:
+          - action: shell_command.nas_maintenance
+            data:
+              nas: "{{ nas }}"
+              action: pause_scrub
+            response_variable: scrub_result
+          - if: "{{ scrub_result.returncode != 0 }}"
+            then:
+              - stop: "Pausing scrubbing on {{ nas }} failed: {{ scrub_result.stderr }}"
+                error: true
+      - if: "{{ what in ['both', 'indexing'] }}"
+        then:
+          - action: shell_command.nas_maintenance
+            data:
+              nas: "{{ nas }}"
+              action: pause_index
+              hours: "{{ index_hours | default('6') }}"
+            response_variable: index_result
+          - if: "{{ index_result.returncode != 0 }}"
+            then:
+              - stop: "Pausing indexing on {{ nas }} failed: {{ index_result.stderr }}"
+                error: true
+      - action: homeassistant.update_entity
+        target:
+          entity_id: "sensor.nas_{{ nas }}_scrubbing"
+
+  nas_maintenance_resume:
+    alias: NAS – Maintenance – Resume
+    description: Resume paused data scrubbing and/or Universal Search indexing on a Synology NAS. Never starts a scrub that wasn't paused.
+    icon: mdi:play-circle-outline
+    mode: queued
+    fields:
+      nas:
+        name: NAS
+        required: true
+        REDACTED calliope
+        REDACTED
+          select:
+            options:
+              - label: Calliope
+                value: calliope
+      what:
+        name: What to resume
+        required: true
+        REDACTED both
+        REDACTED
+          select:
+            options:
+              - label: Scrubbing and indexing
+                value: both
+              - label: Data scrubbing only
+                value: scrubbing
+              - label: Indexing only
+                value: indexing
+    sequence:
+      - if: "{{ what in ['both', 'scrubbing'] }}"
+        then:
+          - action: shell_command.nas_maintenance
+            data:
+              nas: "{{ nas }}"
+              action: resume_scrub
+            response_variable: scrub_result
+          - if: "{{ scrub_result.returncode != 0 }}"
+            then:
+              - stop: "Resuming scrubbing on {{ nas }} failed: {{ scrub_result.stderr }}"
+                error: true
+      - if: "{{ what in ['both', 'indexing'] }}"
+        then:
+          - action: shell_command.nas_maintenance
+            data:
+              nas: "{{ nas }}"
+              action: resume_index
+            response_variable: index_result
+          - if: "{{ index_result.returncode != 0 }}"
+            then:
+              - stop: "Resuming indexing on {{ nas }} failed: {{ index_result.stderr }}"
+                error: true
+      - action: homeassistant.update_entity
+        target:
+          entity_id: "sensor.nas_{{ nas }}_scrubbing"
+
+  backup_hyper_backup_pause:
+    alias: Backup – Hyper Backup – Pause
+    description: Suspend a Hyper Backup task on Calliope. The task is stopped and carries on when resumed.
+    icon: mdi:pause-circle-outline
+    mode: queued
+    fields:
+      task:
+        name: Task
+        required: true
+        REDACTED "2"
+        REDACTED
+          select:
+            options:
+              - label: Production (projects and archive)
+                value: "2"
+              - label: Personal data
+                value: "1"
+    sequence:
+      - action: shell_command.nas_backup
+        data:
+          nas: calliope
+          action: pause_backup
+          task: "{{ task }}"
+        response_variable: backup_result
+      - if: "{{ backup_result.returncode != 0 }}"
+        then:
+          - stop: "Pausing Hyper Backup task {{ task }} failed: {{ backup_result.stderr }}"
+            error: true
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.nas_calliope_backup_tasks
+
+  backup_hyper_backup_resume:
+    alias: Backup – Hyper Backup – Resume
+    description: Resume a suspended Hyper Backup task on Calliope.
+    icon: mdi:play-circle-outline
+    mode: queued
+    fields:
+      task:
+        name: Task
+        required: true
+        REDACTED "2"
+        REDACTED
+          select:
+            options:
+              - label: Production (projects and archive)
+                value: "2"
+              - label: Personal data
+                value: "1"
+    sequence:
+      - action: shell_command.nas_backup
+        data:
+          nas: calliope
+          action: resume_backup
+          task: "{{ task }}"
+        response_variable: backup_result
+      - if: "{{ backup_result.returncode != 0 }}"
+        then:
+          - stop: "Resuming Hyper Backup task {{ task }} failed: {{ backup_result.stderr }}"
+            error: true
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.nas_calliope_backup_tasks
+
+# --- Hyper Backup throttle: schedule and manual override -------------------------------------
+# The throttle itself (tc rules, /usr/local/bin/hb-throttle on Calliope) is switched by
+# switch.hyper_backup_throttle. The switch is the manual override: flip it any time and it stays
+# that way until the next scheduled change. The schedule only acts while "Auto schedule" is on.
+# Weekdays 08:00 on, every day 20:00 off, so weekends are never throttled by the schedule.
+# "Skip today" cancels the 08:00 start (and switches the throttle off if it is already on);
+# it resets itself at midnight.
+
+input_boolean:
+  hb_throttle_schedule:
+    name: Hyper Backup throttle – auto schedule
+    icon: mdi:calendar-clock
+  hb_throttle_skip_today:
+    name: Hyper Backup throttle – skip today
+    icon: mdi:calendar-remove
+
+automation:
+  - id: hb_throttle_weekday_on
+    alias: Hyper Backup throttle – weekday morning on
+    description: Weekdays 08:00, throttle Hyper Backup while Auto schedule is on and today isn't skipped.
+    mode: single
+    triggers:
+      - trigger: time
+        at: "08:00:00"
+    conditions:
+      - condition: time
+        weekday: [mon, tue, wed, thu, fri]
+      - condition: state
+        entity_id: input_boolean.hb_throttle_schedule
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.hb_throttle_skip_today
+        state: "off"
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_evening_off
+    alias: Hyper Backup throttle – evening off
+    description: Every day 20:00, release the Hyper Backup throttle while Auto schedule is on.
+    mode: single
+    triggers:
+      - trigger: time
+        at: "20:00:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hb_throttle_schedule
+        state: "on"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_skip_today_on
+    alias: Hyper Backup throttle – skip today turns it off
+    description: Switching on "skip today" releases the throttle straight away.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.hb_throttle_skip_today
+        to: "on"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_skip_today_reset
+    alias: Hyper Backup throttle – reset skip today
+    mode: single
+    triggers:
+      - trigger: time
+        at: "00:00:00"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hb_throttle_skip_today

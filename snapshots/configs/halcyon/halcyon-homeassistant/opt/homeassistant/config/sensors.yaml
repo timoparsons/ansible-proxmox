@@ -1,0 +1,57 @@
+
+
+- platform: template
+  sensors:
+    ups_status_readable:
+      friendly_name: "UPS Status Readable"
+      value_template: >
+        {% set status = states('sensor.halcyon_ups_status_data') %}
+        {% if status == 'OL' %}
+          ONLINE
+        {% elif status == 'OL CHRG' %}
+          CHARGING
+        {% elif status == 'OB' %}
+          ON BATTERY
+        {% elif status == 'LB' %}
+          LOW BATTERY
+        {% elif status == 'RB' %}
+          REPLACE BATTERY
+        {% elif status == 'OB DISCHRG' %}
+          DISCHARGING
+        {% else %}
+          {{ status }}
+        {% endif %}
+      icon_template: >
+        {% set status = states('sensor.halcyon_ups_status_data') %}
+        {% set battery_level = states('sensor.halcyon_ups_battery_charge') | int %}
+        {% if status == 'OL' %}
+          mdi:power-plug
+        {% elif status == 'OL CHRG' %}
+          {% if battery_level >= 90 %}
+            mdi:battery-charging-100
+          {% elif battery_level >= 80 %}
+            mdi:battery-charging-90
+          {% elif battery_level >= 70 %}
+            mdi:battery-charging-80
+          {% elif battery_level >= 60 %}
+            mdi:battery-charging-70
+          {% elif battery_level >= 50 %}
+            mdi:battery-charging-60
+          {% elif battery_level >= 40 %}
+            mdi:battery-charging-50
+          {% elif battery_level >= 30 %}
+            mdi:battery-charging-40
+          {% elif battery_level >= 20 %}
+            mdi:battery-charging-30
+          {% elif battery_level >= 10 %}
+            mdi:battery-charging-20
+          {% else %}
+            mdi:battery-charging-10
+          {% endif %}
+        {% elif status == 'OB' %}
+          mdi:battery-alert
+        {% elif status == 'OB DISCHRG' %}
+          mdi:battery-alert
+        {% else %}
+          mdi:power
+        {% endif %}

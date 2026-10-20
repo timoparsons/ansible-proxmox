@@ -1,0 +1,25 @@
+# Presence Input
+tim_present_homekit:
+  name: Tim
+  icon: mdi:account
+sonya_present_homekit:
+  name: Sonya
+  icon: mdi:account
+celeste_present_homekit:
+  name: Celeste
+  icon: mdi:account
+eve_present_homekit:
+  name: Eve
+  icon: mdi:account
+
+# Dummy switches to enable automations
+vacation_mode_homekit:
+  name: Vacation Mode
+  icon: mdi:briefcase
+projector_homekit:
+  name: Projector Button
+  icon: mdi:power
+playstation_homekit:
+  name: Playstation Button
+  icon: mdi:power
+

@@ -1,0 +1,226 @@
+services:
+  gatus:
+    image: twinproduction/gatus:latest
+    container_name: gatus
+    restart: unless-stopped
+    env_file: /etc/pushover.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - /opt/gatus/config:/config
+    environment:
+      - TZ=Pacific/Auckland
+
+  mcp-n8n:
+    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    container_name: mcp-n8n
+    env_file: /opt/n8n-mcp/n8n.env
+    restart: "no"
+    profiles: ["on-demand"]
+    ports:
+      - "8092:3000"
+    environment:
+      - MCP_MODE=http
+      - PORT=3000
+      - N8N_API_URL=REDACTED
+      - WEBHOOK_SECURITY_MODE=REDACTED
+      - AUTH_RATE_LIMIT_MAX=999999
+      - AUTH_RATE_LIMIT_WINDOW=86400000 # 24 hours in milliseconds
+
+  ha-mcp:
+    image: ghcr.io/homeassistant-ai/ha-mcp:latest
+    container_name: ha-mcp-server
+    env_file: /opt/ha-mcp/ha.env
+    environment:
+      - HOMEASSISTANT_URL=REDACTED
+      - BACKUP_HINT=normal
+    command: ["fastmcp", "run", "fastmcp-http.json"]
+    ports:
+      - "8093:8086"
+    restart: "no"
+    profiles: ["on-demand"]
+
+
+  # Halcyon Home Assistant MCP (on-demand). Added 2026-10-13. Bifrost client: home_assistant_halcyon. Token in /opt/ha-mcp-halcyon/ha-halcyon.env
+  ha-mcp-halcyon:
+    image: ghcr.io/homeassistant-ai/ha-mcp:latest
+    container_name: ha-mcp-halcyon
+    env_file: /opt/ha-mcp-halcyon/ha-halcyon.env
+    environment:
+      - BACKUP_HINT=normal
+    command: ["fastmcp", "run", "fastmcp-http.json"]
+    ports:
+      - "8098:8086"
+    restart: "no"
+    profiles: ["on-demand"]
+
+  proxmox-mcp-plus:
+      image: ghcr.io/rekklesna/proxmoxmcp-plus:latest
+      container_name: proxmox-mcp-plus
+      restart: "no"
+      profiles: ["on-demand"]
+      ports:
+        - "8811:8811"
+      volumes:
+        - /opt/proxmox-mcp-plus/proxmox-config-calliope/config.json:/app/proxmox-config/config.json:ro
+      environment:
+        - PROXMOX_MCP_CONFIG=/app/proxmox-config/config.json
+      command: >
+            /bin/bash -c "cd /app && python3 -m proxmox_mcp.server"
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8811/sse"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 40s  # Gives service time to initialize
+
+  proxmox-mcp-halcyon:
+      image: ghcr.io/rekklesna/proxmoxmcp-plus:latest
+      container_name: proxmox-mcp-halcyon
+      restart: "no"
+      profiles: ["on-demand"]
+      ports:
+        - "8812:8812"
+      volumes:
+        - /opt/proxmox-mcp-plus/proxmox-config-halcyon/config.json:/app/proxmox-config/config.json:ro
+      environment:
+        - PROXMOX_MCP_CONFIG=/app/proxmox-config/config.json
+      command: >
+            /bin/bash -c "cd /app && python3 -m proxmox_mcp.server"
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8812/sse"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 40s  # Gives service time to initialize
+
+  mcp-adguard-home:
+      image: ghcr.io/samik081/mcp-adguard-home:latest
+      container_name: mcp-adguard-home
+      env_file: /opt/adguard-mcp-calliope/adguard-calliope.env
+      restart: "no"
+      profiles: ["on-demand"]
+      ports:
+        - "3000:3000" # Exposes the MCP server to your local network
+      environment:
+        - MCP_TRANSPORT=http
+
+  # Halcyon AdGuard Home MCP (on-demand, REDACTED tier). Added 2026-10-13. Bifrost client: adguard_home_halcyon. Login in /opt/adguard-mcp-halcyon/adguard-halcyon.env
+  mcp-adguard-halcyon:
+    image: ghcr.io/samik081/mcp-adguard-home:latest
+    container_name: mcp-adguard-halcyon
+    env_file: /opt/adguard-mcp-halcyon/adguard-halcyon.env
+    environment:
+      - MCP_TRANSPORT=http
+      - MCP_PORT=3001
+    ports:
+      - "3001:3001"
+    restart: "no"
+    profiles: ["on-demand"]
+
+  mcp-navidrome:
+      build:
+        context: /opt/mcp-navidrome
+      container_name: mcp-navidrome
+      env_file: /opt/navidrome-mcp/navidrome.env
+      restart: "no"
+      profiles: ["on-demand"]
+      ports:
+        - "8094:8094"
+      environment:
+        - NAVIDROME_URL=http://10.1.1.45:4533  # Your internal Navidrome IP
+        - NAVIDROME_USERNAME=tim
+        # Optional integrations supported by Blakeem/Navidrome-MCP
+        #- LASTFM_API_KEY=xxx                 # For artist recommendations & missing albums
+        #- RADIO_BROWSER_USER_AGENT=HomelabMCP/1.0
+      healthcheck:
+        test: ["CMD", "nc", "-z", "localhost", "8094"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+  
+  # Synology DSM MCP (rafalr100/synology-mcp, HTTP launcher). Added 2026-10-07. Bifrost client: synology_calliope
+  synology-mcp-calliope:
+    build:
+      context: /opt/synology-mcp
+      dockerfile: Dockerfile.http
+    image: synology-mcp:local
+    container_name: synology-mcp-calliope
+    restart: "no"
+    profiles: ["on-demand"]
+    env_file:
+      - /opt/synology-mcp/calliope.env
+    ports:
+      - "8095:8095"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8095), 3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  synology-mcp-norwich:
+    build:
+      context: /opt/synology-mcp
+      dockerfile: Dockerfile.http
+    image: synology-mcp:local
+    container_name: synology-mcp-norwich
+    restart: "no"
+    profiles: ["on-demand"]
+    env_file:
+      - /opt/synology-mcp/norwich.env
+    ports:
+      - "8097:8095"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8095), 3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Halcyon DSM MCP (on-demand, same image as the Calliope and Norwich instances). Added 2026-10-13. Bifrost client: synology_halcyon. Login in /opt/synology-mcp/halcyon.env
+  synology-mcp-halcyon:
+    build:
+      context: /opt/synology-mcp
+      dockerfile: Dockerfile.http
+    image: synology-mcp:local
+    container_name: synology-mcp-halcyon
+    restart: "no"
+    profiles: ["on-demand"]
+    env_file:
+      - /opt/synology-mcp/halcyon.env
+    ports:
+      - "8099:8095"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8095), 3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  # UniFi Network MCP (sirkirby/unifi-network-mcp). Added 2026-10-07. Bifrost client: unifi
+  # Logs in as View Only local account mcp-readonly; write policies off as a second layer.
+  unifi-network-mcp:
+    image: ghcr.io/sirkirby/unifi-network-mcp:0.36.2
+    container_name: unifi-network-mcp
+    restart: "no"
+    profiles: ["on-demand"]
+    env_file:
+      - /opt/unifi-mcp/unifi.env
+    environment:
+      - TZ=Pacific/Auckland
+      - UNIFI_MCP_HTTP_ENABLED=true
+      - UNIFI_MCP_HTTP_TRANSPORT=streamable-http
+      - UNIFI_MCP_HOST=0.0.0.0
+      - UNIFI_MCP_PORT=8096
+      - UNIFI_MCP_ALLOWED_HOSTS=localhost,127.0.0.1,10.1.1.30,10.1.1.30:8096
+      - UNIFI_TOOL_REGISTRATION_MODE=eager
+      - UNIFI_NETWORK_MCP_CONTENT_MODE=compat  # Bifrost code mode reads content only, not structuredContent
+      - UNIFI_POLICY_CREATE=false
+      - UNIFI_POLICY_UPDATE=false
+      - UNIFI_POLICY_DELETE=false
+    ports:
+      - "8096:8096"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8096), 3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

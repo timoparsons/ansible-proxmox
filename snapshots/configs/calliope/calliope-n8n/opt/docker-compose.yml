@@ -1,0 +1,91 @@
+services:
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=n8n.timparsons.nz
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=REDACTED
+      - GENERIC_TIMEZONE=Pacific/Auckland
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168  # keeps 7 days of execution history
+      - NODE_FUNCTION_ALLOW_EXTERNAL=luxon
+      - NODE_PATH=/usr/local/lib/node_modules:/home/node/.n8n/node_modules
+      - TZ=Pacific/Auckland
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+
+  REDACTED-db:
+    image: mysql:8.2
+    container_name: REDACTED-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: REDACTED
+      MYSQL_USER: ${PRICEBUDDY_USER:-REDACTED}
+      MYSQL_PASSWORD: ${PRICEBUDDY_PASSWORD:?PRICEBUDDY_PASSWORD must be set in .env}
+      MYSQL_ROOT_PASSWORD: ${PRICEBUDDY_MYSQL_ROOT_PASSWORD:-root}
+    volumes:
+      - REDACTED_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  REDACTED:
+    image: jez500/REDACTED:latest
+    container_name: REDACTED
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - REDACTED_storage:/app/storage
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: REDACTED-db
+      DB_PORT: 3306
+      DB_DATABASE: REDACTED
+      DB_USERNAME: ${PRICEBUDDY_USER:-REDACTED}
+      DB_PASSWORD: ${PRICEBUDDY_PASSWORD:?PRICEBUDDY_PASSWORD must be set in .env}
+      APP_USER_EMAIL: ${PRICEBUDDY_ADMIN_EMAIL:?PRICEBUDDY_ADMIN_EMAIL must be set in .env}
+      APP_USER_PASSWORD: ${PRICEBUDDY_ADMIN_PASSWORD:?PRICEBUDDY_ADMIN_PASSWORD must be set in .env}
+      SCRAPER_BASE_URL: http://REDACTED-scraper:3000
+      AFFILIATE_ENABLED: 'true'
+    depends_on:
+      REDACTED-db:
+        condition: service_healthy
+
+  REDACTED-scraper:
+    image: jez500/seleniumbase-scrapper:latest
+    container_name: REDACTED-scraper
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+
+
+  REDACTED-mcp:
+    build: ./REDACTED-mcp
+    image: local/REDACTED-mcp:1.0.0
+    container_name: REDACTED-mcp
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    environment:
+      PRICEBUDDY_BASE_URL: http://REDACTED/api
+      PRICEBUDDY_API_TOKEN: ${PRICEBUDDY_API_TOKEN:-}
+      PRICEBUDDY_CLI_PATH: /usr/local/bin/REDACTED
+    volumes:
+      - REDACTED_mcp_home:/home/mcp
+    depends_on:
+      - REDACTED
+
+volumes:
+  REDACTED_storage:
+  REDACTED_db_data:
+  REDACTED_mcp_home:

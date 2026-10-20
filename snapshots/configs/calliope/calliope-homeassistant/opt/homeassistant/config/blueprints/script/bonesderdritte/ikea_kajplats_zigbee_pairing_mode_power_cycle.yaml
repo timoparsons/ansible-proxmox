@@ -1,0 +1,88 @@
+blueprint:
+  source_url: https://raw.githubusercontent.com/bonesderdritte/ha-ikea-kajplats-zigbee-pairing-blueprint/main/blueprints/script/ikea_kajplats_zigbee_pairing_mode_power_cycle.yaml
+  name: IKEA KAJPLATS Smart Bulb Zigbee Pairing Mode Power Cycle
+  description: "Power-cycle helper for IKEA smart bulbs using a smart plug/relay.\nCounting
+    rule (matches typical manual reset instructions): • \"Cycles\" means: how many
+    times the bulb is powered ON (OFF→ON).\n  The script ends with the bulb ON.\n
+    \ Example: cycles=6 => 6 ON-events total\n\nCommon usage (device-dependent): •
+    6  = Factory reset / start new Zigbee pairing • 12 = Switch from Matter mode to
+    Zigbee mode (legacy Zigbee) I only tested this with one KAJPLATS bulb, your settings
+    may vary. This will also work with other smart bulbs if you adjust the input values
+    accordingly\n"
+  domain: script
+  input:
+    target_switch:
+      name: Target Switch
+      description: Smart plug or relay controlling the bulb power.
+      REDACTED
+        entity:
+          domain:
+          - switch
+          REDACTED
+          reorder: false
+    cycles:
+      name: Number of ON events (OFF→ON)
+      description: 'Typical: 6 = new pairing, 12 = Matter→Zigbee mode switch'
+      REDACTED 12
+      REDACTED
+        number:
+          min: 1.0
+          max: 20.0
+          step: 1.0
+          mode: slider
+    initial_off_delay:
+      name: Initial OFF Stabilization (seconds)
+      REDACTED 2
+      REDACTED
+        number:
+          min: 0.0
+          max: 10.0
+          step: 0.1
+          unit_of_measurement: seconds
+          mode: box
+    off_time:
+      name: OFF Duration (seconds)
+      REDACTED 1.5
+      REDACTED
+        number:
+          min: 0.2
+          max: 5.0
+          step: 0.1
+          unit_of_measurement: seconds
+          mode: box
+    on_time:
+      name: ON Duration (seconds)
+      REDACTED 1.5
+      REDACTED
+        number:
+          min: 0.2
+          max: 5.0
+          step: 0.1
+          unit_of_measurement: seconds
+          mode: box
+sequence:
+- service: switch.turn_off
+  target:
+    entity_id: !input target_switch
+- delay:
+    seconds: !input initial_off_delay
+- variables:
+    cycles_value: !input cycles
+    repeat_count: '{{ max((cycles_value | int) - 1, 0) }}'
+- repeat:
+    count: '{{ repeat_count }}'
+    sequence:
+    - service: switch.turn_on
+      target:
+        entity_id: !input target_switch
+    - delay:
+        seconds: !input on_time
+    - service: switch.turn_off
+      target:
+        entity_id: !input target_switch
+    - delay:
+        seconds: !input off_time
+- service: switch.turn_on
+  target:
+    entity_id: !input target_switch
+mode: single

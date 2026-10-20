@@ -1,0 +1,158 @@
+mqtt:
+  enabled: true
+  host: 10.1.1.25
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
+  user: "{FRIGATE_MQTT_USER}"
+  password: REDACTED
+
+birdseye:
+  enabled: false
+  mode: objects  # Shows active/stationary objects
+
+
+objects:
+  track:
+    - person
+    - car
+  filters:
+    person:
+      min_area: 1500
+
+motion:
+  threshold: 60
+  contour_area: 50
+
+snapshots:
+  enabled: true
+  retain:
+    default: 20
+
+detect:
+  width: 640
+  height: 360
+  fps: 4
+  enabled: true
+
+detectors:
+  coral:
+    type: edgetpu
+    device: usb
+
+model:
+  model_type: yolo-generic
+  width: 320
+  height: 320
+  path: /config/model_cache/yolov9-s-relu6-best_320_int8_edgetpu.tflite
+  labelmap_path: /config/labels-coco17.txt
+
+go2rtc:
+  ffmpeg:
+    qsv: -hwaccel qsv -qsv_device /dev/dri/renderD128
+  streams:
+    front:
+      - ffmpeg:rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/103/#video=h264#hardware=qsv
+  webrtc:
+    candidates:
+      - 10.1.1.28:8555
+      - stun:8555
+    ice_servers:
+      - urls: [stun:stun.l.google.com:19302]
+
+ffmpeg:
+  #hwaccel_args: preset-vaapi
+  hwaccel_args: preset-intel-qsv-h264
+
+cameras:
+  Front:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/101/
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+            - audio # record audio
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/102/
+          roles:
+            - detect
+          input_args: preset-rtsp-restream
+      output_args:
+        record: preset-record-generic-audio-aac # record audio
+
+    record:
+      enabled: true
+      alerts:
+        retain:
+          days: 14
+        pre_capture: 2
+        post_capture: 7
+      detections:
+        retain:
+          days: 14
+        pre_capture: 2
+        post_capture: 7
+      continuous:
+        days: 21
+      motion:
+        days: 0
+    live:
+      streams:
+        front: front
+    review:
+      alerts:
+        required_zones: property
+        labels:
+          - person  # Only alert for people
+      detections:
+        required_zones:
+          - property
+          - carstreet
+    snapshots:
+      required_zones:
+        - property
+        - carstreet
+
+    zones:
+      property:
+        coordinates: 
+          0.002,1,0.058,0.822,0.109,0.666,0.356,0.686,0.639,0.676,0.819,0.642,0.967,0.626,1,0.662,0.999,0.996
+        objects: person
+        inertia: 2          # How many frames an object must be in a zone before they are considered in the zone
+        loitering_time: 0   # Minimum amount of time in seconds that the object must be in the zone for it to activate
+      carpad:
+        coordinates: 0.637,0.667,0.759,1,0.154,0.998,0.225,0.66
+        objects: car
+        inertia: 12
+        loitering_time: 2
+        filters:
+          car:
+            min_score: 0.2      # Lower than default (usually 0.5-0.7)
+            threshold: 0.3      # Lower than default (usually 0.7)
+      carstreet:
+        coordinates: 0.562,0.406,0.561,0.464,0.791,0.484,0.79,0.411
+        objects: car
+        inertia: 18  # Increased from 12
+        loitering_time: 6  # Increased from 4
+
+
+
+      footpath:
+        coordinates: 0,0.448,0.997,0.455,0.997,0.619,0.643,0.679,0.003,0.672
+        loitering_time: 0
+        inertia: 3
+    motion:
+      mask:
+        - 0,0,0.334,0.003,0.334,0.083,0.002,0.085 # timecode mask
+        - 0.562,0.406,0.79,0.411,1,0.453,0.999,0.001,0.001,0,0.001,0.448,0.248,0.442 # road
+      threshold: 60
+      contour_area: 50
+      improve_contrast: true
+version: 0.17-0
+camera_groups:
+  Birdseye:
+    order: 1
+    icon: LuActivity
+    cameras: birdseye
+
