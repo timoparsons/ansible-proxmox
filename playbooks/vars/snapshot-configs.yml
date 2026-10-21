@@ -118,7 +118,7 @@ snapshot_pct_guests:
     cts:
       122:
         name: halcyon-homeassistant
-        files: "{{ [{'src': '/root/docker-compose.yaml'}] + ha_common }}"
+        files: "{{ [{'src': '/opt/docker-compose.yaml'}] + ha_common }}"
       123:
         name: halcyon-adguard
         files:
