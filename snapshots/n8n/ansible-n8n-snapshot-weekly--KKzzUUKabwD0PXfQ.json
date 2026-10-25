@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-16T21:02:42.510Z",
+  "updatedAt": "2026-10-20T22:12:31.752Z",
   "createdAt": "2026-05-04T21:24:54.290Z",
   "id": "KKzzUUKabwD0PXfQ",
   "name": "Ansible n8n Snapshot Weekly",
@@ -29,7 +29,7 @@
       ],
       "parameters": {
         "authentication": "privateKey",
-        "command": "ansible-playbook -i inventories/calliope playbooks/snapshot-n8n.yml",
+        "command": "ansible-playbook -i inventories/calliope playbooks/snapshot-n8n.yml; ansible-playbook -i inventories/calliope -i inventories/halcyon playbooks/snapshot-configs.yml",
         "cwd": "/opt/ansible-proxmox"
       },
       "credentials": {
@@ -49,7 +49,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const output = $json.stdout;\n\n// Extract PLAY RECAP section\nconst recapMatch = output.match(/PLAY RECAP[\\s\\S]*$/);\n\nif (!recapMatch) {\n  return [{ message: \"No recap found. Check Ansible output.\" }];\n}\n\nconst recap = recapMatch[0];\n\n// Extract each host line\nconst lines = recap.split(\"\\n\").filter(line => line.includes(\":\"));\n\nlet summary = [];\nlet hasFailure = false;\n\nfor (const line of lines) {\n  const match = line.match(/^(\\S+)\\s+:.*ok=(\\d+).*changed=(\\d+).*failed=(\\d+)/);\n  if (match) {\n    const [, host, ok, changed, failed] = match;\n\n    if (failed !== \"0\") hasFailure = true;\n\n    summary.push(\n      `${host}: ok=${ok}, changed=${changed}, failed=${failed}`\n    );\n  }\n}\n\nreturn [{\n  message: (hasFailure ? \"❌ n8n snapshot FAILED\\n\" : \"✅ n8n snapshot OK\\n\") + summary.join(\"\\n\") + (output.includes(\"No workflow changed\") ? \"\\nNo workflow changes since the last snapshot.\" : (output.includes(\"TASK [Push]\") ? \"\\nNew snapshot committed and pushed.\" : \"\"))\n}];"
+        "jsCode": "const output = $json.stdout || '';\nconst parts = output.split('PLAY RECAP').slice(1);\n\nif (parts.length === 0) {\n  return [{ message: \"No recap found. Check Ansible output.\\n\" + (($json.stderr || '').slice(0, 300)) }];\n}\n\nconst labels = ['n8n snapshot', 'config snapshot'];\nlet hasFailure = false;\nconst text = [];\n\nparts.forEach((recap, i) => {\n  const bad = [];\n  for (const line of recap.split(\"\\n\")) {\n    const m = line.match(/^(\\S+)\\s+:.*unreachable=(\\d+).*failed=(\\d+)/);\n    if (m && (m[2] !== \"0\" || m[3] !== \"0\")) bad.push(`${m[1]}: failed=${m[3]}, unreachable=${m[2]}`);\n  }\n  if (bad.length) hasFailure = true;\n  text.push((bad.length ? \"❌ \" : \"✅ \") + (labels[i] || 'run ' + (i + 1)) + (bad.length ? \" FAILED\\n\" + bad.join(\"\\n\") : \" OK\"));\n});\n\nif (parts.length < labels.length) {\n  hasFailure = true;\n  text.push(\"❌ config snapshot did not run\");\n}\n\ntext.push(output.includes(\"No workflow changed\") ? \"n8n: no workflow changes since the last snapshot.\" : (output.includes(\"TASK [Push]\") ? \"n8n: new snapshot committed and pushed.\" : \"\"));\ntext.push(output.includes(\"No config changed since the last snapshot\") ? \"configs: no changes since the last snapshot.\" : (output.includes(\"TASK [Commit]\") ? \"configs: new snapshot committed and pushed.\" : \"\"));\n\nreturn [{ message: (hasFailure ? \"❌ Ansible snapshots had problems\\n\" : \"✅ Ansible snapshots OK\\n\") + text.filter(t => t).join(\"\\n\") }];"
       }
     },
     {
@@ -179,9 +179,9 @@
     "templateCredsSetupCompleted": true
   },
   "nodeGroups": [],
-  "versionId": "e04cadec-4f73-411d-80e3-2bbe482a602b",
-  "activeVersionId": "e04cadec-4f73-411d-80e3-2bbe482a602b",
-  "versionCounter": 43,
+  "versionId": "4d6811cc-821a-4d53-a76a-c756a7ff5dc2",
+  "activeVersionId": "4d6811cc-821a-4d53-a76a-c756a7ff5dc2",
+  "versionCounter": 44,
   "triggerCount": 2,
   "sourceWorkflowId": null,
   "tags": [],
