@@ -65,7 +65,7 @@ send_ios:
       title: Driveway Camera
       data:
         image: http://halcyon.timparsons.nz/api/frigate/notifications/1707289205.739932-fj74po/snapshot.jpg
-        url: /REDACTED/recordings
+        url: /lovelace/recordings
         push:
           interruption-level: time-sensitive
   mode: single

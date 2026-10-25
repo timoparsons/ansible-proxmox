@@ -16,12 +16,12 @@
       },
       {
         "id": "51cf54cf64ff40c3b92bffb827a17c4b",
-        "url": "/hacsfiles/button-card/button-card.js?hacstag=146194325600",
+        "url": "/hacsfiles/button-card/button-card.js?hacstag=146194325701",
         "type": "module"
       },
       {
         "id": "9eb83fb1bf074858b8b9637614fe79c4",
-        "url": "/hacsfiles/REDACTED-layout-card/layout-card.js?hacstag=156434866247",
+        "url": "/hacsfiles/lovelace-layout-card/layout-card.js?hacstag=156434866247",
         "type": "module"
       },
       {
@@ -36,7 +36,7 @@
       },
       {
         "id": "a8c41784ae0e49a58c30bd0146c008ce",
-        "url": "/hacsfiles/REDACTED-slider-entity-row/slider-entity-row.js?hacstag=1448997001741",
+        "url": "/hacsfiles/lovelace-slider-entity-row/slider-entity-row.js?hacstag=1448997001741",
         "type": "module"
       },
       {
@@ -46,32 +46,32 @@
       },
       {
         "id": "104a04632d454fce92011fdc412b7aa0",
-        "url": "/hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=3940825527191",
+        "url": "/hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=394082552810",
         "type": "module"
       },
       {
         "id": "ed689b2677de437085cca8e52aff5e65",
-        "url": "/hacsfiles/REDACTED-card-mod/card-mod.js?hacstag=190927524346",
+        "url": "/hacsfiles/lovelace-card-mod/card-mod.js?hacstag=190927524346",
         "type": "module"
       },
       {
         "id": "b5d5bba61d974224a26f82ebe640c0c9",
-        "url": "/hacsfiles/flex-horseshoe-card/flex-horseshoe-card.js?hacstag=20729272512",
+        "url": "/hacsfiles/flex-horseshoe-card/flex-horseshoe-card.js?hacstag=207292725547",
         "type": "module"
       },
       {
         "id": "ab1da3ce44e14c08a4bd990302967b2b",
-        "url": "/hacsfiles/REDACTED-mushroom/mushroom.js?hacstag=444350375508",
+        "url": "/hacsfiles/lovelace-mushroom/mushroom.js?hacstag=444350375523",
         "type": "module"
       },
       {
         "id": "4aa39d2d701b4a56bb361bc2719345b4",
-        "url": "/hacsfiles/Bubble-Card/bubble-card.js?hacstag=680112919304",
+        "url": "/hacsfiles/Bubble-Card/bubble-card.js?hacstag=680112919342",
         "type": "module"
       },
       {
         "id": "ffa2e6c150cd42a2bfbac3e79f7e0a50",
-        "url": "/hacsfiles/device-card/device-card.js?hacstag=9467337080150",
+        "url": "/hacsfiles/device-card/device-card.js?hacstag=946733708110",
         "type": "module"
       },
       {

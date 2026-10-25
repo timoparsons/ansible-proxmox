@@ -356,15 +356,11 @@ automation:
 
   - id: hb_throttle_evening_off
     alias: Hyper Backup throttle – evening off
-    description: Every day 20:00, release the Hyper Backup throttle while Auto schedule is on.
+    description: Every day 20:00, release the Hyper Backup throttle whether or not Auto schedule is on, so a manual throttle is never left on.
     mode: single
     triggers:
       - trigger: time
         at: "20:00:00"
-    conditions:
-      - condition: state
-        entity_id: input_boolean.hb_throttle_schedule
-        state: "on"
     actions:
       - action: switch.turn_off
         target:

@@ -805,9 +805,9 @@ blueprint:
                   | lower | replace(''-'',''_'')}}?token=REDACTED ''camera.''
                   ~ camera, ''access_token'')}}'
               - label: Open Home Assistant (web)
-                value: '{{base_url}}/REDACTED'
+                value: '{{base_url}}/lovelace'
               - label: Open Home Assistant (app)
-                value: /REDACTED
+                value: /lovelace
               - label: Open Frigate
                 value: /ccab4aaf_frigate/dashboard
               - label: Open Frigate (Full Access)
@@ -850,9 +850,9 @@ blueprint:
                   | lower | replace(''-'',''_'')}}?token=REDACTED ''camera.''
                   ~ camera, ''access_token'')}}'
               - label: Open Home Assistant (web)
-                value: '{{base_url}}/REDACTED'
+                value: '{{base_url}}/lovelace'
               - label: Open Home Assistant (app)
-                value: /REDACTED
+                value: /lovelace
               - label: Open Frigate
                 value: /ccab4aaf_frigate/dashboard
               - label: Open Frigate (Full Access)
@@ -894,9 +894,9 @@ blueprint:
                   | lower | replace(''-'',''_'')}}?token=REDACTED ''camera.''
                   ~ camera, ''access_token'')}}'
               - label: Open Home Assistant (web)
-                value: '{{base_url}}/REDACTED'
+                value: '{{base_url}}/lovelace'
               - label: Open Home Assistant (app)
-                value: /REDACTED
+                value: /lovelace
               - label: Open Frigate
                 value: /ccab4aaf_frigate/dashboard
               - label: Open Frigate (Full Access)
@@ -942,9 +942,9 @@ blueprint:
                   | lower | replace(''-'',''_'')}}?token=REDACTED ''camera.''
                   ~ camera, ''access_token'')}}'
               - label: Open Home Assistant (web)
-                value: '{{base_url}}/REDACTED'
+                value: '{{base_url}}/lovelace'
               - label: Open Home Assistant (app)
-                value: /REDACTED
+                value: /lovelace
               - label: Open Frigate
                 value: /ccab4aaf_frigate/dashboard
               - label: Open Frigate (Full Access)

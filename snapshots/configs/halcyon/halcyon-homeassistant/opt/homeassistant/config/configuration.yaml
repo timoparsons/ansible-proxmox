@@ -48,6 +48,7 @@ zeroconf:
 zone:
 
 homeassistant:
+  packages: !include_dir_named packages
 # Allow read / write access to folders
   allowlist_external_dirs:
     - "/config/www"
@@ -67,17 +68,9 @@ frontend:
   themes: !include_dir_merge_named themes
   extra_module_url:
 #    - /local/card-mod.js
-    - /hacsfiles/REDACTED-card-mod/card-mod.js #Manually add card-mod for better functionality
+    - /hacsfiles/lovelace-card-mod/card-mod.js #Manually add card-mod for better functionality
     
 
-# Non standard port for security
-http:
-  server_port: 8443 # Use your chosen port
-  # These lines for Cloudflared
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 172.30.33.0/24
-    - 10.2.1.24
     
 
 #shell_command:
@@ -164,7 +157,7 @@ automation: !include automations.yaml
 #input_boolean: !include input_boolean.yaml
 #light: !include lights.yaml
 rest: !include rest.yaml
-sensor: !include sensors.yaml
+template: !include templates.yaml
 scene: !include scenes.yaml
 script: !include scripts.yaml
 shell_command: !include shell_commands.yaml

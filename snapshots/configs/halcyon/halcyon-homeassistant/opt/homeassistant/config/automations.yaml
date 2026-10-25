@@ -181,7 +181,7 @@
       id: '{{ id }}'
       title: '{{ camera_label }}'
       message: '{{ label }} detected on {{ id }}'
-      url: /REDACTED/recordings
+      url: /lovelace/recordings
       importance: time-sensitive
       image: /api/frigate/notifications/{{ id }}/snapshot.jpg
   mode: single
@@ -230,7 +230,7 @@
       id: '{{ id }}'
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: /REDACTED/recordings
+      url: /lovelace/recordings
       importance: active
       image: /api/frigate/notifications/{{ id }}/snapshot.jpg
     enabled: false
@@ -253,7 +253,7 @@
       id: '{{ id }}'
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_snapshot.jpg
   mode: single
@@ -347,7 +347,7 @@
           group: frigate-notification-{{ camera }}
           title: '{{ camera_label }}'
           message: '{{ label }} detected on {{ id }} '
-          url: /REDACTED/recordings
+          url: /lovelace/recordings
           importance: time-sensitive
           image: /api/frigate/notifications/{{ id }}/snapshot.jpg
       - repeat:
@@ -510,7 +510,7 @@
     data:
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_grab.jpg
     enabled: false
@@ -519,7 +519,7 @@
     data:
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_grab.jpg
       priority: 0
@@ -611,7 +611,7 @@
       id: '{{ id }}'
       title: '{{ camera | title }}'
       message: '{{ label }} detected on the {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_grab.jpg
     action: script.send_dynamic_pushover_notification
@@ -621,7 +621,7 @@
       id: '{{ id }}'
       title: '{{ camera | title }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_grab.jpg
     action: script.send_dynamic_notification_pushover_tim
@@ -645,7 +645,6 @@
   - data: {}
     action: shell_command.add_calliope_route
   mode: single
-- *id001
 - id: '1750409779089'
   alias: 'Security - Driveway Occupancy Frigate: Dynamic Notification TEST'
   description: Send notifications for detected objects in driveway camera
@@ -694,7 +693,7 @@
       id: driveway_{{ object_type }}_{{ timestamp }}
       title: Driveway Occupancy TEST
       message: '{{ notification_message }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: View Recordings
       image: /config/www/driveway_{{ object_type }}_{{ timestamp }}.jpg
   - action: shell_command.delete_camera_grab
@@ -1150,7 +1149,7 @@
       id: '{{ id }}'
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: /REDACTED/recordings
+      url: /lovelace/recordings
       importance: active
       image: /api/frigate/notifications/{{ id }}/snapshot.jpg
     enabled: false
@@ -1166,7 +1165,7 @@
       id: '{{ id }}'
       title: '{{ camera }}'
       message: '{{ label }} detected on {{ camera }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
       image: /config/www/driveway_snapshot.jpg
     action: script.send_dynamic_pushover_notification
@@ -1175,7 +1174,7 @@
       message: A {{ label }} was detected on {{ camera }}
       data:
         image: /config/www/driveway_snapshot.jpg
-        url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+        url: homeassistant://navigate/lovelace/recordings?server=Halcyon
     action: notify.mobile_app_dick_iphone
     enabled: false
   - data:
@@ -1183,7 +1182,7 @@
       message: A {{ label }} was detected on {{ camera }}
       data:
         image: /config/www/driveway_snapshot.jpg
-        url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+        url: homeassistant://navigate/lovelace/recordings?server=Halcyon
     action: notify.mobile_app_tims_iphone
     enabled: false
   - action: notify.mobile_app_tims_iphone
@@ -1225,7 +1224,7 @@
       id: driveway_{{ object_type }}_{{ timestamp }}
       title: Driveway Occupancy
       message: '{{ notification_message }}'
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: View Recordings
       image: /local/driveway_{{ object_type }}_{{ timestamp }}.jpg
   mode: single
@@ -1266,7 +1265,7 @@
     data:
       title: Halcyon Camera Unavailable
       message: Restarting Frigate LXC
-      url: homeassistant://navigate/REDACTED/recordings?server=Halcyon
+      url: homeassistant://navigate/lovelace/recordings?server=Halcyon
       url_title: Open in Home Assistant
     action: script.send_dynamic_notification_pushover_tim
     enabled: true

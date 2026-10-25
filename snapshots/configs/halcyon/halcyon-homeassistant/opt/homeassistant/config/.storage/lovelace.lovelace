@@ -1060,17 +1060,17 @@
                 },
                 {
                   "type": "custom:mushroom-template-card",
+                  "icon": "mdi:nas",
+                  "icon_color": "{% if has_value('sensor.halcyon_temperature') %}{% set t = states('sensor.halcyon_temperature') | float(0) %}{% set u = states('sensor.halcyon_volume_1_volume_used') | float(0) %}{% if t >= 70 or u >= 90 or states('sensor.halcyon_volume_1_status') != 'normal' or is_state('binary_sensor.halcyon_security_status', 'on') %}red{% elif t >= 55 or u >= 80 %}orange{% else %}green{% endif %}{% else %}grey{% endif %}",
+                  "layout": "vertical",
+                  "multiline_secondary": true,
                   "primary": "Synology",
-                  "icon": "mdi:server-network",
-                  "icon_color": "{% set temp = states('sensor.calliope_temperature') | float(0) %}\n{% if temp < 50 %}\n  green\n{% elif temp < 70 %}\n  orange\n{% else %}\n  red\n{% endif %}\n",
                   "tap_action": {
                     "action": "navigate",
                     "navigation_path": "#synology"
                   },
-                  "secondary": "Up: {{ states('sensor.calliope_upload_throughput') | int }} kB/s\nDown: {{ states('sensor.calliope_download_throughput') | int }} kB/s",
-                  "layout": "vertical",
-                  "fill_container": false,
-                  "multiline_secondary": true
+                  "secondary": "{% if has_value('sensor.halcyon_temperature') %}Halcyon {{ states('sensor.halcyon_temperature') | int(0) }}°C · {{ states('sensor.halcyon_volume_1_volume_used') | float(0) | round(0) | int }}% full{% else %}offline{% endif %}",
+                  "fill_container": false
                 },
                 {
                   "type": "custom:mushroom-template-card",
@@ -1092,22 +1092,19 @@
               "type": "grid",
               "cards": [
                 {
-                  "type": "vertical-stack",
+                  "type": "custom:bubble-card",
+                  "card_type": "pop-up",
+                  "hash": "#ups",
+                  "margin_top_mobile": "-56px",
+                  "bg_opacity": "0",
+                  "close_on_click": false,
+                  "bg_blur": "25",
+                  "name": "UPS Power",
+                  "icon": "mdi:sine-wave",
+                  "width_desktop": "540px",
+                  "button_type": "name",
+                  "scrolling_effect": false,
                   "cards": [
-                    {
-                      "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#ups",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "UPS Power",
-                      "icon": "mdi:sine-wave",
-                      "width_desktop": "540px",
-                      "button_type": "name",
-                      "scrolling_effect": false
-                    },
                     {
                       "type": "custom:mushroom-template-card",
                       "entity": "sensor.ups_status_readable",
@@ -1117,7 +1114,11 @@
                       "tap_action": {
                         "action": "more-info"
                       },
-                      "secondary": ""
+                      "secondary": "",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "square": false,
@@ -1172,7 +1173,11 @@
                             "entity": "sensor.ups_last_outage_duration"
                           }
                         }
-                      ]
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "square": false,
@@ -1408,7 +1413,11 @@
                           }
                         }
                       ],
-                      "columns": 2
+                      "columns": 2,
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "type": "logbook",
@@ -1416,6 +1425,10 @@
                         "entity_id": [
                           "input_text.ups_last_event"
                         ]
+                      },
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
                       }
                     }
                   ],
@@ -1425,22 +1438,19 @@
                   }
                 },
                 {
-                  "type": "vertical-stack",
+                  "type": "custom:bubble-card",
+                  "card_type": "pop-up",
+                  "hash": "#mac-server",
+                  "margin_top_mobile": "-56px",
+                  "bg_opacity": "0",
+                  "close_on_click": false,
+                  "bg_blur": "25",
+                  "name": "Server",
+                  "icon": "mdi:chart-line",
+                  "width_desktop": "33%",
+                  "button_type": "name",
+                  "scrolling_effect": false,
                   "cards": [
-                    {
-                      "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#mac-server",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "Server",
-                      "icon": "mdi:chart-line",
-                      "width_desktop": "33%",
-                      "button_type": "name",
-                      "scrolling_effect": false
-                    },
                     {
                       "square": false,
                       "type": "grid",
@@ -1681,7 +1691,11 @@
                             }
                           ]
                         }
-                      ]
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "type": "vertical-stack",
@@ -1736,7 +1750,11 @@
                             }
                           ]
                         }
-                      ]
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     }
                   ],
                   "grid_options": {
@@ -1744,22 +1762,19 @@
                   }
                 },
                 {
-                  "type": "vertical-stack",
+                  "type": "custom:bubble-card",
+                  "card_type": "pop-up",
+                  "hash": "#proxmox",
+                  "margin_top_mobile": "-56px",
+                  "bg_opacity": "0",
+                  "close_on_click": false,
+                  "bg_blur": "25",
+                  "name": "Proxmox",
+                  "icon": "mdi:robot",
+                  "width_desktop": "540px",
+                  "button_type": "name",
+                  "scrolling_effect": false,
                   "cards": [
-                    {
-                      "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#proxmox",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "Proxmox",
-                      "icon": "mdi:robot",
-                      "width_desktop": "540px",
-                      "button_type": "name",
-                      "scrolling_effect": false
-                    },
                     {
                       "type": "custom:bubble-card",
                       "card_type": "button",
@@ -1804,8 +1819,8 @@
                       ],
                       "card_layout": "large",
                       "grid_options": {
-                        "columns": "full",
-                        "rows": 1
+                        "rows": 1,
+                        "columns": 12
                       },
                       "show_icon": true,
                       "scrolling_effect": false,
@@ -1822,8 +1837,8 @@
                       "type": "custom:decluttering-card",
                       "template": "lxc_service_button",
                       "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
+                        "rows": "auto",
+                        "columns": 12
                       },
                       "variables": [
                         {
@@ -1847,8 +1862,8 @@
                       "type": "custom:decluttering-card",
                       "template": "lxc_service_button",
                       "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
+                        "rows": "auto",
+                        "columns": 12
                       },
                       "variables": [
                         {
@@ -1889,16 +1904,16 @@
                         }
                       ],
                       "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
+                        "rows": "auto",
+                        "columns": 12
                       }
                     },
                     {
                       "type": "custom:decluttering-card",
                       "template": "lxc_service_button",
                       "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
+                        "rows": "auto",
+                        "columns": 12
                       },
                       "variables": [
                         {
@@ -1922,8 +1937,8 @@
                       "type": "custom:decluttering-card",
                       "template": "lxc_service_button",
                       "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
+                        "rows": "auto",
+                        "columns": 12
                       },
                       "variables": [
                         {
@@ -1949,27 +1964,162 @@
                   }
                 },
                 {
-                  "type": "vertical-stack",
+                  "bg_opacity": "0",
+                  "margin_top_mobile": "-56px",
+                  "card_type": "pop-up",
+                  "icon": "",
+                  "bg_blur": "25",
+                  "width_desktop": "540px",
+                  "sub_button": {
+                    "bottom": [],
+                    "main": []
+                  },
+                  "styles": ".bubble-icon-container { display: none !important; } .bubble-name-container { overflow: visible !important; margin-left: 12px !important; } .bubble-name { font-size: 26px !important; font-weight: 500 !important; line-height: 1.4 !important; overflow: visible !important; }",
+                  "name": "Synology",
+                  "close_on_click": false,
+                  "hash": "#synology",
+                  "button_type": "name",
+                  "scrolling_effect": false,
+                  "type": "custom:bubble-card",
                   "cards": [
                     {
+                      "sub_button": {
+                        "main": [
+                          {
+                            "tap_action": {
+                              "action": "perform-action",
+                              "perform_action": "button.press",
+                              "target": {
+                                "entity_id": "button.halcyon_reboot"
+                              },
+                              "confirmation": {
+                                "text": "Restart Halcyon? Its shares and the Hyper Backup will be interrupted until it is back."
+                              }
+                            },
+                            "icon": "mdi:restart",
+                            "name": "Restart",
+                            "show_name": false,
+                            "show_icon": true,
+                            "show_background": true
+                          },
+                          {
+                            "icon": "mdi:power",
+                            "name": "Shut down",
+                            "show_name": false,
+                            "show_icon": true,
+                            "show_background": true,
+                            "tap_action": {
+                              "action": "perform-action",
+                              "perform_action": "button.press",
+                              "target": {
+                                "entity_id": "button.halcyon_shutdown"
+                              },
+                              "confirmation": {
+                                "text": "Shut down Halcyon? It will not come back until someone powers it on at the house."
+                              }
+                            }
+                          }
+                        ],
+                        "bottom": []
+                      },
+                      "grid_options": {
+                        "rows": "auto",
+                        "columns": 12
+                      },
+                      "styles": ".bubble-icon { color: ${(() => { const s = hass.states; const g = (e) => s[e] ? s[e].state : 'unavailable'; const t = parseFloat(g('sensor.halcyon_temperature')); if (isNaN(t)) return 'var(--disabled-text-color)'; const u = parseFloat(g('sensor.halcyon_volume_1_volume_used')) || 0; if (t >= 70 || u >= 90 || g('sensor.halcyon_volume_1_status') !== 'normal' || g('binary_sensor.halcyon_security_status') === 'on') return 'var(--error-color)'; if (t >= 55 || u >= 80) return 'var(--warning-color)'; return 'var(--success-color)'; })()} !important; } .bubble-name-container { overflow: visible !important; } .bubble-name { font-size: 22px !important; font-weight: 600 !important; line-height: 1.4 !important; overflow: visible !important; } .bubble-icon { --mdc-icon-size: 28px !important; width: 28px !important; height: 28px !important; }",
                       "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#synology",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "Synology",
-                      "icon": "mdi:server-network",
-                      "width_desktop": "540px",
-                      "button_type": "name",
-                      "scrolling_effect": false
+                      "card_type": "separator",
+                      "name": "Halcyon",
+                      "icon": "mdi:nas"
                     },
                     {
-                      "type": "custom:device-card",
-                      "device_id": "cfecd8b1df89a4b593691800f54d5ef1",
-                      "title": "Halcyon Synology",
-                      "preview_count": "3"
+                      "grid_options": {
+                        "rows": "auto",
+                        "columns": 12
+                      },
+                      "tap_action": {
+                        "action": "more-info",
+                        "entity": "sensor.halcyon_temperature"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      },
+                      "card_mod": {
+                        "style": "ha-card { border: none !important; box-shadow: none !important; --ha-card-border-width: 0px; background: transparent !important; margin-top: -24px !important; }"
+                      },
+                      "primary": "{% if has_value('sensor.halcyon_temperature') %}CPU {{ states('sensor.halcyon_cpu_utilisation_total') | int(0) }}% · RAM {{ states('sensor.halcyon_memory_usage_real') | int(0) }}% · {{ states('sensor.halcyon_temperature') | int(0) }}°C{% else %}Offline{% endif %}",
+                      "fill_container": true,
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "type": "custom:mushroom-template-card",
+                      "secondary": "{% if has_value('sensor.halcyon_temperature') %}↑ {{ states('sensor.halcyon_upload_throughput') | float(0) | round(0) | int }} kB/s · ↓ {{ states('sensor.halcyon_download_throughput') | float(0) | round(0) | int }} kB/s\nVolume 1 · {{ states('sensor.halcyon_volume_1_volume_used') | float(0) | round(0) | int }}% used ({{ states('sensor.halcyon_volume_1_used_space') | float(0) | round(1) }} TB){% else %}Unreachable{% endif %}",
+                      "multiline_secondary": true
+                    },
+                    {
+                      "type": "custom:bubble-card",
+                      "card_type": "separator",
+                      "name": "Hyper Backup",
+                      "icon": "",
+                      "sub_button": {
+                        "bottom": [],
+                        "main": []
+                      },
+                      "grid_options": {
+                        "rows": "auto",
+                        "columns": 12
+                      },
+                      "styles": ".bubble-icon-container { display: none !important; } .bubble-name-container { margin-left: 12px !important; } .bubble-name { font-size: 16px !important; font-weight: 500 !important; color: var(--secondary-text-color) !important; }"
+                    },
+                    {
+                      "button_type": "switch",
+                      "show_state": true,
+                      "tap_action": {
+                        "action": "toggle"
+                      },
+                      "grid_options": {
+                        "rows": "auto",
+                        "columns": 12
+                      },
+                      "styles": ".bubble-button-background { background: var(--card-background-color) !important; border-radius: 28px !important; } .bubble-sub-button { background-color: var(--card-background-color) !important; } .bubble-sub-button.auto, .bubble-sub-button.auto .bubble-sub-button-icon, .bubble-sub-button.auto .bubble-sub-button-name-container { color: ${hass.states['input_boolean.hb_throttle_schedule']?.state === 'on' ? 'var(--info-color)' : 'var(--primary-text-color)'} !important; } .bubble-sub-button.skip-today, .bubble-sub-button.skip-today .bubble-sub-button-icon, .bubble-sub-button.skip-today .bubble-sub-button-name-container { color: ${hass.states['input_boolean.hb_throttle_skip_today']?.state === 'on' ? 'var(--info-color)' : 'var(--primary-text-color)'} !important; } .bubble-state { visibility: hidden !important; position: relative !important; } .bubble-icon { color: ${hass.states['switch.hyper_backup_throttle']?.state === 'on' ? 'var(--info-color)' : 'var(--disabled-color)'} !important; } .bubble-state::after { visibility: visible; position: absolute; left: 0; content: \"${hass.states['switch.hyper_backup_throttle']?.state === 'on' ? ((v) => isNaN(v) ? 'On' : 'On · ↑ ' + v.toFixed(0) + ' kB/s')(parseFloat(hass.states['sensor.halcyon_upload_throughput']?.state)) : 'Off'}\"; }",
+                      "type": "custom:bubble-card",
+                      "card_type": "button",
+                      "entity": "switch.hyper_backup_throttle",
+                      "name": "Throttle",
+                      "icon": "mdi:speedometer-slow",
+                      "hold_action": {
+                        "action": "more-info"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      },
+                      "sub_button": {
+                        "bottom": [],
+                        "main": [
+                          {
+                            "tap_action": {
+                              "action": "toggle"
+                            },
+                            "entity": "input_boolean.hb_throttle_schedule",
+                            "icon": "mdi:calendar-clock",
+                            "name": "Auto",
+                            "show_name": true,
+                            "show_icon": true,
+                            "show_background": true
+                          },
+                          {
+                            "show_icon": true,
+                            "show_background": true,
+                            "tap_action": {
+                              "action": "toggle"
+                            },
+                            "entity": "input_boolean.hb_throttle_skip_today",
+                            "icon": "mdi:calendar-remove",
+                            "name": "Skip today",
+                            "show_name": true
+                          }
+                        ]
+                      }
                     }
                   ],
                   "grid_options": {
@@ -1977,87 +2127,87 @@
                   }
                 },
                 {
-                  "type": "vertical-stack",
+                  "type": "custom:bubble-card",
+                  "card_type": "pop-up",
+                  "hash": "#maintenance",
+                  "margin_top_mobile": "-56px",
+                  "bg_opacity": "0",
+                  "close_on_click": false,
+                  "bg_blur": "25",
+                  "name": "Maintenance",
+                  "icon": "mdi:script-outline",
+                  "width_desktop": "33%",
+                  "button_type": "name",
+                  "scrolling_effect": false,
                   "cards": [
                     {
-                      "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#maintenance",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "Maintenance",
-                      "icon": "mdi:script-outline",
-                      "width_desktop": "33%",
-                      "button_type": "name",
-                      "scrolling_effect": false
+                      "type": "custom:button-card",
+                      "name": "Restart HA",
+                      "show_name": true,
+                      "show_icon": true,
+                      "color": "#005cc5",
+                      "icon": "mdi:power",
+                      "tap_action": {
+                        "action": "call-service",
+                        "service": "homeassistant.restart"
+                      },
+                      "size": "40px",
+                      "styles": {
+                        "card": [
+                          {
+                            "height": "90px"
+                          },
+                          {
+                            "font-size": "12px"
+                          },
+                          {
+                            "padding": "10%"
+                          }
+                        ]
+                      },
+                      "grid_options": {
+                        "columns": 6,
+                        "rows": "auto"
+                      }
                     },
                     {
-                      "type": "horizontal-stack",
-                      "cards": [
-                        {
-                          "type": "custom:button-card",
-                          "name": "Restart HA",
-                          "show_name": true,
-                          "show_icon": true,
-                          "color": "#005cc5",
-                          "icon": "mdi:power",
-                          "tap_action": {
-                            "action": "call-service",
-                            "service": "homeassistant.restart"
-                          },
-                          "size": "40px",
-                          "styles": {
-                            "card": [
-                              {
-                                "height": "90px"
-                              },
-                              {
-                                "font-size": "12px"
-                              },
-                              {
-                                "padding": "10%"
-                              }
-                            ]
-                          }
+                      "type": "custom:button-card",
+                      "name": "Shellies Announce",
+                      "show_name": true,
+                      "show_icon": true,
+                      "color": "#005cc5",
+                      "hold_action": {
+                        "action": "more-info"
+                      },
+                      "tap_action": {
+                        "action": "call-service",
+                        "service": "automation.trigger",
+                        "target": {
+                          "entity_id": "automation.shellies_announce_gen2"
                         },
-                        {
-                          "type": "custom:button-card",
-                          "name": "Shellies Announce",
-                          "show_name": true,
-                          "show_icon": true,
-                          "color": "#005cc5",
-                          "hold_action": {
-                            "action": "more-info"
-                          },
-                          "tap_action": {
-                            "action": "call-service",
-                            "service": "automation.trigger",
-                            "target": {
-                              "entity_id": "automation.shellies_announce_gen2"
-                            },
-                            "data": {
-                              "skip_condition": true
-                            }
-                          },
-                          "entity": "automation.shellies_announce_gen2",
-                          "size": "40px",
-                          "styles": {
-                            "card": [
-                              {
-                                "height": "90px"
-                              },
-                              {
-                                "font-size": "12px"
-                              },
-                              {
-                                "padding": "10%"
-                              }
-                            ]
-                          }
+                        "data": {
+                          "skip_condition": true
                         }
-                      ]
+                      },
+                      "entity": "automation.shellies_announce_gen2",
+                      "size": "40px",
+                      "styles": {
+                        "card": [
+                          {
+                            "height": "90px"
+                          },
+                          {
+                            "font-size": "12px"
+                          },
+                          {
+                            "padding": "10%"
+                          }
+                        ]
+                      },
+                      "grid_options": {
+                        "columns": 6,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "square": true,
@@ -2278,7 +2428,11 @@
                           }
                         }
                       ],
-                      "columns": 3
+                      "columns": 3,
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "type": "entities",
@@ -2307,7 +2461,11 @@
                         {
                           "entity": "sensor.front_security_light_relay_0_temperature"
                         }
-                      ]
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     }
                   ],
                   "grid_options": {
@@ -2315,22 +2473,19 @@
                   }
                 },
                 {
-                  "type": "vertical-stack",
+                  "type": "custom:bubble-card",
+                  "card_type": "pop-up",
+                  "hash": "#internet",
+                  "margin_top_mobile": "-56px",
+                  "bg_opacity": "0",
+                  "close_on_click": false,
+                  "bg_blur": "25",
+                  "name": "Internet",
+                  "icon": "mdi:web",
+                  "width_desktop": "540px",
+                  "button_type": "name",
+                  "scrolling_effect": false,
                   "cards": [
-                    {
-                      "type": "custom:bubble-card",
-                      "card_type": "pop-up",
-                      "hash": "#internet",
-                      "margin_top_mobile": "-56px",
-                      "bg_opacity": "0",
-                      "close_on_click": false,
-                      "bg_blur": "25",
-                      "name": "Internet",
-                      "icon": "mdi:web",
-                      "width_desktop": "540px",
-                      "button_type": "name",
-                      "scrolling_effect": false
-                    },
                     {
                       "type": "custom:decluttering-card",
                       "template": "templated_mini_graph_binarysensor",
@@ -2367,11 +2522,19 @@
                         {
                           "on_color": "#0366d6"
                         }
-                      ]
+                      ],
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     },
                     {
                       "type": "custom:decluttering-card",
-                      "template": "graph_controls"
+                      "template": "graph_controls",
+                      "grid_options": {
+                        "columns": 12,
+                        "rows": "auto"
+                      }
                     }
                   ],
                   "grid_options": {

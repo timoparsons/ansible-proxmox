@@ -1,0 +1,156 @@
+# Synology maintenance (Halcyon) - Hyper Backup throttle for the Halcyon NAS.
+#
+# Controls the tc throttle on the Halcyon NAS (/usr/local/bin/hb-throttle) over SSH, through
+# /config/scripts/synology_maintenance.py. The SSH key (/config/.ssh/hb_throttle_ro) is limited on
+# the NAS to a wrapper that accepts only status, on and off; on and off use a sudoers entry for
+# that one command. The DSM Task Scheduler API cannot start tasks on DSM 7.1, so DSM is not used.
+#
+# switch.hyper_backup_throttle is the manual override: flip it any time and it stays that way
+# until the next scheduled change. The schedule only acts while "Auto schedule" is on.
+# Every day 06:00 on, 00:00 off. "Skip today" cancels the 06:00 start (and switches the
+# throttle off if it is already on); it resets itself at midnight.
+# The Hyper Backup job runs Thursday 01:00, inside the unthrottled hours.
+
+command_line:
+  - sensor:
+      name: NAS Halcyon Throttle
+      unique_id: nas_halcyon_throttle
+      icon: mdi:speedometer-slow
+      command: python3 /config/scripts/synology_maintenance.py halcyon throttle_status
+      command_timeout: 60
+      scan_interval: 60
+      value_template: "{{ value_json.throttle }}"
+      json_attributes:
+        - throttle_rate
+        - throttle_devices
+        - checked
+
+template:
+  - switch:
+      - name: Hyper Backup Throttle
+        unique_id: hyper_backup_throttle
+        icon: mdi:speedometer-slow
+        state: "{{ is_state('sensor.nas_halcyon_throttle', 'on') }}"
+        availability: "{{ has_value('sensor.nas_halcyon_throttle') }}"
+        turn_on:
+          - action: shell_command.nas_throttle
+            data:
+              nas: halcyon
+              action: throttle_on
+            response_variable: throttle_result
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.nas_halcyon_throttle
+          - if: "{{ throttle_result.returncode != 0 }}"
+            then:
+              - stop: "Turning the Hyper Backup throttle on failed: {{ throttle_result.stderr }}"
+                error: true
+        turn_off:
+          - action: shell_command.nas_throttle
+            data:
+              nas: halcyon
+              action: throttle_off
+            response_variable: throttle_result
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.nas_halcyon_throttle
+          - if: "{{ throttle_result.returncode != 0 }}"
+            then:
+              - stop: "Turning the Hyper Backup throttle off failed: {{ throttle_result.stderr }}"
+                error: true
+
+shell_command:
+  nas_throttle: "python3 /config/scripts/synology_maintenance.py {{ nas }} {{ action }}"
+
+input_boolean:
+  hb_throttle_schedule:
+    name: Hyper Backup throttle – auto schedule
+    icon: mdi:calendar-clock
+  hb_throttle_skip_today:
+    name: Hyper Backup throttle – skip today
+    icon: mdi:calendar-remove
+
+automation:
+  - id: hb_throttle_morning_on
+    alias: Hyper Backup throttle – morning on
+    description: Every day 06:00, throttle Hyper Backup while Auto schedule is on and today isn't skipped.
+    mode: single
+    triggers:
+      - trigger: time
+        at: "06:00:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hb_throttle_schedule
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.hb_throttle_skip_today
+        state: "off"
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_midnight_off
+    alias: Hyper Backup throttle – midnight off
+    description: Every day 00:00, release the Hyper Backup throttle whether or not Auto schedule is on, so a manual throttle is never left on.
+    mode: single
+    triggers:
+      - trigger: time
+        at: "00:00:00"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_reapply_after_outage
+    alias: Hyper Backup throttle – reapply after NAS reboot
+    description: >-
+      The tc rules are lost when the NAS reboots or Tailscale restarts. The sensor goes unknown
+      while tailscale0 is missing, then reads off once it is back. If Auto is on, today isn't
+      skipped and it is after 06:00, switch the throttle back on.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.nas_halcyon_throttle
+        from:
+          - unknown
+          - unavailable
+        to: "off"
+        for: "00:00:30"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hb_throttle_schedule
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.hb_throttle_skip_today
+        state: "off"
+      - condition: time
+        after: "06:00:00"
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_skip_today_on
+    alias: Hyper Backup throttle – skip today turns it off
+    description: Switching on "skip today" releases the throttle straight away.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.hb_throttle_skip_today
+        to: "on"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.hyper_backup_throttle
+
+  - id: hb_throttle_skip_today_reset
+    alias: Hyper Backup throttle – reset skip today
+    mode: single
+    triggers:
+      - trigger: time
+        at: "00:00:00"
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hb_throttle_skip_today
