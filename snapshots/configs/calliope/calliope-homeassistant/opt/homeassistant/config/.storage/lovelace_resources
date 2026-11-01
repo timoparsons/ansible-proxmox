@@ -15,7 +15,7 @@
         "id": "f73fbfbe0a2043c6817d23f35ad4c39d"
       },
       {
-        "url": "/hacsfiles/vertical-stack-in-card/vertical-stack-in-card.js?hacstag=142051833112",
+        "url": "/hacsfiles/vertical-stack-in-card/vertical-stack-in-card.js?hacstag=142051833114",
         "type": "module",
         "id": "622c8f42d9344874a893b7b9a574b0c7"
       },
@@ -26,7 +26,7 @@
       },
       {
         "id": "05155b010098437abf3d813d71e70ed7",
-        "url": "/hacsfiles/custom-sonos-card/custom-sonos-card.js?hacstag=4494168161082",
+        "url": "/hacsfiles/custom-sonos-card/custom-sonos-card.js?hacstag=4494168161085",
         "type": "module"
       },
       {
@@ -36,7 +36,7 @@
       },
       {
         "id": "cd367e3ad2634f4c99218892863f3b3b",
-        "url": "/hacsfiles/lovelace-multiple-entity-row/multiple-entity-row.js?hacstag=1789210374102",
+        "url": "/hacsfiles/lovelace-multiple-entity-row/multiple-entity-row.js?hacstag=1789210374131",
         "type": "module"
       },
       {
@@ -116,7 +116,7 @@
       },
       {
         "id": "88cc7d6a91b1486b9c138c7f776b59a2",
-        "url": "/hacsfiles/flex-table-card/flex-table-card.js?hacstag=15629205814",
+        "url": "/hacsfiles/flex-table-card/flex-table-card.js?hacstag=15629205815",
         "type": "module"
       },
       {
@@ -131,7 +131,7 @@
       },
       {
         "id": "a9184f48cf224a3ba98ecf49eb5918cb",
-        "url": "/hacsfiles/lovelace-mushroom/mushroom.js?hacstag=444350375522",
+        "url": "/hacsfiles/lovelace-mushroom/mushroom.js?hacstag=444350375523",
         "type": "module"
       },
       {
@@ -196,17 +196,17 @@
       },
       {
         "id": "075d342e3c684003a6c8c3edf16c1f33",
-        "url": "/hacsfiles/lovelace-navbar-card/navbar-card.js?hacstag=871106499161",
+        "url": "/hacsfiles/lovelace-navbar-card/navbar-card.js?hacstag=871106499180",
         "type": "module"
       },
       {
         "id": "ac1dc09182bc4bafa969ef0e200e2701",
-        "url": "/hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=3940825527274",
+        "url": "/hacsfiles/advanced-camera-card/advanced-camera-card.js?hacstag=394082552810",
         "type": "module"
       },
       {
         "id": "4d93ec43b5fe4917904eba55e38f6038",
-        "url": "/hacsfiles/lovelace-entity-progress-card/entity-progress-card.js?hacstag=908868522161",
+        "url": "/hacsfiles/lovelace-entity-progress-card/entity-progress-card.js?hacstag=908868522163",
         "type": "module"
       },
       {

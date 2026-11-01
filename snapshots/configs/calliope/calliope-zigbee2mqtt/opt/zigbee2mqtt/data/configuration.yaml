@@ -48,7 +48,7 @@ devices:
   '0xa4c138ad357ce724':
     friendly_name: watervalve_sprayzone
   '0xa4c138603248d696':
-    friendly_name: watervalve_dripzone
+    friendly_name: watervalve_master
   '0xa4c13892ae9d06cb':
     friendly_name: watervalve_vegezone
   '0xa4c1388df1db61dc':

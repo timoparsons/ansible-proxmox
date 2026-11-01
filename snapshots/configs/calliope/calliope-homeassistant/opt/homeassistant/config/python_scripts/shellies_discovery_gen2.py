@@ -1,6 +1,6 @@
 """Adds MQTT discovery support for Shellies Gen2+ devices."""
 
-VERSION = "5.4.0"
+VERSION = "5.6.0"
 
 ATTR_BATTERY_POWERED = "battery_powered"
 ATTR_BINARY_SENSORS = "binary_sensors"
@@ -320,6 +320,7 @@ MODEL_1_MINI_G4 = "shelly1minig4"
 MODEL_1PM_G4 = "shelly1pmg4"
 MODEL_1PM_MINI_G4 = "shelly1pmminig4"
 MODEL_2PM_G4 = "shelly2pmg4"
+MODEL_DIMMER_G4 = "shellydimmerg4"
 MODEL_EM_MINI_G4 = "shellyemminig4"
 MODEL_I4_G4 = "shellyi4g4"
 MODEL_FLOOD_G4 = "shellyfloodg4"
@@ -339,6 +340,7 @@ MODEL_BLU_TRV = "SBTR-001AEU"
 MODEL_BLU_WALL_SWITCH_4 = "SBBT-004CEU"
 MODEL_GENERIC_BTHOME_DEVICE = "Generic BTHome Device"
 # Powered by Shelly devices
+MODEL_IRRIGATION_CONTROLLER = "irrigation"
 MODEL_OGEMRAY_25A = "ogemray25a"
 MODEL_ST1820 = "st1820"
 MODEL_ST802_B = "st-802"
@@ -632,7 +634,9 @@ TPL_HVAC_MODE = (
 TPL_VOLTAGE = "{{value_json.voltage}}"
 TPL_WIFI_IP = "{{value_json.wifi.sta_ip}}"
 TPL_WIFI_IP_INDEPENDENT = "{{value_json.sta_ip}}"
-TPL_WIFI_RSSI = "{{value_json.wifi.rssi}}"
+TPL_WIFI_RSSI = (
+    "{%if value_json.wifi.rssi is defined%}{{value_json.wifi.rssi}}{%endif%}"
+)
 TPL_WIFI_SSID = "{{value_json.wifi.ssid}}"
 TPL_WIFI_SSID_INDEPENDENT = "{{value_json.ssid}}"
 TPL_RSSI = "{{value_json.rssi}}"
@@ -2646,6 +2650,40 @@ SUPPORTED_MODELS = {
         },
         ATTR_MIN_FIRMWARE_DATE: 20240912,
     },
+    MODEL_DIMMER_G4: {
+        ATTR_NAME: "Shelly Dimmer Gen4",
+        ATTR_MODEL_ID: "S4DM-0A101WWL",
+        ATTR_GEN: 4,
+        ATTR_BINARY_SENSORS: {SENSOR_CLOUD: DESCRIPTION_SENSOR_CLOUD},
+        ATTR_BUTTONS: {BUTTON_RESTART: DESCRIPTION_BUTTON_RESTART},
+        ATTR_INPUT_BINARY_SENSORS: {SENSOR_INPUT: DESCRIPTION_SENSOR_INPUT},
+        ATTR_INPUT_EVENTS: [
+            EVENT_BUTTON_DOWN,
+            EVENT_BUTTON_UP,
+            EVENT_DOUBLE_PUSH,
+            EVENT_LONG_PUSH,
+            EVENT_SINGLE_PUSH,
+            EVENT_TRIPLE_PUSH,
+        ],
+        ATTR_LIGHT_SENSORS: {
+            SENSOR_CURRENT: DESCRIPTION_SENSOR_LIGHT_CURRENT,
+            SENSOR_ENERGY: DESCRIPTION_SENSOR_LIGHT_ENERGY,
+            SENSOR_POWER: DESCRIPTION_SENSOR_LIGHT_POWER,
+            SENSOR_TEMPERATURE: DESCRIPTION_SENSOR_LIGHT_TEMPERATURE,
+            SENSOR_VOLTAGE: DESCRIPTION_SENSOR_LIGHT_VOLTAGE,
+        },
+        ATTR_SENSORS: {
+            SENSOR_LAST_RESTART: DESCRIPTION_SENSOR_LAST_RESTART,
+            SENSOR_SSID: DESCRIPTION_SENSOR_SSID,
+            SENSOR_WIFI_IP: DESCRIPTION_SENSOR_WIFI_IP,
+            SENSOR_WIFI_SIGNAL: DESCRIPTION_SENSOR_WIFI_SIGNAL,
+        },
+        ATTR_UPDATES: {
+            UPDATE_FIRMWARE: DESCRIPTION_UPDATE_FIRMWARE,
+            UPDATE_FIRMWARE_BETA: DESCRIPTION_UPDATE_FIRMWARE_BETA,
+        },
+        ATTR_MIN_FIRMWARE_DATE: 20260923,
+    },
     MODEL_BLU_GATEWAY: {
         ATTR_NAME: "Shelly BLU Gateway",
         ATTR_MODEL_ID: "SNGW-BT01",
@@ -4253,8 +4291,7 @@ SUPPORTED_MODELS = {
     MODEL_PRO_3EM_3CT63_MONOPHASE: {
         ATTR_NAME: "Shelly Pro 3EM-3CT63",
         ATTR_MODEL_ID: "SPEM-003CEBEU63",
-        ATTR_EMETERS: 1,
-        ATTR_EMETER_PHASES: ["a", "b", "c"],
+        ATTR_EMETERS: 3,
         ATTR_BINARY_SENSORS: {SENSOR_CLOUD: DESCRIPTION_SENSOR_CLOUD},
         ATTR_BUTTONS: {BUTTON_RESTART: DESCRIPTION_BUTTON_RESTART},
         ATTR_SENSORS: {
@@ -4263,23 +4300,17 @@ SUPPORTED_MODELS = {
             SENSOR_SSID: DESCRIPTION_SENSOR_SSID,
             SENSOR_WIFI_IP: DESCRIPTION_SENSOR_WIFI_IP,
             SENSOR_WIFI_SIGNAL: DESCRIPTION_SENSOR_WIFI_SIGNAL,
-            SENSOR_N_CURRENT: DESCRIPTION_SENSOR_N_CURRENT,
             SENSOR_DEVICE_TEMPERATURE: DESCRIPTION_SENSOR_DEVICE_TEMPERATURE,
-            SENSOR_TOTAL_CURRENT: DESCRIPTION_SENSOR_TOTAL_CURRENT,
-            SENSOR_TOTAL_ACTIVE_POWER: DESCRIPTION_SENSOR_EMETER_TOTAL_ACTIVE_POWER,
-            SENSOR_TOTAL_APPARENT_POWER: DESCRIPTION_SENSOR_EMETER_TOTAL_APPARENT_POWER,
-            SENSOR_TOTAL_ACTIVE_ENERGY: DESCRIPTION_SENSOR_EMETER0_TOTAL_ACTIVE_ENERGY,
-            SENSOR_TOTAT_ACTIVE_RETURNED_ENERGY: DESCRIPTION_SENSOR_EMETER0_TOTAL_ACTIVE_RETURNED_ENERGY,
         },
         ATTR_EMETER_SENSORS: {
-            SENSOR_ACTIVE_POWER: DESCRIPTION_SENSOR_EMETER_PHASE_ACTIVE_POWER,
-            SENSOR_APPARENT_POWER: DESCRIPTION_SENSOR_EMETER_PHASE_APPARENT_POWER,
-            SENSOR_CURRENT: DESCRIPTION_SENSOR_EMETER_PHASE_CURRENT,
-            SENSOR_POWER_FACTOR: DESCRIPTION_SENSOR_EMETER_PHASE_POWER_FACTOR,
-            SENSOR_TOTAL_ACTIVE_ENERGY: DESCRIPTION_SENSOR_EMETER_PHASE_TOTAL_ACTIVE_ENERGY,
-            SENSOR_TOTAT_ACTIVE_RETURNED_ENERGY: DESCRIPTION_SENSOR_EMETER_PHASE_TOTAL_ACTIVE_RETURNED_ENERGY,
-            SENSOR_VOLTAGE: DESCRIPTION_SENSOR_EMETER_PHASE_VOLTAGE,
-            SENSOR_FREQUENCY: DESCRIPTION_SENSOR_EMETER_PHASE_FREQUENCY,
+            SENSOR_ACTIVE_POWER: DESCRIPTION_SENSOR_EMETER_ACTIVE_POWER,
+            SENSOR_APPARENT_POWER: DESCRIPTION_SENSOR_EMETER_APPARENT_POWER,
+            SENSOR_CURRENT: DESCRIPTION_SENSOR_EMETER_CURRENT,
+            SENSOR_POWER_FACTOR: DESCRIPTION_SENSOR_EMETER_POWER_FACTOR,
+            SENSOR_TOTAL_ACTIVE_ENERGY: DESCRIPTION_SENSOR_EMETER_TOTAL_ACTIVE_ENERGY,
+            SENSOR_TOTAT_ACTIVE_RETURNED_ENERGY: DESCRIPTION_SENSOR_EMETER_TOTAL_ACTIVE_RETURNED_ENERGY,
+            SENSOR_VOLTAGE: DESCRIPTION_SENSOR_EMETER_VOLTAGE,
+            SENSOR_FREQUENCY: DESCRIPTION_SENSOR_EMETER_FREQUENCY,
         },
         ATTR_UPDATES: {
             UPDATE_FIRMWARE: DESCRIPTION_UPDATE_FIRMWARE,
@@ -4669,6 +4700,24 @@ SUPPORTED_MODELS = {
         ATTR_VALVES: {0: DESCRIPTION_VALVE_FRANKEVER},
         ATTR_MIN_FIRMWARE_DATE: 20241121,
     },
+    MODEL_IRRIGATION_CONTROLLER: {
+        ATTR_NAME: "FrankEver Irrigation Controller FK-06X",
+        ATTR_MODEL_ID: "FK-06X",
+        ATTR_BRAND: "FrankEver",
+        ATTR_GEN: 3,
+        ATTR_BINARY_SENSORS: {
+            SENSOR_CLOUD: DESCRIPTION_SLEEPING_SENSOR_CLOUD,
+            SENSOR_FIRMWARE: DESCRIPTION_SLEEPING_SENSOR_FIRMWARE,
+        },
+        ATTR_BUTTONS: {BUTTON_RESTART: DESCRIPTION_BUTTON_RESTART},
+        ATTR_SENSORS: {
+            SENSOR_LAST_RESTART: DESCRIPTION_SLEEPING_SENSOR_LAST_RESTART,
+            SENSOR_SSID: DESCRIPTION_SLEEPING_SENSOR_SSID,
+            SENSOR_WIFI_IP: DESCRIPTION_SLEEPING_SENSOR_WIFI_IP,
+            SENSOR_WIFI_SIGNAL: DESCRIPTION_SLEEPING_SENSOR_WIFI_SIGNAL,
+        },
+        ATTR_MIN_FIRMWARE_DATE: 20260925,
+    },
     MODEL_OGEMRAY_25A: {
         ATTR_NAME: "Ogemray 25A Smart Switch",
         ATTR_MODEL_ID: "Ogemray25A",
@@ -4761,13 +4810,13 @@ def get_consumption_type(consumption_list, relay_id):
     return ATTR_SWITCH
 
 
-def mqtt_publish(topic, payload):
+def mqtt_publish(topic, payload, retain=True):
     """Publish data to MQTT broker."""
     payload_str = str(payload).replace("'", '"').replace("^", '\\"')
     service_data = {
         "topic": topic,
         "payload": payload_str,
-        "retain": True,
+        "retain": retain,
         "qos": 0,
     }
     logger.debug("Sending to MQTT broker: %s %s", topic, payload_str)  # noqa: F821
@@ -5693,8 +5742,11 @@ def get_binary_sensor(
         SUPPORTED_MODELS[model].get(ATTR_USE_SUBDEVICES, False)
         and entity_id is not None
     ):
-        payload[KEY_NAME] = description[KEY_NAME]
-        payload[KEY_DEVICE] = get_subdevice_info(entity_id, name)
+        if is_input:
+            payload[KEY_DEVICE] = get_subdevice_info(entity_id, name)
+        else:
+            payload[KEY_NAME] = description[KEY_NAME]
+            payload[KEY_DEVICE] = get_subdevice_info(entity_id, name)
 
     if availability:
         payload[KEY_AVAILABILITY] = availability
@@ -6214,6 +6266,7 @@ def configure_device():
         MODEL_DALI_DIMMER_G3,
         MODEL_DIMMER_10V_G3,
         MODEL_DIMMER_G3,
+        MODEL_DIMMER_G4,
         MODEL_PLUS_DIMMER_10V,
         MODEL_PRO_DIMMER_1PM,
         MODEL_PRO_DIMMER_2PM,
@@ -6468,23 +6521,23 @@ def install_script(script_id, device_topic, script_topic):
         "method": "Script.Create",
         "params": {ATTR_NAME: SCRIPT_CURRENT_NAME},
     }
-    mqtt_publish(device_topic, payload)
+    mqtt_publish(device_topic, payload, retain=False)
     payload = {
         "id": 1,
         "src": script_topic,
         "method": "Script.PutCode",
         "params": {"id": script_id, "code": SCRIPT_CODE},
     }
-    mqtt_publish(device_topic, payload)
+    mqtt_publish(device_topic, payload, retain=False)
     payload = {
         "id": 1,
         "src": script_topic,
         "method": "Script.Start",
         "params": {"id": script_id},
     }
-    mqtt_publish(device_topic, payload)
+    mqtt_publish(device_topic, payload, retain=False)
     payload = f"{{'id':1,'src':'{script_topic}','method':'Script.SetConfig','params':{{'id':{script_id},'config':{{'enable':true}}}}}}"
-    mqtt_publish(device_topic, payload)
+    mqtt_publish(device_topic, payload, retain=False)
 
 
 def current_script_installed():
@@ -6520,14 +6573,14 @@ def remove_old_script_versions(device_topic, script_topic):
                     "method": "Script.Stop",
                     "params": {"id": script_id},
                 }
-                mqtt_publish(device_topic, payload)
+                mqtt_publish(device_topic, payload, retain=False)
                 payload = {
                     "id": 1,
                     "src": script_topic,
                     "method": "Script.Delete",
                     "params": {"id": script_id},
                 }
-                mqtt_publish(device_topic, payload)
+                mqtt_publish(device_topic, payload, retain=False)
 
 
 logger.info("Shellies Discovery Gen2 version: %s", VERSION)  # noqa: F821
@@ -6831,6 +6884,7 @@ else:
         not in (
             MODEL_FLOOD_G4,
             MODEL_HT_G3,
+            MODEL_IRRIGATION_CONTROLLER,
             MODEL_PLUS_HT,
             MODEL_PLUS_SMOKE,
         )

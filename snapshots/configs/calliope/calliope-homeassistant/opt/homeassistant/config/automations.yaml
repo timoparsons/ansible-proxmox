@@ -1765,195 +1765,24 @@
   conditions: []
   actions:
   - if:
-    - condition: numeric_state
+    - above: 0
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_sprayzone
-      above: 0
     then:
-    - target:
+    - action: counter.decrement
+      data: {}
+      target:
         entity_id: counter.irrigation_daysuntilnext_sprayzone
-      action: counter.decrement
-      data: {}
   - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_dripzone
-      above: 0
-    then:
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_dripzone
-      action: counter.decrement
-      data: {}
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_lawnzone
-      above: 0
-    then:
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_lawnzone
-      action: counter.decrement
-      data: {}
-  - if:
-    - condition: numeric_state
+    - above: 0
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_vegezone
-      above: 0
     then:
-    - target:
+    - action: counter.decrement
+      data: {}
+      target:
         entity_id:
         - counter.irrigation_daysuntilnext_vegezone
-      action: counter.decrement
-      data: {}
-  mode: single
-- id: '1704515078564'
-  alias: Irrigation - Morning Irrigation Sequence OLD Nov 2025
-  description: Sequential irrigation of all zones starting one hour before sunrise
-  triggers:
-  - event: sunrise
-    offset: -01:00:00
-    trigger: sun
-  conditions: []
-  actions:
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_dripzone
-      below: 1
-    then:
-    - if:
-      - condition: template
-        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
-          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-          | float <\n  states('input_number.irrigation_moisturetrigger_dripzone')
-          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_dripzone',
-          'on'))\n}}"
-      - condition: state
-        entity_id: input_boolean.irrigation_enable_dripzone
-        state: 'on'
-      then:
-      - data:
-          title: Irrigation
-          message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
-            | round }} mins
-          target: tim-iphone
-        action: notify.pushover_tim
-      - target:
-          entity_id: timer.irrigation_timer_dripzone
-        data:
-          duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'') |
-            float * 60) | round }}'
-        action: timer.start
-      - target:
-          entity_id: switch.watervalve_dripzone_state
-        action: switch.turn_on
-        data: {}
-      - wait_for_trigger:
-        - entity_id: timer.irrigation_timer_dripzone
-          from: active
-          to: idle
-          trigger: state
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_dripzone
-      data:
-        value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int }}'
-      action: counter.set_value
-    - target:
-        entity_id: input_datetime.irrigation_last_dripzone
-      data:
-        datetime: '{{ now().isoformat() }}'
-      action: input_datetime.set_datetime
-    enabled: false
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_sprayzone
-      below: 1
-    then:
-    - if:
-      - condition: template
-        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
-          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-          | float <\n  states('input_number.irrigation_moisturetrigger_sprayzone')
-          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_sprayzone',
-          'on'))\n}}"
-      - condition: state
-        entity_id: input_boolean.irrigation_enable_sprayzone
-        state: 'on'
-      then:
-      - data:
-          title: Irrigation
-          message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
-            | round }} mins
-          target: tim-iphone
-        action: notify.pushover_tim
-      - target:
-          entity_id: timer.irrigation_timer_sprayzone
-        data:
-          duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
-            | float * 60) | round }}'
-        action: timer.start
-      - target:
-          entity_id: switch.watervalve_sprayzone_state
-        action: switch.turn_on
-        data: {}
-      - wait_for_trigger:
-        - entity_id: timer.irrigation_timer_sprayzone
-          from: active
-          to: idle
-          trigger: state
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_sprayzone
-      data:
-        value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int }}'
-      action: counter.set_value
-    - target:
-        entity_id: input_datetime.irrigation_last_sprayzone
-      data:
-        datetime: '{{ now().isoformat() }}'
-      action: input_datetime.set_datetime
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_lawnzone
-      below: 1
-    then:
-    - if:
-      - condition: template
-        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
-          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-          | float <\n  states('input_number.irrigation_moisturetrigger_lawnzone')
-          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_lawnzone',
-          'on'))\n}}"
-      - condition: state
-        entity_id: input_boolean.irrigation_enable_lawnzone
-        state: 'on'
-      then:
-      - data:
-          title: Irrigation
-          message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
-            | round }} mins
-          target: tim-iphone
-        action: notify.pushover_tim
-      - target:
-          entity_id: timer.irrigation_timer_lawnzone
-        data:
-          duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'') |
-            float * 60) | round }}'
-        action: timer.start
-      - target:
-          entity_id: switch.watervalve_lawnzone_state
-        action: switch.turn_on
-        data: {}
-      - wait_for_trigger:
-        - entity_id: timer.irrigation_timer_lawnzone
-          from: active
-          to: idle
-          trigger: state
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_lawnzone
-      data:
-        value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int }}'
-      action: counter.set_value
-    - target:
-        entity_id: input_datetime.irrigation_last_lawnzone
-      data:
-        datetime: '{{ now().isoformat() }}'
-      action: input_datetime.set_datetime
-    enabled: false
   mode: single
 - id: '1704518880915'
   alias: Irrigation - Update Counter on frequency change
@@ -1962,12 +1791,6 @@
   triggers:
   - entity_id: input_number.irrigation_frequency_sprayzone
     id: sprayzone
-    trigger: state
-  - entity_id: input_number.irrigation_frequency_dripzone
-    id: dripzone
-    trigger: state
-  - entity_id: input_number.irrigation_frequency_lawnzone
-    id: lawnzone
     trigger: state
   - entity_id: input_number.irrigation_frequency_vegezone
     id: vegezone
@@ -1979,42 +1802,22 @@
       - condition: trigger
         id: sprayzone
       sequence:
-      - target:
-          entity_id: counter.irrigation_daysuntilnext_sprayzone
+      - action: counter.set_value
         data:
           value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
             }}'
-        action: counter.set_value
-    - conditions:
-      - condition: trigger
-        id: dripzone
-      sequence:
-      - target:
-          entity_id: counter.irrigation_daysuntilnext_dripzone
-        data:
-          value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
-            }}'
-        action: counter.set_value
-    - conditions:
-      - condition: trigger
-        id: lawnzone
-      sequence:
-      - target:
-          entity_id: counter.irrigation_daysuntilnext_lawnzone
-        data:
-          value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
-            }}'
-        action: counter.set_value
+        target:
+          entity_id: counter.irrigation_daysuntilnext_sprayzone
     - conditions:
       - condition: trigger
         id: vegezone
       sequence:
-      - target:
-          entity_id: counter.irrigation_daysuntilnext_vegezone
+      - action: counter.set_value
         data:
           value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
             }}'
-        action: counter.set_value
+        target:
+          entity_id: counter.irrigation_daysuntilnext_vegezone
   mode: single
 - id: '1704521201143'
   alias: Shellies Announce BOTH
@@ -2494,7 +2297,7 @@
           minutes: 0
           seconds: 0
         condition: sun
-      - before: '22:00:00'
+      - before: '22:45:00'
         condition: time
       - condition: state
         entity_id: binary_sensor.tims_iphone_focus
@@ -2535,7 +2338,7 @@
           minutes: 0
           seconds: 0
         condition: sun
-      - before: '22:00:00'
+      - before: '22:45:00'
         condition: time
       - condition: state
         entity_id: sensor.tims_iphone_battery_state
@@ -3531,30 +3334,30 @@
   mode: single
 - id: '1730452755730'
   alias: Irrigation - Turn off after Duration
-  description: Automatically turns off irrigation valves after 30 minutes and notifies
-    which valve was triggered
+  description: Automatically turns off irrigation valves after their maximum run time
+    (spray 30 min, vege 60 min, master 75 min) and notifies which valve was triggered
   triggers:
   - entity_id: switch.watervalve_sprayzone_state
-    to: 'on'
     for:
       minutes: 30
     id: sprayzone
+    to: 'on'
     trigger: state
   - entity_id:
-    - switch.watervalve_dripzone_state
-    to: 'on'
+    - switch.watervalve_master_state
     for:
       hours: 1
-      minutes: 0
+      minutes: 15
       seconds: 0
-    id: dripzone
+    id: master
+    to: 'on'
     trigger: state
   - entity_id:
     - switch.watervalve_vegezone_state
-    to: 'on'
     for:
       minutes: 60
     id: vegezone
+    to: 'on'
     trigger: state
   conditions: []
   actions:
@@ -3563,50 +3366,50 @@
       - condition: trigger
         id: sprayzone
       sequence:
-      - target:
-          entity_id: switch.watervalve_sprayzone_state
-        action: switch.turn_off
+      - action: switch.turn_off
         data: {}
-      - data:
+        target:
+          entity_id: switch.watervalve_sprayzone_state
+      - action: notify.pushover_tim
+        data:
           message: Sprayzone has been on for 30min. Turning off now.
           target: tim-iphone
-        action: notify.pushover_tim
     - conditions:
       - condition: trigger
-        id: dripzone
+        id: master
       sequence:
-      - target:
-          entity_id: switch.watervalve_dripzone_state
-        action: switch.turn_off
+      - action: switch.turn_off
         data: {}
-      - data:
-          message: Dripzone has been on for 30min. Turning off now.
+        target:
+          entity_id: switch.watervalve_master_state
+      - action: notify.pushover_tim
+        data:
+          message: Master valve has been on for 75min. Turning off now.
           target: tim-iphone
-        action: notify.pushover_tim
     - conditions:
       - condition: trigger
         id: vegezone
       sequence:
-      - target:
-          entity_id: switch.watervalve_vegezone_state
-        action: switch.turn_off
+      - action: switch.turn_off
         data: {}
-      - data:
+        target:
+          entity_id: switch.watervalve_vegezone_state
+      - action: notify.pushover_tim
+        data:
           message: Vegezone  has been on for 60min. Turning off now.
           target: tim-iphone
-        action: notify.pushover_tim
     REDACTED
-    - target:
+    - action: switch.turn_off
+      data: {}
+      target:
         entity_id:
         - switch.watervalve_sprayzone_state
-        - switch.watervalve_dripzone_state
+        - switch.watervalve_master_state
         - switch.watervalve_vegezone_state
-      action: switch.turn_off
-      data: {}
-    - data:
+    - action: notify.pushover_tim
+      data:
         message: Unknown zone triggered. Turning off all valves as precaution.
         target: tim-iphone
-      action: notify.pushover_tim
   mode: single
 - id: '1730786066468'
   alias: 'Office – Presence AWAY: Switch Gear OFF'
@@ -3704,39 +3507,21 @@
   triggers:
   - entity_id: timer.irrigation_timer_sprayzone
     from: active
-    to: idle
     id: sprayzone_timer
+    to: idle
     trigger: state
   - entity_id: switch.watervalve_sprayzone_state
-    to: 'off'
     id: sprayzone_valve
-    trigger: state
-  - entity_id: timer.irrigation_timer_dripzone
-    from: active
-    to: idle
-    id: dripzone_timer
-    trigger: state
-  - entity_id: switch.watervalve_dripzone_state
     to: 'off'
-    id: dripzone_valve
-    trigger: state
-  - entity_id: timer.irrigation_timer_lawnzone
-    from: active
-    to: idle
-    id: lawnzone_timer
-    trigger: state
-  - entity_id: switch.watervalve_lawnzone_state
-    to: 'off'
-    id: lawnzone_valve
     trigger: state
   - entity_id: timer.irrigation_timer_vegezone
     from: active
-    to: idle
     id: vegezone_timer
+    to: idle
     trigger: state
   - entity_id: switch.watervalve_vegezone_state
-    to: 'off'
     id: vegezone_valve
+    to: 'off'
     trigger: state
   conditions: []
   actions:
@@ -3749,46 +3534,14 @@
         - condition: trigger
           id: sprayzone_valve
       sequence:
-      - target:
+      - action: switch.turn_off
+        data: {}
+        target:
           entity_id: switch.watervalve_sprayzone_state
-        action: switch.turn_off
+      - action: timer.cancel
         data: {}
-      - target:
+        target:
           entity_id: timer.irrigation_timer_sprayzone
-        action: timer.cancel
-        data: {}
-    - conditions:
-      - condition: or
-        conditions:
-        - condition: trigger
-          id: dripzone_timer
-        - condition: trigger
-          id: dripzone_valve
-      sequence:
-      - target:
-          entity_id: switch.watervalve_dripzone_state
-        action: switch.turn_off
-        data: {}
-      - target:
-          entity_id: timer.irrigation_timer_dripzone
-        action: timer.cancel
-        data: {}
-    - conditions:
-      - condition: or
-        conditions:
-        - condition: trigger
-          id: lawnzone_timer
-        - condition: trigger
-          id: lawnzone_valve
-      sequence:
-      - target:
-          entity_id: switch.watervalve_lawnzone_state
-        action: switch.turn_off
-        data: {}
-      - target:
-          entity_id: timer.irrigation_timer_lawnzone
-        action: timer.cancel
-        data: {}
     - conditions:
       - condition: or
         conditions:
@@ -3797,31 +3550,27 @@
         - condition: trigger
           id: vegezone_valve
       sequence:
-      - target:
+      - action: switch.turn_off
+        data: {}
+        target:
           entity_id: switch.watervalve_vegezone_state
-        action: switch.turn_off
+      - action: timer.cancel
         data: {}
-      - target:
+        target:
           entity_id: timer.irrigation_timer_vegezone
-        action: timer.cancel
-        data: {}
   mode: single
 - id: '1730885759254'
   alias: Irrigation - Zone Timers START
   description: Start appropriate timer when any irrigation valve turns on
   triggers:
   - entity_id: switch.watervalve_sprayzone_state
-    to: 'on'
     id: sprayzone
-    trigger: state
-  - entity_id: switch.watervalve_dripzone_state
     to: 'on'
-    id: dripzone
     trigger: state
   - entity_id:
     - switch.watervalve_vegezone_state
-    to: 'on'
     id: vegezone
+    to: 'on'
     trigger: state
   conditions: []
   actions:
@@ -3833,38 +3582,12 @@
         entity_id: timer.irrigation_timer_sprayzone
         state: idle
       sequence:
-      - target:
-          entity_id: timer.irrigation_timer_sprayzone
+      - action: timer.start
         data:
           duration: '{{ (states(''input_number.irrigation_manualduration_sprayzone'')
             | int * 60) | string }}'
-        action: timer.start
-    - conditions:
-      - condition: trigger
-        id: dripzone
-      - condition: state
-        entity_id: timer.irrigation_timer_dripzone
-        state: idle
-      sequence:
-      - target:
-          entity_id: timer.irrigation_timer_dripzone
-        data:
-          duration: '{{ (states(''input_number.irrigation_manualduration_dripzone'')
-            | int * 60) | string }}'
-        action: timer.start
-    - conditions:
-      - condition: trigger
-        id: lawnzone
-      - condition: state
-        entity_id: timer.irrigation_timer_lawnzone
-        state: idle
-      sequence:
-      - target:
-          entity_id: timer.irrigation_timer_lawnzone
-        data:
-          duration: '{{ (states(''input_number.irrigation_manualduration_lawnzone'')
-            | int * 60) | string }}'
-        action: timer.start
+        target:
+          entity_id: timer.irrigation_timer_sprayzone
     - conditions:
       - condition: trigger
         id: vegezone
@@ -3872,12 +3595,12 @@
         entity_id: timer.irrigation_timer_vegezone
         state: idle
       sequence:
-      - target:
-          entity_id: timer.irrigation_timer_vegezone
+      - action: timer.start
         data:
           duration: '{{ (states(''input_number.irrigation_manualduration_vegezone'')
             | int * 60) | string }}'
-        action: timer.start
+        target:
+          entity_id: timer.irrigation_timer_vegezone
   mode: single
 - id: '1732837360821'
   alias: Lighting – Office – Office Lamp ON
@@ -4087,66 +3810,6 @@
       brightness_pct: 50
     target:
       entity_id: light.projector_volume_templatelight
-  mode: single
-- id: '1736029765964'
-  alias: Irrigation - Evening Irrigation Sequence OLD Nov 2025
-  description: Sequential irrigation of all zones starting one hour before sunset
-  triggers:
-  - event: sunset
-    offset: -01:00:00
-    trigger: sun
-  conditions: []
-  actions:
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_vegezone
-      below: 1
-    then:
-    - if:
-      - condition: template
-        value_template: "{{\n  (states('sensor.fineoffset_wh51_0de4e5_moisture') not
-          in ['unavailable', 'unknown'] and\n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-          | float <\n  states('input_number.irrigation_moisturetrigger_vegezone')
-          | float) or\n  (not is_state('input_boolean.irrigation_moisturetrigger_enable_vegezone',
-          'on'))\n}}"
-      - condition: state
-        entity_id: input_boolean.irrigation_enable_vegezone
-        state: 'on'
-      then:
-      - data:
-          title: Irrigation
-          message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
-            | round }} mins
-          target: tim-iphone
-        action: notify.pushover_tim
-      - target:
-          entity_id: timer.irrigation_timer_vegezone
-        data:
-          duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'') |
-            float * 60) | round }}'
-        action: timer.start
-      - target:
-          entity_id:
-          - switch.watervalve_vegezone_state
-        action: switch.turn_on
-        data: {}
-      - wait_for_trigger:
-        - entity_id:
-          - timer.irrigation_timer_vegezone
-          from: active
-          to: idle
-          trigger: state
-    - target:
-        entity_id: counter.irrigation_daysuntilnext_vegezone
-      data:
-        value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int }}'
-      action: counter.set_value
-    - target:
-        entity_id: input_datetime.irrigation_last_vegezone
-      data:
-        datetime: '{{ now().isoformat() }}'
-      action: input_datetime.set_datetime
-    enabled: true
   mode: single
 - id: '1736032841443'
   alias: Alarm – Toggle Alarm
@@ -4679,93 +4342,6 @@
       - input_boolean.sidebar_toggle
       - input_boolean.navbar_toggle
   mode: single
-- id: auto_theme_switcher
-  alias: Front End - Auto Theme Switcher
-  description: Automatically switch between Catppuccin Latte and Mocha based on sun
-  triggers:
-  - event: sunrise
-    offset: 00:30:00
-    trigger: sun
-  - event: sunset
-    offset: -00:30:00
-    trigger: sun
-  - event: start
-    trigger: homeassistant
-  actions:
-  - data:
-      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
-        else %}\n  Catppuccin Mocha\n{% endif %}\n"
-    action: frontend.set_theme
-  mode: single
-- id: auto_theme_switcher
-  alias: Auto Theme Switcher
-  description: Automatically switch between Catppuccin Latte and Mocha based on sun
-  triggers:
-  - event: sunrise
-    offset: 00:30:00
-    trigger: sun
-  - event: sunset
-    offset: -00:30:00
-    trigger: sun
-  - event: start
-    trigger: homeassistant
-  actions:
-  - data:
-      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
-        else %}\n  Catppuccin Mocha\n{% endif %}\n"
-    action: frontend.set_theme
-  mode: single
-- id: auto_theme_switcher
-  alias: Auto Theme Switcher
-  description: Automatically switch between Catppuccin Latte and Mocha based on sun
-  triggers:
-  - event: sunrise
-    offset: 00:30:00
-    trigger: sun
-  - event: sunset
-    offset: -00:30:00
-    trigger: sun
-  - event: start
-    trigger: homeassistant
-  actions:
-  - data:
-      name: "{% if state_attr('sun.sun', 'elevation') > 0 %}\n  Catppuccin Latte\n{%
-        else %}\n  Catppuccin Mocha\n{% endif %}\n"
-    action: frontend.set_theme
-  mode: single
-- id: '1750550589757'
-  alias: Front End - Set Default Theme
-  description: ''
-  triggers:
-  - trigger: sun
-    event: sunrise
-    offset: 00:30:00
-  - trigger: sun
-    event: sunrise
-    offset: -00:30:00
-  - trigger: homeassistant
-    event: start
-  conditions: []
-  actions:
-  - action: frontend.set_theme
-    metadata: {}
-    data:
-      name: Catppuccin Latte
-  - if:
-    - condition: sun
-      before: sunset
-      after: sunrise
-    then:
-    - action: frontend.set_theme
-      metadata: {}
-      data:
-        name: Catppuccin Latte
-    else:
-    - action: frontend.set_theme
-      metadata: {}
-      data:
-        name: Catppuccin Mocha
-  mode: single
 - id: '1750754835490'
   alias: 'Power Outage – Power OFF 0min: Set Flag'
   description: On loss of power, set input boolean for tracking and send notification.
@@ -5252,28 +4828,23 @@
   alias: 'Irrigation - Zone Valve CHANGE: Master Valve FOLLOW'
   description: ''
   triggers:
-  - trigger: state
-    entity_id:
+  - entity_id:
     - switch.watervalve_sprayzone_state
     to:
-  - trigger: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - switch.watervalve_vegezone_state
     to:
+    trigger: state
   conditions: []
   actions:
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: switch.watervalve_dripzone_state
-  - action: timer.start
-    metadata: {}
-    data:
-      duration: 00:60
-    target:
-      entity_id: timer.irrigation_timer_dripzone
-  - if:
+  - else:
+    - action: switch.turn_off
+      data: {}
+      metadata: {}
+      target:
+        entity_id: switch.watervalve_master_state
+    if:
     - condition: or
       conditions:
       - condition: state
@@ -5284,16 +4855,10 @@
         state: 'on'
     then:
     - action: switch.turn_on
-      metadata: {}
       data: {}
-      target:
-        entity_id: switch.watervalve_dripzone_state
-    else:
-    - action: switch.turn_off
       metadata: {}
-      data: {}
       target:
-        entity_id: switch.watervalve_dripzone_state
+        entity_id: switch.watervalve_master_state
   mode: single
 - id: '1763459524192'
   alias: 'Master Bedroom – Timer FINISH, Lamp OFF: Turn OFF'
@@ -5365,9 +4930,9 @@
   conditions: []
   actions:
   - if:
-    - condition: numeric_state
+    - below: 1
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_vegezone
-      below: 1
     - condition: state
       entity_id: input_select.irrigation_mode_vegezone
       state: Evening
@@ -5382,46 +4947,51 @@
           - condition: state
             entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
             state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_vegezone')
-              | float \n}}"
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+          - below: input_number.irrigation_moisturetrigger_vegezone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
         sequence:
-        - data:
-            title: Irrigation
+        - action: notify.pushover_tim
+          data:
             message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
-              | round }} mins
+              | round }} mins{% if is_state('input_boolean.irrigation_moisturetrigger_enable_vegezone',
+              'on') and not has_value('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              %} (moisture sensor unavailable, watering anyway){% endif %}
             target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_vegezone
+            title: Irrigation
+        - action: timer.start
           data:
             duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'')
               | float * 60) | round }}'
-          action: timer.start
-        - target:
+          target:
+            entity_id: timer.irrigation_timer_vegezone
+        - action: switch.turn_on
+          data: {}
+          target:
             entity_id:
             - switch.watervalve_vegezone_state
-          action: switch.turn_on
-          data: {}
         - wait_for_trigger:
           - entity_id:
             - timer.irrigation_timer_vegezone
             from: active
             to: idle
             trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
               }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_vegezone
+          target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: input_datetime.set_datetime
           data:
             datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.irrigation_last_vegezone
       - conditions:
         - condition: state
           entity_id: input_boolean.irrigation_enable_vegezone
@@ -5429,31 +4999,26 @@
         - condition: state
           entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
           state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_vegezone')
-            | float \n}}"
         sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Vege irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_vegezone')
-              }}%. **Will try again tomorrow.**
+        - action: notify.pushover_tim
+          data:
+            message: Vege irrigation skipped. Moisture is {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              }}%, at or above the {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              | int }}% threshold. Will check again tomorrow.
             target: tim-iphone
-          action: notify.pushover_tim
+            title: "Irrigation Skipped \U0001F4A7"
       REDACTED
         sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
               }}'
-          action: counter.set_value
+          target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
   - if:
-    - condition: numeric_state
+    - below: 1
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_sprayzone
-      below: 1
     - condition: state
       entity_id: input_select.irrigation_mode_sprayzone
       state: Evening
@@ -5468,46 +5033,51 @@
           - condition: state
             entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
             state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_sprayzone')
-              | float \n}}"
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+          - below: input_number.irrigation_moisturetrigger_sprayzone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
         sequence:
-        - data:
-            title: Irrigation
+        - action: notify.pushover_tim
+          data:
             message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
-              | round }} mins
+              | round }} mins{% if is_state('input_boolean.irrigation_moisturetrigger_enable_sprayzone',
+              'on') and not has_value('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              %} (moisture sensor unavailable, watering anyway){% endif %}
             target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_sprayzone
+            title: Irrigation
+        - action: timer.start
           data:
             duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
               | float * 60) | round }}'
-          action: timer.start
-        - target:
+          target:
+            entity_id: timer.irrigation_timer_sprayzone
+        - action: switch.turn_on
+          data: {}
+          target:
             entity_id:
             - switch.watervalve_sprayzone_state
-          action: switch.turn_on
-          data: {}
         - wait_for_trigger:
           - entity_id:
             - timer.irrigation_timer_sprayzone
             from: active
             to: idle
             trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
               }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_sprayzone
+          target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: input_datetime.set_datetime
           data:
             datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.irrigation_last_sprayzone
       - conditions:
         - condition: state
           entity_id: input_boolean.irrigation_enable_sprayzone
@@ -5515,200 +5085,22 @@
         - condition: state
           entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
           state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_sprayzone')
-            | float \n}}"
         sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Spray irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_sprayzone')
-              }}%. **Will try again tomorrow.**
+        - action: notify.pushover_tim
+          data:
+            message: Spray irrigation skipped. Moisture is {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              }}%, at or above the {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              | int }}% threshold. Will check again tomorrow.
             target: tim-iphone
-          action: notify.pushover_tim
+            title: "Irrigation Skipped \U0001F4A7"
       REDACTED
         sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
               }}'
-          action: counter.set_value
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_dripzone
-      below: 1
-    - condition: state
-      entity_id: input_select.irrigation_mode_dripzone
-      state: Evening
-    then:
-    - choose:
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_dripzone
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
-            state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_dripzone')
-              | float \n}}"
-        sequence:
-        - data:
-            title: Irrigation
-            message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
-              | round }} mins
-            target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_dripzone
-          data:
-            duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'')
-              | float * 60) | round }}'
-          action: timer.start
-        - target:
-            entity_id:
-            - switch.watervalve_dripzone_state
-          action: switch.turn_on
-          data: {}
-        - wait_for_trigger:
-          - entity_id:
-            - timer.irrigation_timer_dripzone
-            from: active
-            to: idle
-            trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_dripzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
-              }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_dripzone
-          data:
-            datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_dripzone
-          state: 'on'
-        - condition: state
-          entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
-          state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_dripzone')
-            | float \n}}"
-        sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Drip irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_dripzone')
-              }}%. **Will try again tomorrow.**
-            target: tim-iphone
-          action: notify.pushover_tim
-      REDACTED
-        sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_dripzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
-              }}'
-          action: counter.set_value
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_lawnzone
-      below: 1
-    - condition: state
-      entity_id: input_select.irrigation_mode_lawnzone
-      state: Evening
-    then:
-    - choose:
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_lawnzone
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
-            state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_lawnzone')
-              | float \n}}"
-        sequence:
-        - data:
-            title: Irrigation
-            message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
-              | round }} mins
-            target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_lawnzone
-          data:
-            duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'')
-              | float * 60) | round }}'
-          action: timer.start
-        - target:
-            entity_id:
-            - switch.watervalve_lawnzone_state
-          action: switch.turn_on
-          data: {}
-        - wait_for_trigger:
-          - entity_id:
-            - timer.irrigation_timer_lawnzone
-            from: active
-            to: idle
-            trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_lawnzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
-              }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_lawnzone
-          data:
-            datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_lawnzone
-          state: 'on'
-        - condition: state
-          entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
-          state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_lawnzone')
-            | float \n}}"
-        sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Lawn irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_lawnzone')
-              }}%. **Will try again tomorrow.**
-            target: tim-iphone
-          action: notify.pushover_tim
-      REDACTED
-        sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_lawnzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
-              }}'
-          action: counter.set_value
-    enabled: true
+          target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
   mode: single
 - id: '1763499148645'
   alias: Irrigation - Morning Irrigation Sequence
@@ -5720,9 +5112,9 @@
   conditions: []
   actions:
   - if:
-    - condition: numeric_state
+    - below: 1
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_vegezone
-      below: 1
     - condition: state
       entity_id: input_select.irrigation_mode_vegezone
       state: Morning
@@ -5737,46 +5129,51 @@
           - condition: state
             entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
             state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_vegezone')
-              | float \n}}"
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+          - below: input_number.irrigation_moisturetrigger_vegezone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
         sequence:
-        - data:
-            title: Irrigation
+        - action: notify.pushover_tim
+          data:
             message: Irrigating Vege Zone for {{ states('sensor.irrigation_adjustedduration_vegezone')
-              | round }} mins
+              | round }} mins{% if is_state('input_boolean.irrigation_moisturetrigger_enable_vegezone',
+              'on') and not has_value('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              %} (moisture sensor unavailable, watering anyway){% endif %}
             target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_vegezone
+            title: Irrigation
+        - action: timer.start
           data:
             duration: '{{ (states(''sensor.irrigation_adjustedduration_vegezone'')
               | float * 60) | round }}'
-          action: timer.start
-        - target:
+          target:
+            entity_id: timer.irrigation_timer_vegezone
+        - action: switch.turn_on
+          data: {}
+          target:
             entity_id:
             - switch.watervalve_vegezone_state
-          action: switch.turn_on
-          data: {}
         - wait_for_trigger:
           - entity_id:
             - timer.irrigation_timer_vegezone
             from: active
             to: idle
             trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
               }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_vegezone
+          target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: input_datetime.set_datetime
           data:
             datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.irrigation_last_vegezone
       - conditions:
         - condition: state
           entity_id: input_boolean.irrigation_enable_vegezone
@@ -5784,31 +5181,26 @@
         - condition: state
           entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
           state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_vegezone')
-            | float \n}}"
         sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Vege irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_vegezone')
-              }}%. **Will try again today.**
+        - action: notify.pushover_tim
+          data:
+            message: Vege irrigation skipped. Moisture is {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              }}%, at or above the {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              | int }}% threshold. Will check again tomorrow.
             target: tim-iphone
-          action: notify.pushover_tim
+            title: "Irrigation Skipped \U0001F4A7"
       REDACTED
         sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_vegezone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_vegezone'') | int
               }}'
-          action: counter.set_value
+          target:
+            entity_id: counter.irrigation_daysuntilnext_vegezone
   - if:
-    - condition: numeric_state
+    - below: 1
+      condition: numeric_state
       entity_id: counter.irrigation_daysuntilnext_sprayzone
-      below: 1
     - condition: state
       entity_id: input_select.irrigation_mode_sprayzone
       state: Morning
@@ -5823,46 +5215,51 @@
           - condition: state
             entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
             state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_sprayzone')
-              | float \n}}"
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+          - below: input_number.irrigation_moisturetrigger_sprayzone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
         sequence:
-        - data:
-            title: Irrigation
+        - action: notify.pushover_tim
+          data:
             message: Irrigating Spray Zone for {{ states('sensor.irrigation_adjustedduration_sprayzone')
-              | round }} mins
+              | round }} mins{% if is_state('input_boolean.irrigation_moisturetrigger_enable_sprayzone',
+              'on') and not has_value('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              %} (moisture sensor unavailable, watering anyway){% endif %}
             target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_sprayzone
+            title: Irrigation
+        - action: timer.start
           data:
             duration: '{{ (states(''sensor.irrigation_adjustedduration_sprayzone'')
               | float * 60) | round }}'
-          action: timer.start
-        - target:
+          target:
+            entity_id: timer.irrigation_timer_sprayzone
+        - action: switch.turn_on
+          data: {}
+          target:
             entity_id:
             - switch.watervalve_sprayzone_state
-          action: switch.turn_on
-          data: {}
         - wait_for_trigger:
           - entity_id:
             - timer.irrigation_timer_sprayzone
             from: active
             to: idle
             trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
               }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_sprayzone
+          target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: input_datetime.set_datetime
           data:
             datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.irrigation_last_sprayzone
       - conditions:
         - condition: state
           entity_id: input_boolean.irrigation_enable_sprayzone
@@ -5870,200 +5267,22 @@
         - condition: state
           entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
           state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_sprayzone')
-            | float \n}}"
         sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Spray irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_sprayzone')
-              }}%. **Will try again today.**
+        - action: notify.pushover_tim
+          data:
+            message: Spray irrigation skipped. Moisture is {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              }}%, at or above the {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              | int }}% threshold. Will check again tomorrow.
             target: tim-iphone
-          action: notify.pushover_tim
+            title: "Irrigation Skipped \U0001F4A7"
       REDACTED
         sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - action: counter.set_value
           data:
             value: '{{ states(''input_number.irrigation_frequency_sprayzone'') | int
               }}'
-          action: counter.set_value
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_dripzone
-      below: 1
-    - condition: state
-      entity_id: input_select.irrigation_mode_dripzone
-      state: Morning
-    then:
-    - choose:
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_dripzone
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
-            state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_dripzone')
-              | float \n}}"
-        sequence:
-        - data:
-            title: Irrigation
-            message: Irrigating Drip Zone for {{ states('sensor.irrigation_adjustedduration_dripzone')
-              | round }} mins
-            target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_dripzone
-          data:
-            duration: '{{ (states(''sensor.irrigation_adjustedduration_dripzone'')
-              | float * 60) | round }}'
-          action: timer.start
-        - target:
-            entity_id:
-            - switch.watervalve_dripzone_state
-          action: switch.turn_on
-          data: {}
-        - wait_for_trigger:
-          - entity_id:
-            - timer.irrigation_timer_dripzone
-            from: active
-            to: idle
-            trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_dripzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
-              }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_dripzone
-          data:
-            datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_dripzone
-          state: 'on'
-        - condition: state
-          entity_id: input_boolean.irrigation_moisturetrigger_enable_dripzone
-          state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_dripzone')
-            | float \n}}"
-        sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Drip irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_dripzone')
-              }}%. **Will try again today.**
-            target: tim-iphone
-          action: notify.pushover_tim
-      REDACTED
-        sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_dripzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_dripzone'') | int
-              }}'
-          action: counter.set_value
-  - if:
-    - condition: numeric_state
-      entity_id: counter.irrigation_daysuntilnext_lawnzone
-      below: 1
-    - condition: state
-      entity_id: input_select.irrigation_mode_lawnzone
-      state: Morning
-    then:
-    - choose:
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_lawnzone
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
-            state: 'off'
-          - condition: template
-            value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-              not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-              | float < states('input_number.irrigation_moisturetrigger_lawnzone')
-              | float \n}}"
-        sequence:
-        - data:
-            title: Irrigation
-            message: Irrigating Lawn Zone for {{ states('sensor.irrigation_adjustedduration_lawnzone')
-              | round }} mins
-            target: tim-iphone
-          action: notify.pushover_tim
-        - target:
-            entity_id: timer.irrigation_timer_lawnzone
-          data:
-            duration: '{{ (states(''sensor.irrigation_adjustedduration_lawnzone'')
-              | float * 60) | round }}'
-          action: timer.start
-        - target:
-            entity_id:
-            - switch.watervalve_lawnzone_state
-          action: switch.turn_on
-          data: {}
-        - wait_for_trigger:
-          - entity_id:
-            - timer.irrigation_timer_lawnzone
-            from: active
-            to: idle
-            trigger: state
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_lawnzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
-              }}'
-          action: counter.set_value
-        - target:
-            entity_id: input_datetime.irrigation_last_lawnzone
-          data:
-            datetime: '{{ now().isoformat() }}'
-          action: input_datetime.set_datetime
-      - conditions:
-        - condition: state
-          entity_id: input_boolean.irrigation_enable_lawnzone
-          state: 'on'
-        - condition: state
-          entity_id: input_boolean.irrigation_moisturetrigger_enable_lawnzone
-          state: 'on'
-        - condition: template
-          value_template: "{{ \n  states('sensor.fineoffset_wh51_0de4e5_moisture')
-            not in ['unavailable', 'unknown'] \n  and states('sensor.fineoffset_wh51_0de4e5_moisture')
-            | float >= states('input_number.irrigation_moisturetrigger_lawnzone')
-            | float \n}}"
-        sequence:
-        - data:
-            title: "Irrigation Skipped \U0001F4A7"
-            message: Lawn irrigation skipped. Moisture level ({{ states('sensor.fineoffset_wh51_0de4e5_moisture')
-              }}%)  is above the threshold of {{ states('input_number.irrigation_moisturetrigger_lawnzone')
-              }}%. **Will try again today.**
-            target: tim-iphone
-          action: notify.pushover_tim
-      REDACTED
-        sequence:
-        - target:
-            entity_id: counter.irrigation_daysuntilnext_lawnzone
-          data:
-            value: '{{ states(''input_number.irrigation_frequency_lawnzone'') | int
-              }}'
-          action: counter.set_value
-    enabled: true
+          target:
+            entity_id: counter.irrigation_daysuntilnext_sprayzone
   mode: single
 - id: '1764449015687'
   alias: Location - Sonya left home
@@ -6563,11 +5782,14 @@
       milliseconds: 30
   mode: restart
 - id: '1791268308278'
-  alias: 'Master Bedroom – Phone CHARGING after 2200: SLEEP Mode ON'
-  description: When Tim's iPhone starts charging between 22:00 and 05:00, turn on
-    Adaptive Lighting sleep mode for the master bedroom. Sleep mode is turned off
-    again 1 hour before sunrise (same as the Lounge dawn automation).
+  alias: 'Master Bedroom – 2200 or Phone CHARGING after 2100: SLEEP Mode ON'
+  description: Turn on Adaptive Lighting sleep mode for the master bedroom at 22:00,
+    or earlier when Tim's iPhone starts charging between 21:00 and 05:00. Sleep mode
+    is turned off again 1 hour before sunrise (same as the Lounge dawn automation).
   triggers:
+  - at: '22:00:00'
+    id: sleep
+    trigger: time
   - entity_id: sensor.tims_iphone_battery_state
     from: Not Charging
     id: charging
@@ -6584,8 +5806,15 @@
   - choose:
     - conditions:
       - condition: trigger
+        id: sleep
+      sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.adaptive_lighting_sleep_mode_master_bedroom
+    - conditions:
+      - condition: trigger
         id: charging
-      - after: '22:00:00'
+      - after: '21:00:00'
         before: 05:00:00
         condition: time
       sequence:

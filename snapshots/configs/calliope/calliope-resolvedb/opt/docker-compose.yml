@@ -10,8 +10,8 @@ x-common:
     POSTGRES_LOCATION: &db-location "/opt/databases/resolve-new:/var/lib/postgresql/data"
   backup: &backup-environment
     SCHEDULE: "@daily"
-    BACKUP_KEEP_DAYS: 7
-    BACKUP_KEEP_WEEKS: 4
+    BACKUP_KEEP_DAYS: 30
+    BACKUP_KEEP_WEEKS: 12
     BACKUP_KEEP_MONTHS: 6
     BACKUP_LATEST_TYPE: none
     BACKUP_LOCATION: &bk-location "/mnt/resolve/backups:/backups"

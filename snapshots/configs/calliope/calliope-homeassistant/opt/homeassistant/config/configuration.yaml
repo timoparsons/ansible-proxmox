@@ -83,13 +83,14 @@ tts:
   - platform: google_translate
 
 # Non standard port for security
-http:
-  server_port: 8443 # Use your chosen port
-  # These lines for Cloudflared
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 10.1.1.24    # Cloudflared LXC
-    #- 172.30.33.0/24 # Internal Cludflared Add-On
+# http: block removed 2026-10-31, migrated to UI (Settings > System > Network); see .storage/http
+#http:
+#  server_port: 8443 # Use your chosen port
+#  # These lines for Cloudflared
+#  use_x_forwarded_for: true
+#  trusted_proxies:
+#    - 10.1.1.24    # Cloudflared LXC
+#    #- 172.30.33.0/24 # Internal Cludflared Add-On
 
 # ffmpeg DISABLED FOR HAOS
 ffmpeg: # Only need this line for HAOS

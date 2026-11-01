@@ -4,7 +4,7 @@ mqtt:
   port: 1883
   topic_prefix: frigate
   client_id: frigate
-  user: "{FRIGATE_MQTT_USER}"
+  user: '{FRIGATE_MQTT_USER}'
   password: REDACTED
 
 birdseye:
@@ -69,12 +69,14 @@ cameras:
     enabled: true
     ffmpeg:
       inputs:
-        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/101/
+        - path: 
+            rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/101/
           input_args: preset-rtsp-restream
           roles:
             - record
             - audio # record audio
-        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/102/
+        - path: 
+            rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@10.1.20.51:554/Streaming/Channels/102/
           roles:
             - detect
           input_args: preset-rtsp-restream
@@ -144,12 +146,19 @@ cameras:
         inertia: 3
     motion:
       mask:
-        - 0,0,0.334,0.003,0.334,0.083,0.002,0.085 # timecode mask
-        - 0.562,0.406,0.79,0.411,1,0.453,0.999,0.001,0.001,0,0.001,0.448,0.248,0.442 # road
+        motion_mask_1:
+          friendly_name: Motion Mask 1
+          enabled: true
+          coordinates: 0,0,0.334,0.003,0.334,0.083,0.002,0.085
+        motion_mask_2:
+          friendly_name: Motion Mask 2
+          enabled: true
+          coordinates: 
+            0.562,0.406,0.79,0.411,1,0.453,0.999,0.001,0.001,0,0.001,0.448,0.248,0.442
       threshold: 60
       contour_area: 50
       improve_contrast: true
-version: 0.17-0
+version: 0.18-0
 camera_groups:
   Birdseye:
     order: 1

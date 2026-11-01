@@ -433,15 +433,27 @@
                         "action": "navigate",
                         "navigation_path": "#dishwasher"
                       },
-                      "icon": "{% set state = states('sensor.bosch_dishwasher_operation_state') %} {% if state == 'Run' %}\n  mdi:dishwasher\n{% elif state == 'Ready' and\n  as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) >\n  as_timestamp(now().replace(hour=0, minute=0, second=0, microsecond=0)) %}\n  mdi:check-circle\n{% else %}\n  mdi:dishwasher-alert\n{% endif %}\n",
-                      "icon_color": "{% set state = states('sensor.bosch_dishwasher_operation_state') %} {% if state == 'Run' %}\n  blue\n{% elif state == 'Ready' and\n  as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) >\n  as_timestamp(now().replace(hour=0, minute=0, second=0, microsecond=0)) %}\n  green\n{% else %}\n  light-blue\n{% endif %}\n",
-                      "content": "{% set state = states('sensor.bosch_dishwasher_operation_state') %} {% if state == 'Run' %}\n  {{ states('sensor.bosch_dishwasher_program_progress') | int }}%\n{% elif state == 'Ready' and\n  as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) >\n  as_timestamp(now().replace(hour=0, minute=0, second=0, microsecond=0)) %}\n  {{ as_datetime(states('input_datetime.dishwasher_last_completed')).astimezone(now().tzinfo).strftime('%-I:%M%p') | lower }}\n{% endif %}\n",
+                      "icon": "{% set state = states('sensor.bosch_dishwasher_operation_state') | lower %}\n{% set done = as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) > as_timestamp(now()) - 108000 %}\n{% if state in ['run', 'pause', 'delayedstart'] %}mdi:dishwasher\n{% elif state in ['error', 'actionrequired'] %}mdi:dishwasher-alert\n{% elif done %}mdi:check-circle\n{% else %}mdi:dishwasher-alert{% endif %}",
+                      "icon_color": "{% set state = states('sensor.bosch_dishwasher_operation_state') | lower %}\n{% set done = as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) > as_timestamp(now()) - 108000 %}\n{% if state in ['run', 'pause', 'delayedstart'] %}blue\n{% elif state in ['error', 'actionrequired'] %}red\n{% elif done %}green\n{% else %}orange{% endif %}",
+                      "content": "{% set state = states('sensor.bosch_dishwasher_operation_state') | lower %}\n{% set done = as_timestamp(states('input_datetime.dishwasher_last_completed'), 0) > as_timestamp(now()) - 108000 %}\n{% if state in ['run', 'pause'] %}{{ states('sensor.bosch_dishwasher_program_progress') | int(0) }}%\n{% elif state == 'delayedstart' %}Delayed\n{% elif state in ['error', 'actionrequired'] %}Check\n{% elif done %}{{ as_datetime(states('input_datetime.dishwasher_last_completed')).astimezone(now().tzinfo).strftime('%-I:%M%p') | lower }}\n{% else %}Not run{% endif %}",
                       "card_mod": {
                         "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
                       }
                     },
                     {
-                      "type": "conditional",
+                      "chip": {
+                        "card_mod": {
+                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
+                        },
+                        "content": "{% set ns = namespace(key=999, label='', when='', icon='mdi:sprinkler-variant') %}\n{% for z, label, icon in [('vegezone', 'Vege', 'mdi:sprout'), ('sprayzone', 'Spray', 'mdi:sprinkler-variant')] %}\n  {% set when = states('sensor.irrigation_nextday_' ~ z) %}\n  {% if is_state('switch.watervalve_' ~ z ~ '_state', 'on') or is_state('input_boolean.irrigation_enable_' ~ z, 'on') %}\n    {% set d = 0 if when in ['Now', 'Today'] else (1 if when == 'Tomorrow' else states('counter.irrigation_daysuntilnext_' ~ z) | int(99)) %}\n    {% set k = -1 if when == 'Now' else d * 2 + (1 if is_state('input_select.irrigation_mode_' ~ z, 'Evening') else 0) %}\n    {% if k < ns.key %}\n      {% set ns.key = k %}{% set ns.label = label %}{% set ns.when = when %}{% set ns.icon = icon %}\n    {% endif %}\n  {% endif %}\n{% endfor %}\n{{ ns.when }}",
+                        "icon": "{% set ns = namespace(key=999, label='', when='', icon='mdi:sprinkler-variant') %}\n{% for z, label, icon in [('vegezone', 'Vege', 'mdi:sprout'), ('sprayzone', 'Spray', 'mdi:sprinkler-variant')] %}\n  {% set when = states('sensor.irrigation_nextday_' ~ z) %}\n  {% if is_state('switch.watervalve_' ~ z ~ '_state', 'on') or is_state('input_boolean.irrigation_enable_' ~ z, 'on') %}\n    {% set d = 0 if when in ['Now', 'Today'] else (1 if when == 'Tomorrow' else states('counter.irrigation_daysuntilnext_' ~ z) | int(99)) %}\n    {% set k = -1 if when == 'Now' else d * 2 + (1 if is_state('input_select.irrigation_mode_' ~ z, 'Evening') else 0) %}\n    {% if k < ns.key %}\n      {% set ns.key = k %}{% set ns.label = label %}{% set ns.when = when %}{% set ns.icon = icon %}\n    {% endif %}\n  {% endif %}\n{% endfor %}\n{{ ns.icon }}",
+                        "icon_color": "{% set ns = namespace(key=999, label='', when='', icon='mdi:sprinkler-variant') %}\n{% for z, label, icon in [('vegezone', 'Vege', 'mdi:sprout'), ('sprayzone', 'Spray', 'mdi:sprinkler-variant')] %}\n  {% set when = states('sensor.irrigation_nextday_' ~ z) %}\n  {% if is_state('switch.watervalve_' ~ z ~ '_state', 'on') or is_state('input_boolean.irrigation_enable_' ~ z, 'on') %}\n    {% set d = 0 if when in ['Now', 'Today'] else (1 if when == 'Tomorrow' else states('counter.irrigation_daysuntilnext_' ~ z) | int(99)) %}\n    {% set k = -1 if when == 'Now' else d * 2 + (1 if is_state('input_select.irrigation_mode_' ~ z, 'Evening') else 0) %}\n    {% if k < ns.key %}\n      {% set ns.key = k %}{% set ns.label = label %}{% set ns.when = when %}{% set ns.icon = icon %}\n    {% endif %}\n  {% endif %}\n{% endfor %}\n{{ 'orange' if ns.when == 'Now' else 'light-blue' }}",
+                        "tap_action": {
+                          "action": "navigate",
+                          "navigation_path": "bathroom"
+                        },
+                        "type": "template"
+                      },
                       "conditions": [
                         {
                           "condition": "or",
@@ -455,31 +467,7 @@
                               "condition": "state",
                               "entity": "input_boolean.irrigation_enable_vegezone",
                               "state": "on"
-                            }
-                          ]
-                        }
-                      ],
-                      "chip": {
-                        "type": "template",
-                        "tap_action": {
-                          "action": "navigate",
-                          "navigation_path": "bathroom"
-                        },
-                        "icon": "mdi:sprout",
-                        "content": "{{ states('sensor.irrigation_nextday_vegezone')}}",
-                        "entity": "switch.watervalve_vegezone_state",
-                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
-                        "card_mod": {
-                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
-                        }
-                      }
-                    },
-                    {
-                      "type": "conditional",
-                      "conditions": [
-                        {
-                          "condition": "or",
-                          "conditions": [
+                            },
                             {
                               "condition": "state",
                               "entity": "switch.watervalve_sprayzone_state",
@@ -493,88 +481,7 @@
                           ]
                         }
                       ],
-                      "chip": {
-                        "type": "template",
-                        "tap_action": {
-                          "action": "navigate",
-                          "navigation_path": "bathroom"
-                        },
-                        "icon": "mdi:sprinkler-variant",
-                        "content": "{{ states('sensor.irrigation_nextday_sprayzone')}}",
-                        "entity": "switch.watervalve_sprayzone_state",
-                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
-                        "card_mod": {
-                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
-                        }
-                      }
-                    },
-                    {
-                      "type": "conditional",
-                      "conditions": [
-                        {
-                          "condition": "or",
-                          "conditions": [
-                            {
-                              "condition": "state",
-                              "entity": "switch.watervalve_dripzone_state",
-                              "state": "on"
-                            },
-                            {
-                              "condition": "state",
-                              "entity": "input_boolean.irrigation_enable_dripzone",
-                              "state": "on"
-                            }
-                          ]
-                        }
-                      ],
-                      "chip": {
-                        "type": "template",
-                        "tap_action": {
-                          "action": "navigate",
-                          "navigation_path": "bathroom"
-                        },
-                        "icon": "mdi:water",
-                        "content": "{{ states('sensor.irrigation_nextday_dripzone')}}",
-                        "entity": "switch.watervalve_dripzone_state",
-                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
-                        "card_mod": {
-                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
-                        }
-                      }
-                    },
-                    {
-                      "type": "conditional",
-                      "conditions": [
-                        {
-                          "condition": "or",
-                          "conditions": [
-                            {
-                              "condition": "state",
-                              "entity": "switch.watervalve_lawnzone_state",
-                              "state": "on"
-                            },
-                            {
-                              "condition": "state",
-                              "entity": "input_boolean.irrigation_enable_lawnzone",
-                              "state": "on"
-                            }
-                          ]
-                        }
-                      ],
-                      "chip": {
-                        "type": "template",
-                        "tap_action": {
-                          "action": "navigate",
-                          "navigation_path": "bathroom"
-                        },
-                        "icon": "mdi:sprinkler",
-                        "content": "{{ states('sensor.irrigation_nextday_lawnzone')}}",
-                        "entity": "switch.watervalve_lawnzone_state",
-                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
-                        "card_mod": {
-                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
-                        }
-                      }
+                      "type": "conditional"
                     }
                   ],
                   "layout_options": {
@@ -786,7 +693,7 @@
                         },
                         {
                           "condition": "state",
-                          "entity": "timer.irrigation_sprayzone_timer",
+                          "entity": "timer.irrigation_timer_sprayzone",
                           "state": "active"
                         }
                       ]
@@ -795,7 +702,7 @@
                   "card": {
                     "type": "custom:timer-bar-card",
                     "entities": [
-                      "timer.irrigation_sprayzone_timer"
+                      "timer.irrigation_timer_sprayzone"
                     ],
                     "bar_direction": "ltr",
                     "invert": true,
@@ -1476,13 +1383,8 @@
                       }
                     },
                     "auto_play": [
+                      "selected",
                       "visible"
-                    ],
-                    "auto_pause": [
-                      "hidden"
-                    ],
-                    "auto_mute": [
-                      "hidden"
                     ]
                   },
                   "dimensions": {
@@ -2547,129 +2449,6 @@
                         "name": false,
                         "state": false
                       },
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "custom:bubble-card",
-                  "card_type": "pop-up",
-                  "hash": "#irrigation",
-                  "margin_top_mobile": "-56px",
-                  "bg_opacity": "0",
-                  "close_on_click": false,
-                  "bg_blur": "25",
-                  "button_type": "name",
-                  "sub_button": {
-                    "main": [],
-                    "bottom": []
-                  },
-                  "cards": [
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "input_button.irrigation_irrigatenow",
-                          "name": "Irrigate Now"
-                        },
-                        {
-                          "entity": "input_number.irrigation_manualduration",
-                          "name": "Manual Duration"
-                        }
-                      ],
-                      "title": "Manual Irrigation",
-                      "show_header_toggle": false,
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "input_boolean.irrigation_sprayzone_enable",
-                          "name": "Spray Zone"
-                        },
-                        {
-                          "entity": "input_button.irrigation_irrigatetomorrow",
-                          "name": "Irrigate Tomorrow"
-                        },
-                        {
-                          "entity": "input_number.irrigation_frequency",
-                          "name": "Irrigate every"
-                        },
-                        {
-                          "entity": "counter.irrigation_daysuntilnext",
-                          "name": "Days until next irrigation"
-                        },
-                        {
-                          "entity": "sensor.irrigation_nextday",
-                          "name": "Next Irrigation"
-                        },
-                        {
-                          "entity": "input_boolean.irrigation_moisturetrigger_enable",
-                          "name": "Irrigate only if moisture low"
-                        },
-                        {
-                          "entity": "input_number.irrigation_moisturetrigger",
-                          "name": "Irrigate if below"
-                        },
-                        {
-                          "entity": "sensor.irrigation_lastirrigation_sensor",
-                          "icon": "mdi:calendar-arrow-left",
-                          "name": "Last Irrigation"
-                        }
-                      ],
-                      "title": "Irrigation Schedule",
-                      "show_header_toggle": false,
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "switch.watervalve_sprayzone_state",
-                          "icon": "mdi:valve-closed",
-                          "name": "Valve",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "input_number.irrigation_sprayzone_defaultduration",
-                          "name": "Default Duration",
-                          "icon": "mdi:timer-outline"
-                        },
-                        {
-                          "entity": "sensor.irrigation_sprayzone_adjustedduration",
-                          "secondary_info": "none",
-                          "name": "Adjusted Duration"
-                        },
-                        {
-                          "entity": "sensor.watervalve_sprayzone_irrigation_start_time",
-                          "name": "Last Irrigation TIME",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.watervalve_sprayzone_last_irrigation_duration",
-                          "name": "Last Irrigation DURATION",
-                          "icon": "mdi:clock-time-eight"
-                        },
-                        {
-                          "entity": "sensor.watervalve_sprayzone_water_consumed",
-                          "name": "Water Consumed",
-                          "secondary_info": "none"
-                        }
-                      ],
-                      "title": "Spray Zone",
-                      "state_color": true,
                       "grid_options": {
                         "columns": 12,
                         "rows": "auto"
@@ -4880,13 +4659,93 @@
                   }
                 },
                 {
+                  "alignment": "start",
+                  "card_mod": {
+                    "style": "ha-card {\n  --chip-size: 42px;\n  --icon-size: 24px;\n}\n"
+                  },
+                  "chips": [
+                    {
+                      "chip": {
+                        "card_mod": {
+                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
+                        },
+                        "content": "{{ states('sensor.irrigation_nextday_vegezone') }} · {{ states('sensor.irrigation_adjustedduration_vegezone') | float(0) | round }} min",
+                        "entity": "switch.watervalve_vegezone_state",
+                        "icon": "mdi:sprout",
+                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
+                        "tap_action": {
+                          "action": "navigate",
+                          "navigation_path": "#vegezone"
+                        },
+                        "type": "template"
+                      },
+                      "conditions": [
+                        {
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "switch.watervalve_vegezone_state",
+                              "state": "on"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "input_boolean.irrigation_enable_vegezone",
+                              "state": "on"
+                            }
+                          ]
+                        }
+                      ],
+                      "type": "conditional"
+                    },
+                    {
+                      "chip": {
+                        "card_mod": {
+                          "style": "ha-card {\n  justify-content: center;\n  --chip-icon-size: var(--icon-size) !important;\n  --chip-height: var(--chip-size) !important;\n  border-radius: 2em !important;\n}\n"
+                        },
+                        "content": "{{ states('sensor.irrigation_nextday_sprayzone') }} · {{ states('sensor.irrigation_adjustedduration_sprayzone') | float(0) | round }} min",
+                        "entity": "switch.watervalve_sprayzone_state",
+                        "icon": "mdi:sprinkler-variant",
+                        "icon_color": "{{ 'orange' if states(entity) == 'on' else 'light-blue' }}",
+                        "tap_action": {
+                          "action": "navigate",
+                          "navigation_path": "#sprayzone"
+                        },
+                        "type": "template"
+                      },
+                      "conditions": [
+                        {
+                          "condition": "or",
+                          "conditions": [
+                            {
+                              "condition": "state",
+                              "entity": "switch.watervalve_sprayzone_state",
+                              "state": "on"
+                            },
+                            {
+                              "condition": "state",
+                              "entity": "input_boolean.irrigation_enable_sprayzone",
+                              "state": "on"
+                            }
+                          ]
+                        }
+                      ],
+                      "type": "conditional"
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": 12
+                  },
+                  "type": "custom:mushroom-chips-card"
+                },
+                {
                   "card": null,
                   "type": "custom:stack-in-card",
                   "cards": [
                     {
                       "type": "custom:mushroom-template-card",
                       "icon": "mdi:pipe-valve",
-                      "icon_color": "{% if is_state(entity,'on') %}\n  yellow\n{% else %}\n  {% if is_state('input_boolean.irrigation_enable_dripzone','on') %}\n    light-blue\n  {% else %}\n    grey\n  {% endif %}\n{% endif %}",
+                      "icon_color": "{% if is_state(entity,'on') %}yellow{% else %}light-blue{% endif %}",
                       "hold_action": {
                         "action": "more-info"
                       },
@@ -4894,46 +4753,17 @@
                         "action": "none"
                       },
                       "tap_action": {
-                        "action": "navigate",
-                        "navigation_path": "#dripzone"
+                        "action": "more-info"
                       },
                       "primary": "Master",
-                      "secondary": "{% if is_state(entity,'on') %}\n  On\n{% else %}\n  {% if is_state('input_boolean.irrigation_enable_dripzone','on') %}\n    {{ states('sensor.irrigation_nextday_dripzone') }}\n  {% endif %}\n{% endif %}",
-                      "entity": "switch.watervalve_dripzone_state",
+                      "secondary": "{% if is_state(entity,'on') %}On{% else %}Off{% endif %}",
+                      "entity": "switch.watervalve_master_state",
                       "grid_options": {
                         "columns": 4,
                         "rows": 1
                       },
                       "card_mod": {
                         "style": "ha-card {\n  backdrop-filter: blur(0px); !important;\n  backdrop-filter: opacity(0%); !important;\n  margin: 0px 0px 0px 0px\n} \n"
-                      }
-                    },
-                    {
-                      "type": "conditional",
-                      "conditions": [
-                        {
-                          "entity": "timer.irrigation_timer_dripzone",
-                          "state": "active"
-                        }
-                      ],
-                      "card": {
-                        "type": "custom:timer-bar-card",
-                        "entities": [
-                          "timer.irrigation_timer_dripzone"
-                        ],
-                        "bar_direction": "ltr",
-                        "invert": true,
-                        "state_color": true,
-                        "icon": "mdi:timelapse",
-                        "active_icon": "mdi:lightbulb",
-                        "bar_foreground": "orange",
-                        "bar_background": "black",
-                        "layout": "full_row",
-                        "text_width": "40px",
-                        "bar_height": "5px",
-                        "card_mod": {
-                          "style": "ha-card {\n  backdrop-filter: blur(0px); !important;\n  backdrop-filter: opacity(0%); !important;\n  margin-top: -20px;\n  background-color: transparent;\n} \ntimer-bar-entity-row {\n  height: 5px\n}\n"
-                        }
                       }
                     }
                   ],
@@ -5064,68 +4894,6 @@
                   "grid_options": {
                     "columns": 4
                   }
-                },
-                {
-                  "card": null,
-                  "type": "custom:stack-in-card",
-                  "cards": [
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "icon": "mdi:grass",
-                      "icon_color": "{% if is_state(entity,'on') %}\n  yellow\n{% else %}\n  {% if is_state('input_boolean.irrigation_enable_lawnzone','on') %}\n    light-blue\n  {% else %}\n    grey\n  {% endif %}\n{% endif %}",
-                      "hold_action": {
-                        "action": "more-info"
-                      },
-                      "double_tap_action": {
-                        "action": "none"
-                      },
-                      "tap_action": {
-                        "action": "navigate",
-                        "navigation_path": "#lawnzone"
-                      },
-                      "primary": "Lawn Zone",
-                      "secondary": "{% if is_state(entity,'on') %}\n  On\n{% else %}\n  {% if is_state('input_boolean.irrigation_enable_lawnzone','on') %}\n    {{ states('sensor.irrigation_nextday_lawnzone') }}\n  {% endif %}\n{% endif %}",
-                      "entity": "switch.watervalve_lawnzone_state",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": 1
-                      },
-                      "card_mod": {
-                        "style": "ha-card {\n  backdrop-filter: blur(0px); !important;\n  backdrop-filter: opacity(0%); !important;\n  margin: 0px 0px 0px 0px\n} \n"
-                      }
-                    },
-                    {
-                      "type": "conditional",
-                      "conditions": [
-                        {
-                          "entity": "timer.irrigation_timer_lawnzone",
-                          "state": "active"
-                        }
-                      ],
-                      "card": {
-                        "type": "custom:timer-bar-card",
-                        "entities": [
-                          "timer.irrigation_timer_lawnzone"
-                        ],
-                        "bar_direction": "ltr",
-                        "invert": true,
-                        "state_color": true,
-                        "icon": "mdi:timelapse",
-                        "active_icon": "mdi:lightbulb",
-                        "bar_foreground": "orange",
-                        "bar_background": "black",
-                        "layout": "full_row",
-                        "text_width": "40px",
-                        "bar_height": "5px",
-                        "card_mod": {
-                          "style": "ha-card {\n  backdrop-filter: blur(0px); !important;\n  backdrop-filter: opacity(0%); !important;\n  margin-top: -20px;\n  background-color: transparent;\n} \ntimer-bar-entity-row {\n  height: 5px\n}\n"
-                        }
-                      }
-                    }
-                  ],
-                  "grid_options": {
-                    "columns": 4
-                  }
                 }
               ]
             },
@@ -5154,7 +4922,7 @@
                       "icon": "mdi:water",
                       "entities": [
                         {
-                          "entity": "sensor.fineoffset_wh51_0de4e5_moisture"
+                          "entity": "sensor.fineoffset_wh51_0de4e5_moisture_calibrated"
                         }
                       ],
                       "show": {
@@ -5341,375 +5109,6 @@
                 {
                   "type": "custom:bubble-card",
                   "card_type": "pop-up",
-                  "hash": "#dripzone",
-                  "margin_top_mobile": "-56px",
-                  "bg_opacity": "0",
-                  "close_on_click": false,
-                  "bg_blur": "25",
-                  "name": "DripZone",
-                  "icon": "mdi:water",
-                  "button_type": "name",
-                  "sub_button": {
-                    "main": [],
-                    "bottom": []
-                  },
-                  "cards": [
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Now",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "switch.toggle",
-                        "target": {
-                          "entity_id": [
-                            "switch.watervalve_dripzone_state"
-                          ]
-                        }
-                      },
-                      "icon_color": "{% if is_state(entity,'on') %}\n  yellow\n{% else %}\n  light-blue\n{% endif %}",
-                      "entity": "switch.watervalve_dripzone_state",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Tomorrow",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "counter.set_value",
-                        "target": {
-                          "entity_id": [
-                            "counter.irrigation_daysuntilnext_dripzone"
-                          ]
-                        },
-                        "data": {
-                          "value": 1
-                        }
-                      },
-                      "icon_color": "light-blue",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Postpone",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "counter.increment",
-                        "target": {
-                          "entity_id": [
-                            "counter.irrigation_daysuntilnext_dripzone"
-                          ]
-                        },
-                        "data": {}
-                      },
-                      "icon_color": "light-blue",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "switch.watervalve_dripzone_state",
-                          "icon": "mdi:valve-closed",
-                          "name": "Valve",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "timer.irrigation_timer_dripzone",
-                          "name": "Timer"
-                        },
-                        {
-                          "entity": "input_number.irrigation_manualduration_dripzone",
-                          "secondary_info": "none",
-                          "name": "Manual Duration"
-                        }
-                      ],
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "input_boolean.irrigation_enable_dripzone",
-                          "name": "Drip Zone Enable"
-                        },
-                        {
-                          "entity": "input_select.irrigation_mode_dripzone",
-                          "name": "Mode"
-                        },
-                        {
-                          "entity": "input_number.irrigation_frequency_dripzone",
-                          "name": "Irrigate every",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "input_number.irrigation_defaultduration_dripzone",
-                          "name": "Irrigation Duration"
-                        },
-                        {
-                          "entity": "sensor.irrigation_adjustedduration_dripzone",
-                          "name": "Adjusted Duration"
-                        },
-                        {
-                          "entity": "input_boolean.irrigation_moisturetrigger_enable_dripzone",
-                          "name": "Irrigate only if moisture low"
-                        },
-                        {
-                          "entity": "input_number.irrigation_moisturetrigger_dripzone",
-                          "name": "Irrigate if below"
-                        }
-                      ],
-                      "show_header_toggle": false,
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "sensor.irrigation_nextday_dripzone",
-                          "name": "Next Irrigation",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.irrigation_lastsensor_dripzone",
-                          "name": "Last Scheduled Irrigation"
-                        },
-                        {
-                          "entity": "sensor.watervalve_dripzone_irrigation_start_time",
-                          "name": "Last Irrigation",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.watervalve_dripzone_last_irrigation_duration",
-                          "name": "Duration",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.watervalve_dripzone_water_consumed",
-                          "name": "Water Consumed",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "sensor.watervalve_dripzone_battery",
-                          "name": "Battery",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "sensor.watervalve_dripzone_battery_last_replaced",
-                          "name": "Battery Replaced"
-                        }
-                      ],
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "custom:bubble-card",
-                  "card_type": "pop-up",
-                  "hash": "#lawnzone",
-                  "margin_top_mobile": "-56px",
-                  "bg_opacity": "0",
-                  "close_on_click": false,
-                  "bg_blur": "25",
-                  "name": "LawnZone",
-                  "icon": "mdi:grass",
-                  "button_type": "name",
-                  "sub_button": {
-                    "main": [],
-                    "bottom": []
-                  },
-                  "cards": [
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Now",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "switch.toggle",
-                        "target": {
-                          "entity_id": [
-                            "switch.watervalve_dripzone_state"
-                          ]
-                        }
-                      },
-                      "icon_color": "{% if is_state(entity,'on') %}\n  yellow\n{% else %}\n  light-blue\n{% endif %}",
-                      "entity": "switch.watervalve_lawnzone_state",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Tomorrow",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "counter.set_value",
-                        "target": {
-                          "entity_id": [
-                            "counter.irrigation_daysuntilnext_lawnzone"
-                          ]
-                        },
-                        "data": {
-                          "value": 1
-                        }
-                      },
-                      "icon_color": "light-blue",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "custom:mushroom-template-card",
-                      "primary": "Postpone",
-                      "secondary": "",
-                      "icon": "mdi:timer-outline",
-                      "tap_action": {
-                        "action": "perform-action",
-                        "perform_action": "counter.increment",
-                        "target": {
-                          "entity_id": [
-                            "counter.irrigation_daysuntilnext_lawnzone"
-                          ]
-                        },
-                        "data": {}
-                      },
-                      "icon_color": "light-blue",
-                      "grid_options": {
-                        "columns": 4,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "switch.watervalve_lawnzone_state",
-                          "icon": "mdi:valve-closed",
-                          "name": "Valve",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "timer.irrigation_timer_lawnzone",
-                          "name": "Timer"
-                        },
-                        {
-                          "entity": "input_number.irrigation_manualduration_lawnzone",
-                          "secondary_info": "none",
-                          "name": "Manual Duration"
-                        }
-                      ],
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "input_boolean.irrigation_enable_lawnzone",
-                          "name": "Lawn Zone Enable"
-                        },
-                        {
-                          "entity": "input_number.irrigation_frequency_lawnzone",
-                          "name": "Irrigate every",
-                          "secondary_info": "none"
-                        },
-                        {
-                          "entity": "input_number.irrigation_defaultduration_lawnzone",
-                          "name": "Irrigation Duration"
-                        },
-                        {
-                          "entity": "sensor.irrigation_adjustedduration_lawnzone",
-                          "name": "Adjusted Duration"
-                        },
-                        {
-                          "entity": "input_boolean.irrigation_moisturetrigger_enable_lawnzone",
-                          "name": "Irrigate only if moisture low"
-                        },
-                        {
-                          "entity": "input_number.irrigation_moisturetrigger_lawnzone",
-                          "name": "Irrigate if below"
-                        }
-                      ],
-                      "show_header_toggle": false,
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    },
-                    {
-                      "type": "entities",
-                      "entities": [
-                        {
-                          "entity": "sensor.irrigation_nextday_lawnzone",
-                          "name": "Next Irrigation",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.irrigation_lastsensor_lawnzone",
-                          "name": "Last Scheduled Irrigation"
-                        },
-                        {
-                          "entity": "sensor.watervalve_lawnzone_irrigation_start_time",
-                          "name": "Last Irrigation",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.watervalve_lawnzone_last_irrigation_duration",
-                          "name": "Duration",
-                          "icon": "mdi:clock-time-eight-outline"
-                        },
-                        {
-                          "entity": "sensor.watervalve_lawnzone_water_consumed",
-                          "name": "Water Consumed",
-                          "secondary_info": "none"
-                        }
-                      ],
-                      "state_color": true,
-                      "grid_options": {
-                        "columns": 12,
-                        "rows": "auto"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "custom:bubble-card",
-                  "card_type": "pop-up",
                   "hash": "#vegezone",
                   "margin_top_mobile": "-56px",
                   "bg_opacity": "0",
@@ -5729,7 +5128,7 @@
                       "icon": "mdi:water",
                       "entities": [
                         {
-                          "entity": "sensor.fineoffset_wh51_0de4e5_moisture"
+                          "entity": "sensor.fineoffset_wh51_0de4e5_moisture_calibrated"
                         }
                       ],
                       "show": {
@@ -6655,7 +6054,7 @@
                             {
                               "graph_entities": [
                                 {
-                                  "entity": "sensor.fineoffset_wh51_0de4e5_moisture"
+                                  "entity": "sensor.fineoffset_wh51_0de4e5_moisture_calibrated"
                                 }
                               ]
                             }
