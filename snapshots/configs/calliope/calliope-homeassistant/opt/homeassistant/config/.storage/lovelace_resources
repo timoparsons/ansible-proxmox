@@ -26,7 +26,7 @@
       },
       {
         "id": "05155b010098437abf3d813d71e70ed7",
-        "url": "/hacsfiles/custom-sonos-card/custom-sonos-card.js?hacstag=4494168161085",
+        "url": "/hacsfiles/custom-sonos-card/custom-sonos-card.js?hacstag=4494168161091",
         "type": "module"
       },
       {
@@ -111,7 +111,7 @@
       },
       {
         "id": "7e32d7ff160144c5bf01b5301cff95d6",
-        "url": "/hacsfiles/scheduler-card/scheduler-card.js?hacstag=2862701574019",
+        "url": "/hacsfiles/scheduler-card/scheduler-card.js?hacstag=2862701574020",
         "type": "module"
       },
       {
@@ -141,7 +141,7 @@
       },
       {
         "id": "928e6507e1fc49a499c32f7686a050b0",
-        "url": "/hacsfiles/Bubble-Card/bubble-card.js?hacstag=680112919325",
+        "url": "/hacsfiles/Bubble-Card/bubble-card.js?hacstag=680112919343",
         "type": "module"
       },
       {
@@ -161,7 +161,7 @@
       },
       {
         "id": "92c5262712a54b1da4f78af7ec0cac82",
-        "url": "/hacsfiles/kiosk-mode/kiosk-mode.js?hacstag=4973191281402",
+        "url": "/hacsfiles/kiosk-mode/kiosk-mode.js?hacstag=4973191281500",
         "type": "module"
       },
       {
@@ -221,7 +221,12 @@
       },
       {
         "id": "0ac1d2f824134e4596ed5636e0c9d0b5",
-        "url": "/openweathermaphistory/www/openweathermaphistory.js?v=2026.05.03",
+        "url": "/openweathermaphistory/www/openweathermaphistory.js?v=2026.11.05",
+        "type": "module"
+      },
+      {
+        "id": "40666f1848ef4b1d92250a93cef78832",
+        "url": "/fluvy-frontend/1.16.0-ad136a5f/fluvy.js",
         "type": "module"
       }
     ]

@@ -1429,7 +1429,8 @@
                       "grid_options": {
                         "columns": 12,
                         "rows": "auto"
-                      }
+                      },
+                      "hours_to_show": 8760
                     }
                   ],
                   "grid_options": {

@@ -1194,53 +1194,54 @@
   alias: 'Entertainment – Lamp – Presence Detected: Turn ON'
   description: ''
   triggers:
-  - platform: state
+  - enabled: false
     entity_id:
     - binary_sensor.crow_alarm_sensors_downstairs_lounge
     to: 'on'
-    enabled: false
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.presence_tvroom_presence
-    to: 'on'
     for:
       hours: 0
       minutes: 0
       seconds: 5
+    to: 'on'
+    trigger: state
   conditions:
   - condition: state
+    enabled: false
     entity_id: timer.tvroom_lamp_timer
     state: idle
-    enabled: false
   - condition: state
     entity_id: binary_sensor.projector_status
     state: 'off'
   - condition: state
+    enabled: false
     entity_id: binary_sensor.presence_tvroom_presence
-    state: 'on'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-    enabled: false
+    state: 'on'
   - condition: or
     conditions:
-    - condition: sun
+    - after: sunset
+      after_offset: -00:30:00
       before: sunrise
       before_offset: 01:00:00
-      after: sunset
-      after_offset: -00:30:00
-    - condition: numeric_state
-      entity_id: sensor.lux_office_illuminance_lux
-      below: 200
+      condition: sun
+    - below: 200
+      condition: numeric_state
+      entity_id: sensor.lux_office_illuminance
   actions:
-  - data:
+  - action: timer.start
+    data:
       duration: 00:01:10
+    enabled: false
     target:
       entity_id: timer.tvroom_lamp_timer
-    enabled: false
-    action: timer.start
-  - data:
+  - action: light.turn_on
+    data:
       brightness_pct: 50
       rgb_color:
       - 255
@@ -1248,7 +1249,6 @@
       - 0
     target:
       entity_id: light.tv_room_lights
-    action: light.turn_on
   mode: single
 - id: '1688176092867'
   alias: 'Entertainment – Lamp – Timer finish: Turn OFF'
@@ -2057,26 +2057,26 @@
 - id: '1714645156968'
   alias: Maintenance – Pushover Offline – Send iOS Notification
   description: ''
-  trigger:
-  - platform: template
-    value_template: '"{{ ''notify.pushover'' in state_attr(''sensor.watchman_missing_services'',
-      ''entities'') | map(attribute=''id'') | list }}"'
-    for:
+  triggers:
+  - for:
       hours: 2
       minutes: 0
       seconds: 0
-  condition: []
-  action:
-  - service: script.send_dynamic_notification_tims_iphone
-    metadata: {}
-    data:
-      message: Pushover is offline
+    trigger: template
+    value_template: '"{{ ''notify.pushover'' in state_attr(''sensor.watchman_missing_actions'',
+      ''entities'') | map(attribute=''id'') | list }}"'
+  conditions: []
+  actions:
+  - data:
       importance: time-sensitive
-  - service: homeassistant.reload_config_entry
+      message: Pushover is offline
     metadata: {}
-    data:
+    action: script.send_dynamic_notification_tims_iphone
+  - data:
       entry_id: e12402c3f56b200c71faffea61192809
     enabled: false
+    metadata: {}
+    action: homeassistant.reload_config_entry
   mode: single
 - id: '1716696657403'
   alias: 'Entertainment – Lamp – Devices PAUSE: Turn ON'
@@ -3268,33 +3268,6 @@
         target:
           entity_id: switch.lightswitch_shelly2pm_downstairsbathroom_relay_0
   mode: single
-- id: '1729117726427'
-  alias: 'Proxmox – Jellyfin Timeout: Stop LXC'
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.lxc_jellyfin_143_status
-    for:
-      hours: 0
-      minutes: 30
-      seconds: 0
-  conditions:
-  - condition: state
-    entity_id: binary_sensor.lxc_jellyfin_143_status
-    state: 'on'
-  actions:
-  - action: button.press
-    metadata: {}
-    data: {}
-    target:
-      entity_id: button.lxc_jellyfin_143_stop
-  - action: notify.pushover_servers
-    metadata: {}
-    data:
-      message: Shutting down Jellyfin
-      target: tim-iphone,mac-studio
-  mode: single
 - id: '1730152817861'
   alias: Nanoleaf Reset Oct 2024
   description: ''
@@ -3427,7 +3400,7 @@
     id: presence_timeout
     to: not_home
     trigger: state
-  - at: '21:00:00'
+  - at: '22:01:00'
     id: evening_shutdown
     trigger: time
   - entity_id:
@@ -3439,6 +3412,11 @@
     id: equipment_timeout
     to: 'on'
     trigger: state
+  - trigger: state
+    entity_id: input_boolean.edit_suite_power_override
+    from: 'on'
+    to: 'off'
+    id: override_cleared
   conditions:
   - condition: state
     entity_id: input_boolean.edit_suite_power_override
@@ -3461,8 +3439,8 @@
           entity_id: sensor.espresence_tim_iphone
           state: office
       - condition: template
-        value_template: '{{ trigger.id in [''presence_timeout'', ''evening_shutdown'']
-          }}'
+        value_template: '{{ trigger.id in [''presence_timeout'', ''evening_shutdown'',
+          ''override_cleared''] }}'
     - condition: and
       conditions:
       - condition: template
@@ -3496,7 +3474,8 @@
       message: Equipment turned off – {{ trigger.id }}{% if trigger.id == 'presence_timeout'
         %} after {{ 90 if (now().weekday() < 5 and 7 <= now().hour < 18) else 10 }}
         min away{% elif trigger.id == 'evening_shutdown' %} evening shutdown{% elif
-        trigger.id == 'equipment_timeout' %} light left on for 3+ hours{% endif %}
+        trigger.id == 'override_cleared' %} override cleared while away{% elif trigger.id
+        == 'equipment_timeout' %} light left on for 3+ hours{% endif %}
       priority: '{{ 0 if trigger.id == ''evening_shutdown'' else -1 }}'
       target: tim-iphone
       title: Away from Office
@@ -3772,44 +3751,44 @@
   alias: 'Entertainment – PS4 Rocket League: Set volume'
   description: ''
   triggers:
-  - trigger: state
+  - attribute: source
     entity_id:
     - media_player.playstation_4
-    attribute: source
     to: ROCKET LEAGUE
-  - trigger: state
+    trigger: state
+  - attribute: source
     entity_id:
     - media_player.playstation_4
-    attribute: source
     to: Rocket League®
-  - trigger: state
-    entity_id:
-    - light.projector_volume_templatelight
+    trigger: state
+  - entity_id:
+    - light.projector_volume
     to: 'on'
+    trigger: state
   conditions:
   - condition: or
     conditions:
-    - condition: state
+    - attribute: source
+      condition: state
       entity_id: media_player.playstation_4
-      attribute: source
       state: ROCKET LEAGUE
-    - condition: state
+    - attribute: source
+      condition: state
       entity_id: media_player.playstation_4
-      attribute: source
       state: Rocket League®
   actions:
   - action: media_player.volume_set
-    metadata: {}
     data:
       volume_level: 0.5
+    metadata: {}
     target:
       entity_id: media_player.tv_room
   - action: light.turn_on
-    metadata: {}
     data:
       brightness_pct: 50
+    metadata: {}
     target:
-      entity_id: light.projector_volume_templatelight
+      entity_id: light.projector_volume
   mode: single
 - id: '1736032841443'
   alias: Alarm – Toggle Alarm
@@ -4177,14 +4156,14 @@
         value_template: '{{ not is_connected }}'
       sequence:
       - action: notify.mobile_app_tims_iphone
-        metadata: {}
         data:
-          message: The dishwasher is not connected. Please check the Home Connect
-            integration.
-          title: Dishwasher Alert
           data:
             push:
               interruption-level: critical
+          message: The dishwasher is not connected. Please check the Home Connect
+            integration.
+          title: Dishwasher Alert
+        metadata: {}
     - conditions:
       - condition: template
         value_template: '{{ is_connected }}'
@@ -4192,46 +4171,46 @@
         value_template: '{{ not has_activity_recently }}'
       sequence:
       - action: notify.mobile_app_tims_iphone
-        metadata: {}
         data:
-          message: The dishwasher is connected but hasn't run in the last 4 hours.
-            Did you forget to start it?
-          title: Dishwasher Reminder
           data:
             push:
               interruption-level: critical
+          message: The dishwasher is connected but hasn't run in the last 4 hours.
+            Did you forget to start it?
+          title: Dishwasher Reminder
         enabled: false
-      - action: notify.pushover_household
         metadata: {}
+      - action: notify.pushover_household
         data:
-          message: The dishwasher is connected but hasn't run in the last 4 hours.
-            Did you forget to start it?
-          title: Dishwasher Reminder
           data:
             push:
               interruption-level: critical
+          message: The dishwasher is connected but hasn't run in the last 4 hours.
+            Did you forget to start it?
+          title: Dishwasher Reminder
+        metadata: {}
     - conditions:
       - condition: template
         value_template: '{{ is_connected and has_activity_recently }}'
       sequence:
       - action: notify.mobile_app_tims_iphone
-        metadata: {}
         data:
-          message: Dishwasher is connected and has run recently. All good! ✅
-          title: Dishwasher Status
           data:
             push:
               interruption-level: passive
+          message: Dishwasher is connected and has run recently. All good! ✅
+          title: Dishwasher Status
         enabled: false
-  variables:
-    connectivity_sensor: binary_sensor.bosch_dishwasher_connection
-    operation_sensor: sensor.bosch_dishwasher_operation_state
-    is_connected: '{{ is_state(''binary_sensor.bosch_dishwasher_connection'', ''on'')
-      }}'
-    current_operation: '{{ states(''sensor.bosch_dishwasher_operation_state'') }}'
-    has_activity_recently: '{{ (as_timestamp(now()) - as_timestamp(states.sensor.bosch_dishwasher_operation_state.last_changed,
-      0)) < 14400 }}'
+        metadata: {}
   mode: single
+  variables:
+    connectivity_sensor: binary_sensor.dishwasher_connectivity
+    current_operation: '{{ states(''sensor.dishwasher_operation_state'') }}'
+    has_activity_recently: '{{ (as_timestamp(now()) - as_timestamp(states.sensor.dishwasher_operation_state.last_changed,
+      0)) < 14400 }}'
+    is_connected: '{{ is_state(''binary_sensor.dishwasher_connectivity'', ''on'')
+      }}'
+    operation_sensor: sensor.dishwasher_operation_state
 - id: '1750496398969'
   alias: Enhanced Frigate Notification with Pushover
   description: Frigate notification with both mobile app and Pushover alerts
@@ -4627,28 +4606,28 @@
 - id: '1751770911298'
   alias: 'Power Outage – Power ON: Wake Synology, Start LXCs, Notification'
   description: When power is restored, wake Synology and start up LXCs that were shutdown
-    during the power outage.
+    during the power outage, then clear the flag. The restore notification waits up
+    to 15 minutes for internet (the ONT is not on the UPS).
   triggers:
   - event: start
     trigger: homeassistant
-  - trigger: state
-    entity_id: sensor.calliope_ups_status_data
-    to:
-    - OL
-    - OL CHRG
-    - FSD OL CHRG
+  - entity_id: sensor.calliope_ups_status_data
     from:
     - OB DISCHRG
     - OB
     - FSD OB DISCHRG
+    to:
+    - OL
+    - OL CHRG
+    - FSD OL CHRG
+    trigger: state
   conditions:
   - condition: state
-    state: 'on'
-    entity_id: input_boolean.ups_power_outage
     enabled: true
+    entity_id: input_boolean.ups_power_outage
+    state: 'on'
   actions:
   - action: input_text.set_value
-    metadata: {}
     data:
       value: 'Power restored at {{ now().strftime(''%H:%M on %B %d'') }}. Outage duration:
         {% set hours = states(''sensor.ups_last_outage_duration'') | float %} {%-
@@ -4659,61 +4638,34 @@
         | length > 0 %}Starting up: {{ lxcs_to_start | join('', '') }}{% endif %}
         {% if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
         | join('', '') }}{% endif %}'
+    metadata: {}
     target:
       entity_id: input_text.ups_last_event
   - action: button.press
-    metadata: {}
     data: {}
+    metadata: {}
     target:
       entity_id: button.wake_on_lan_90_09_d0_6a_5f_e4
   - variables:
-      lxcs_to_start: []
-      lxcs_already_running: []
-  - repeat:
-      for_each: '{{ lxcs_to_startup }}'
-      sequence:
-      - if:
-        - condition: template
-          value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
-        then:
-        - variables:
-            lxcs_to_start: '{{ lxcs_to_start + [repeat.item.friendly_name] }}'
-        else:
-        - variables:
-            lxcs_already_running: '{{ lxcs_already_running + [repeat.item.friendly_name]
-              }}'
-  - repeat:
-      sequence:
-      - delay: 30
-      while:
-      - condition: not
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.internet_connectivity
-          state: 'on'
-  - action: notify.pushover_servers
-    continue_on_error: true
-    metadata: {}
-    data:
-      target: tim-iphone,mac-studio
-      title: 'Calliope Power Outage: Power Restored'
-      message: "Power restored at {{ now().strftime('%H:%M on %B %d') }}. Outage duration:
-        {% set hours = states('sensor.ups_last_outage_duration') | float %} {%- if
-        hours >= 1 -%}\n  {{ (hours | int) }} hour{{ 's' if hours | int != 1 else
-        '' }} {{ ((hours % 1) * 60) | round }} minute{{ 's' if ((hours % 1) * 60)
-        | round != 1 else '' }}\n{%- else -%}\n  {{ (hours * 60) | round }} minute{{
-        's' if (hours * 60) | round != 1 else '' }}\n{%- endif -%} {% if lxcs_to_start
-        | length > 0 %}Starting up: {{ lxcs_to_start | join(', ') }}{% endif %} {%
-        if lxcs_already_running | length > 0 %}Already running: {{ lxcs_already_running
-        | join(', ') }}{% endif %}"
-      data:
-        priority: 1
+      lxcs_already_running: '{% set ns = namespace(l=[]) %}{% for x in lxcs_to_startup
+        %}{% if not is_state(x.status_entity, ''off'') %}{% set ns.l = ns.l + [x.friendly_name]
+        %}{% endif %}{% endfor %}{{ ns.l }}'
+      lxcs_to_start: '{% set ns = namespace(l=[]) %}{% for x in lxcs_to_startup %}{%
+        if is_state(x.status_entity, ''off'') %}{% set ns.l = ns.l + [x.friendly_name]
+        %}{% endif %}{% endfor %}{{ ns.l }}'
+      outage_duration: '{% set hours = states(''sensor.ups_last_outage_duration'')
+        | float(0) %}{% if hours >= 1 %}{{ hours | int }} hour{{ ''s'' if hours |
+        int != 1 else '''' }} {{ ((hours % 1) * 60) | round }} minute{{ ''s'' if ((hours
+        % 1) * 60) | round != 1 else '''' }}{% else %}{{ (hours * 60) | round }} minute{{
+        ''s'' if (hours * 60) | round != 1 else '''' }}{% endif %}'
+      restored_at: '{{ now().strftime(''%H:%M on %B %d'') }}'
   - delay:
       hours: 0
+      milliseconds: 0
       minutes: 2
       seconds: 0
-      milliseconds: 0
-  - repeat:
+  - enabled: true
+    repeat:
       for_each: '{{ lxcs_to_startup }}'
       sequence:
       - if:
@@ -4721,42 +4673,56 @@
           value_template: '{{ is_state(repeat.item.status_entity, ''off'') }}'
         then:
         - action: button.press
-          metadata: {}
           data: {}
+          metadata: {}
           target:
             entity_id: '{{ repeat.item.start_entity_id }}'
         - delay:
             seconds: '{{ lxc_startup_delay }}'
-    enabled: true
   - action: input_boolean.turn_off
-    metadata: {}
     data: {}
+    metadata: {}
     target:
       entity_id: input_boolean.ups_power_outage
   - action: rest_command.ups_beeper_enable
-    metadata: {}
     data: {}
+    metadata: {}
+  - continue_on_timeout: true
+    timeout: 00:15:00
+    wait_template: '{{ is_state(''binary_sensor.internet_connectivity'', ''on'') }}'
+  - action: notify.pushover_servers
+    continue_on_error: true
+    data:
+      data:
+        priority: 1
+      message: 'Power restored at {{ restored_at }}. Outage duration: {{ outage_duration
+        }}. {% if lxcs_to_start | length > 0 %}Starting up: {{ lxcs_to_start | join('',
+        '') }}. {% endif %}{% if lxcs_already_running | length > 0 %}Already running:
+        {{ lxcs_already_running | join('', '') }}.{% endif %}'
+      target: tim-iphone,mac-studio
+      title: 'Calliope Power Outage: Power Restored'
+    metadata: {}
+  mode: single
   variables:
-    proxmox_startup_delay: 60
     lxc_startup_delay: 10
     lxcs_to_startup:
-    - name: adguard
-      friendly_name: Adguard
+    - friendly_name: Adguard
+      name: adguard
       start_entity_id: button.lxc_adguard_123_start
       status_entity: binary_sensor.lxc_adguard_123_status
-    - name: frigate
-      friendly_name: Frigate
+    - friendly_name: Frigate
+      name: frigate
       start_entity_id: button.lxc_frigate_128_start
       status_entity: binary_sensor.lxc_frigate_128_status
-    - name: plex
-      friendly_name: Plex
+    - friendly_name: Plex
+      name: plex
       start_entity_id: button.lxc_plex_142_start
       status_entity: binary_sensor.lxc_plex_142_status
-    - name: immich
-      friendly_name: Immich
+    - friendly_name: Immich
+      name: immich
       start_entity_id: button.lxc_immich_148_start
       status_entity: binary_sensor.lxc_immich_148_status
-  mode: single
+    proxmox_startup_delay: 60
 - id: '1751779500530'
   alias: Simple Frigate Logbook Logger
   description: Log Frigate events to logbook via helper entity
@@ -5428,72 +5394,77 @@
     - binary_sensor.crow_alarm_doors_back_door
     - binary_sensor.motion_stairwell_occupancy
     id: motion_detected
-    platform: state
     to: 'on'
-  - event_type: timer.finished
-    id: timer_finished
-    platform: event
-    event_data:
+    trigger: state
+  - event_data:
       entity_id: timer.downstairs_hallway_lights_timer
-  - id: turn_off_at_10pm
-    at: '22:00:00'
-    platform: time
+    event_type: timer.finished
+    id: timer_finished
+    trigger: event
+  - at: '22:00:00'
+    id: turn_off_at_10pm
+    trigger: time
   actions:
   - choose:
-    - sequence:
-      - target:
-          entity_id: switch.downstairs_hallway_switch_0
-        action: switch.turn_on
-      - REDACTED
-        - data:
-            duration: 00:00:30
-          target:
-            entity_id: timer.downstairs_hallway_lights_timer
-          action: timer.start
-        choose:
-        - sequence:
-          - target:
-              entity_id: timer.downstairs_hallway_lights_timer
-            action: timer.start
-            data:
-              duration: 00:00:20
-          conditions:
-          - state: playing
-            condition: state
-            entity_id: media_player.playstation_4
-      conditions:
-      - id: motion_detected
-        condition: trigger
-      - state: 'off'
-        condition: state
+    - conditions:
+      - condition: trigger
+        id: motion_detected
+      - condition: state
         entity_id: input_boolean.silence_doorbell
-      - entity_id: input_boolean.downstairs_hallway_manual_mode
-        condition: state
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.downstairs_hallway_manual_mode
         state: 'off'
       - condition: or
         conditions:
-        - before: sunrise
-          condition: sun
-          before_offset: 01:00:00
-          after: sunset
+        - after: sunset
           after_offset: -01:00:00
-        - entity_id: sensor.lux_office_illuminance_lux
-          below: 200
+          before: sunrise
+          before_offset: 01:00:00
+          condition: sun
+        - below: 200
           condition: numeric_state
-    - sequence:
-      - target:
+          entity_id: sensor.lux_office_illuminance
+      sequence:
+      - action: switch.turn_on
+        target:
           entity_id: switch.downstairs_hallway_switch_0
-        action: switch.turn_off
-      conditions:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+            - condition: state
+              entity_id: media_player.playstation_4
+              state: playing
+            - condition: state
+              entity_id: media_player.appletv
+              state: playing
+          sequence:
+          - action: timer.start
+            data:
+              duration: 00:00:20
+            target:
+              entity_id: timer.downstairs_hallway_lights_timer
+        REDACTED
+        - action: timer.start
+          data:
+            duration: 00:01:00
+          target:
+            entity_id: timer.downstairs_hallway_lights_timer
+    - conditions:
       - condition: trigger
         id: timer_finished
+      sequence:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.downstairs_hallway_switch_0
     - conditions:
       - condition: trigger
         id: turn_off_at_10pm
       sequence:
-      - target:
+      - action: switch.turn_off
+        target:
           entity_id: switch.downstairs_hallway_switch_0
-        action: switch.turn_off
   mode: restart
 - id: downstairs_hallway_manual_control
   alias: Downstairs – Hallway – Manual Control
@@ -5576,24 +5547,25 @@
   mode: single
 - id: '1780566429467'
   alias: 'Kitchen – Dishwasher: Stamp last completed time'
-  description: When the dishwasher operation state reaches Finished, stamp the dishwasher_last_completed
-    helper with the current datetime.
+  description: When the dishwasher operation state (local homeconnect_ws integration)
+    reaches Finished, stamp the dishwasher_last_completed helper with the current
+    datetime.
   triggers:
-  - platform: state
-    entity_id: sensor.bosch_dishwasher_operation_state
-    to: Finished
+  - entity_id: sensor.bosch_dishwasher_operation_state
     from:
-    - Run
-    - Pause
-    - ActionRequired
+    - run
+    - pause
+    - actionrequired
     id: cycle_finished
+    to: finished
+    trigger: state
   conditions: []
   actions:
-  - target:
-      entity_id: input_datetime.dishwasher_last_completed
+  - action: input_datetime.set_datetime
     data:
       datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
-    action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.dishwasher_last_completed
   mode: single
 - id: '1787452895745'
   alias: Maintenance – Frigate Offline or Disk Full – Notification
@@ -6039,4 +6011,281 @@
         - action: light.turn_off
           target:
             entity_id: light.bedside_sonya
+  mode: single
+- id: '1794003311745'
+  alias: Irrigation – Log runs and skips
+  description: 'Logging only; never switches anything. Writes friendly lines to the
+    zone log helpers (shown in the #vegezone and #sprayzone pop-ups): a line when
+    a valve finishes a run (minutes, litres if measured), and a line when a due zone
+    is skipped because soil moisture is at or above its threshold. The skip check
+    mirrors the Morning and Evening Irrigation Sequence automations, including their
+    vege-then-spray order, so update it if their logic changes.'
+  triggers:
+  - entity_id: switch.watervalve_vegezone_state
+    from: 'on'
+    id: run_vege
+    to: 'off'
+    trigger: state
+  - entity_id: switch.watervalve_sprayzone_state
+    from: 'on'
+    id: run_spray
+    to: 'off'
+    trigger: state
+  - event: sunrise
+    id: check_morning
+    offset: -01:00:00
+    trigger: sun
+  - event: sunset
+    id: check_evening
+    offset: -01:00:00
+    trigger: sun
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - run_vege
+      sequence:
+      - delay:
+          seconds: 20
+      - action: logbook.log
+        data:
+          entity_id: input_button.irrigation_log_vegezone
+          message: '{% set mins = [1, (((trigger.to_state.last_changed - trigger.from_state.last_changed).total_seconds()
+            / 60) | round(0) | int)] | max %}{% set litres = states(''sensor.watervalve_vegezone_water_consumed'')
+            | float(0) | round(0) | int %}irrigated for {{ mins }} {{ ''min'' if mins
+            == 1 else ''mins'' }}{% if litres > 0 %} ({{ litres }} L){% endif %}'
+          name: Vege zone
+    - conditions:
+      - condition: trigger
+        id:
+        - run_spray
+      sequence:
+      - delay:
+          seconds: 20
+      - action: logbook.log
+        data:
+          entity_id: input_button.irrigation_log_sprayzone
+          message: '{% set mins = [1, (((trigger.to_state.last_changed - trigger.from_state.last_changed).total_seconds()
+            / 60) | round(0) | int)] | max %}{% set litres = states(''sensor.watervalve_sprayzone_water_consumed'')
+            | float(0) | round(0) | int %}irrigated for {{ mins }} {{ ''min'' if mins
+            == 1 else ''mins'' }}{% if litres > 0 %} ({{ litres }} L){% endif %}'
+          name: Spray zone
+    - conditions:
+      - condition: trigger
+        id:
+        - check_morning
+      sequence:
+      - if:
+        - below: 1
+          condition: numeric_state
+          entity_id: counter.irrigation_daysuntilnext_vegezone
+        - condition: state
+          entity_id: input_select.irrigation_mode_vegezone
+          state: Morning
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+          state: 'on'
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+        - condition: not
+          conditions:
+          - below: input_number.irrigation_moisturetrigger_vegezone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+        then:
+        - action: logbook.log
+          data:
+            entity_id: input_button.irrigation_log_vegezone
+            message: skipped – soil moisture {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              | float(0) | round(0) | int }}% (needs to be below {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              | float(0) | round(0) | int }}%)
+            name: Vege zone
+      - delay:
+          seconds: 30
+      - if:
+        - condition: state
+          entity_id: timer.irrigation_timer_vegezone
+          state: active
+        then:
+        - continue_on_timeout: true
+          timeout:
+            hours: 2
+          wait_for_trigger:
+          - entity_id: timer.irrigation_timer_vegezone
+            from: active
+            to: idle
+            trigger: state
+        - delay:
+            seconds: 10
+      - if:
+        - below: 1
+          condition: numeric_state
+          entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - condition: state
+          entity_id: input_select.irrigation_mode_sprayzone
+          state: Morning
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+          state: 'on'
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+        - condition: not
+          conditions:
+          - below: input_number.irrigation_moisturetrigger_sprayzone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+        then:
+        - action: logbook.log
+          data:
+            entity_id: input_button.irrigation_log_sprayzone
+            message: skipped – soil moisture {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              | float(0) | round(0) | int }}% (needs to be below {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              | float(0) | round(0) | int }}%)
+            name: Spray zone
+    - conditions:
+      - condition: trigger
+        id:
+        - check_evening
+      sequence:
+      - if:
+        - below: 1
+          condition: numeric_state
+          entity_id: counter.irrigation_daysuntilnext_vegezone
+        - condition: state
+          entity_id: input_select.irrigation_mode_vegezone
+          state: Evening
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_vegezone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_vegezone
+          state: 'on'
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+        - condition: not
+          conditions:
+          - below: input_number.irrigation_moisturetrigger_vegezone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+        then:
+        - action: logbook.log
+          data:
+            entity_id: input_button.irrigation_log_vegezone
+            message: skipped – soil moisture {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              | float(0) | round(0) | int }}% (needs to be below {{ states('input_number.irrigation_moisturetrigger_vegezone')
+              | float(0) | round(0) | int }}%)
+            name: Vege zone
+      - delay:
+          seconds: 30
+      - if:
+        - condition: state
+          entity_id: timer.irrigation_timer_vegezone
+          state: active
+        then:
+        - continue_on_timeout: true
+          timeout:
+            hours: 2
+          wait_for_trigger:
+          - entity_id: timer.irrigation_timer_vegezone
+            from: active
+            to: idle
+            trigger: state
+        - delay:
+            seconds: 10
+      - if:
+        - below: 1
+          condition: numeric_state
+          entity_id: counter.irrigation_daysuntilnext_sprayzone
+        - condition: state
+          entity_id: input_select.irrigation_mode_sprayzone
+          state: Evening
+        - condition: state
+          entity_id: input_boolean.irrigation_enable_sprayzone
+          state: 'on'
+        - condition: state
+          entity_id: input_boolean.irrigation_moisturetrigger_enable_sprayzone
+          state: 'on'
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+            state:
+            - unavailable
+            - unknown
+        - condition: not
+          conditions:
+          - below: input_number.irrigation_moisturetrigger_sprayzone
+            condition: numeric_state
+            entity_id: sensor.fineoffset_wh51_0de4e5_moisture_calibrated
+        then:
+        - action: logbook.log
+          data:
+            entity_id: input_button.irrigation_log_sprayzone
+            message: skipped – soil moisture {{ states('sensor.fineoffset_wh51_0de4e5_moisture_calibrated')
+              | float(0) | round(0) | int }}% (needs to be below {{ states('input_number.irrigation_moisturetrigger_sprayzone')
+              | float(0) | round(0) | int }}%)
+            name: Spray zone
+  max: 10
+  max_exceeded: silent
+  mode: parallel
+- id: graph_range_derive
+  alias: 'Graph range: derive hours and points per hour'
+  description: Sets the minigraph hours and points-per-hour helpers from the single
+    Graph range select.
+  triggers:
+  - entity_id: input_select.graph_range
+    trigger: state
+  - event: start
+    trigger: homeassistant
+  conditions: []
+  actions:
+  - action: input_number.set_value
+    data:
+      value: '{% set m = {''1h'':1,''2h'':2,''6h'':6,''12h'':12,''24h'':24,''48h'':48,''7d'':168}
+        %}{{ m.get(states(''input_select.graph_range''), 6) }}'
+    target:
+      entity_id: input_number.minigraph_hours_to_show
+  - action: input_number.set_value
+    data:
+      value: '{% set m = {''1h'':60,''2h'':30,''6h'':12,''12h'':6,''24h'':4,''48h'':2,''7d'':1}
+        %}{{ m.get(states(''input_select.graph_range''), 12) }}'
+    target:
+      entity_id: input_number.minigraph_points_per_hour
+  mode: restart
+- id: '1794130513715'
+  alias: 'Office – Edit Suite Override: Reset at 10pm'
+  description: Turns the Edit Suite power override off every night so the office auto-shutdown
+    automations are active again.
+  triggers:
+  - at: '22:00:00'
+    id: nightly_reset
+    trigger: time
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.edit_suite_power_override
   mode: single

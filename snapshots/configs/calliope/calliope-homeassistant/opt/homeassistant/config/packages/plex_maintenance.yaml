@@ -1,0 +1,75 @@
+# Plex maintenance - run Plex scheduled tasks on demand instead of nightly.
+#
+# Plex's own nightly schedule (02:00-05:00) is switched off. These scripts start named tasks
+# through Plex's local API (POST /butler/TASK) on the Plex LXC. Everything stays on the LAN.
+# The token is secrets.yaml key plex_token and is sent in a header.
+#
+# Light tasks run automatically on Sunday 03:00. The deep analysis is button only: run it
+# after adding new media. Task names are the ones GET /butler lists.
+
+rest_command:
+  plex_run_task:
+    url: "http://10.1.1.42:32400/butler/{{ task }}"
+    method: POST
+    headers:
+      X-Plex-Token: !secret plex_token
+    timeout: 15
+
+script:
+  plex_maintenance_light:
+    alias: "Plex – Maintenance – Light"
+    icon: mdi:wrench-clock
+    mode: single
+    sequence:
+      - repeat:
+          for_each:
+            - BackupDatabase
+            - OptimizeDatabase
+            - CleanOldBundles
+            - CleanOldCacheFiles
+            - GarbageCollectBlobs
+            - GarbageCollectLibraryMedia
+          sequence:
+            - action: rest_command.plex_run_task
+              data:
+                task: "{{ repeat.item }}"
+            - delay: "00:00:02"
+
+  plex_maintenance_deep:
+    alias: "Plex – Maintenance – Deep analysis"
+    icon: mdi:magnify-scan
+    mode: single
+    sequence:
+      - repeat:
+          for_each:
+            - DeepMediaAnalysis
+            - UpgradeMediaAnalysis
+            - RefreshPeriodicMetadata
+            - RefreshLocalMedia
+            - ButlerTaskGenerateIntroMarkers
+            - ButlerTaskGenerateCreditsMarkers
+            - ButlerTaskGenerateAdMarkers
+            - GenerateChapterThumbs
+            - LoudnessAnalysis
+            - MusicAnalysis
+            - ProcessAssets
+          sequence:
+            - action: rest_command.plex_run_task
+              data:
+                task: "{{ repeat.item }}"
+            - delay: "00:00:02"
+
+automation:
+  - id: plex_maintenance_weekly_light
+    alias: "Plex – Maintenance – Sunday 03:00: Run light tasks"
+    description: "Weekly light maintenance. Deep analysis is manual (script.plex_maintenance_deep)."
+    mode: single
+    triggers:
+      - trigger: time
+        at: "03:00:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+    actions:
+      - action: script.plex_maintenance_light

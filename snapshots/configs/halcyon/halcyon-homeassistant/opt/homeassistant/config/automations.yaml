@@ -631,8 +631,7 @@
       filename: driveway_grab.jpg
   mode: single
   max: 10
-- &id001
-  id: add_routes_on_startup
+- id: add_routes_on_startup
   alias: 'Backend - Startup: Add Calliope IP Routes'
   description: Add static routes for Tailscale connectivity
   triggers:
@@ -841,21 +840,21 @@
   description: After 5 minutes of power outage, shutdown Synology to conserve UPS
     battery.
   triggers:
-  - trigger: state
+  - enabled: false
     entity_id: input_boolean.ups_power_outage
-    to: 'on'
     for:
       minutes: '{{ shutdown_delay_minutes }}'
-    enabled: false
-  - trigger: state
-    entity_id:
-    - input_boolean.ups_power_outage
-    from: 'off'
     to: 'on'
+    trigger: state
+  - entity_id:
+    - input_boolean.ups_power_outage
     for:
       hours: 0
       minutes: 5
       seconds: 0
+    from: 'off'
+    to: 'on'
+    trigger: state
   conditions:
   - condition: state
     entity_id: sensor.halcyon_ups_status_data
@@ -865,30 +864,32 @@
     - FSD OB DISCHRG
   actions:
   - action: input_text.set_value
-    metadata: {}
     data:
       value: Power still out after {{ shutdown_delay_minutes }} mins. Shutting down
         Synology.
+    metadata: {}
+    target:
+      entity_id: input_text.ups_last_event
   - action: homeassistant.reload_config_entry
     data:
       entry_id: 31f1251ccfa2d95a1b434c3c7290dad8
   - delay: 00:00:05
   - action: button.press
+    data: {}
     target:
       entity_id: button.halcyon_shutdown
-    data: {}
   - action: notify.servers
     continue_on_error: true
-    metadata: {}
     data:
-      target: tim-iphone,mac-studio
-      title: Halcyon Power Outage
+      data:
+        priority: 1
       message: 'Power still out after {{ shutdown_delay_minutes }} mins.
 
         Shutting down Synology.'
-      data:
-        priority: 1
+      target: tim-iphone,mac-studio
+      title: Halcyon Power Outage
     enabled: true
+    metadata: {}
   mode: single
   variables:
     shutdown_delay_minutes: 5
