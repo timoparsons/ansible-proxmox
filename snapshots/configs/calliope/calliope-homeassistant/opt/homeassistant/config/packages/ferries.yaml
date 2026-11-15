@@ -1,0 +1,129 @@
+# Ferries between Devonport and Downtown (Fullers360, route DEV-209).
+#
+# Data: the GTFS database that gtfs2 downloads (script Sensor Update - Download GTFS Data, Sundays).
+# One gtfs2 config entry is kept only so that gtfs2.update_gtfs exists. Nothing reads its sensor.
+# scripts/ferry_timetable.py reads the database and merges Downtown Pier 2 and Pier 4, so a switch
+# of pier needs no change here.
+#
+# Entities:
+#   sensor.ferry_timetable_to_city and sensor.ferry_timetable_to_devonport: todays departures (state = count)
+#   sensor.devonport_downtown_next_1..4: next departures to the city
+#   sensor.downtown_devonport_next_1..4: next departures to Devonport
+# The next_N sensors carry day, label, last and first, which the ferries pop-up reads.
+
+command_line:
+  - sensor:
+      name: Ferry timetable to city
+      unique_id: ferry_timetable_to_city
+      command: 'python3 /config/scripts/ferry_timetable.py to_city'
+      value_template: "{{ value_json.count }}"
+      json_attributes:
+        - departures
+        - date
+        - html
+        - next
+      scan_interval: 60
+      icon: mdi:ferry
+  - sensor:
+      name: Ferry timetable to Devonport
+      unique_id: ferry_timetable_to_devonport
+      command: 'python3 /config/scripts/ferry_timetable.py to_devonport'
+      value_template: "{{ value_json.count }}"
+      json_attributes:
+        - departures
+        - date
+        - html
+        - next
+      scan_interval: 60
+      icon: mdi:ferry
+
+template:
+  - sensor:
+      - name: Devonport Downtown Next 1
+        unique_id: ferry_devonport_downtown_next_1
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or []) | length >= 1 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[0].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[0].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[0].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[0].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[0].first }}"
+      - name: Devonport Downtown Next 2
+        unique_id: ferry_devonport_downtown_next_2
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or []) | length >= 2 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[1].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[1].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[1].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[1].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[1].first }}"
+      - name: Devonport Downtown Next 3
+        unique_id: ferry_devonport_downtown_next_3
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or []) | length >= 3 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[2].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[2].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[2].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[2].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[2].first }}"
+      - name: Devonport Downtown Next 4
+        unique_id: ferry_devonport_downtown_next_4
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or []) | length >= 4 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[3].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[3].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[3].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[3].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_city', 'next') or [])[3].first }}"
+      - name: Downtown Devonport Next 1
+        unique_id: ferry_downtown_devonport_next_1
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or []) | length >= 1 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[0].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[0].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[0].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[0].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[0].first }}"
+      - name: Downtown Devonport Next 2
+        unique_id: ferry_downtown_devonport_next_2
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or []) | length >= 2 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[1].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[1].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[1].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[1].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[1].first }}"
+      - name: Downtown Devonport Next 3
+        unique_id: ferry_downtown_devonport_next_3
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or []) | length >= 3 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[2].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[2].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[2].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[2].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[2].first }}"
+      - name: Downtown Devonport Next 4
+        unique_id: ferry_downtown_devonport_next_4
+        device_class: timestamp
+        icon: mdi:ferry
+        availability: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or []) | length >= 4 }}"
+        state: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[3].iso }}"
+        attributes:
+          day: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[3].day }}"
+          label: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[3].label }}"
+          last: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[3].last }}"
+          first: "{{ (state_attr('sensor.ferry_timetable_to_devonport', 'next') or [])[3].first }}"

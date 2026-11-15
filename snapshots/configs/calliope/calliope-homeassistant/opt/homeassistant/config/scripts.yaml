@@ -442,7 +442,8 @@ downstairs_hallway_lights_toggle_gui:
     then:
     - action: timer.start
       metadata: {}
-      data: {}
+      data:
+        duration: 00:01:00
       target:
         entity_id: timer.downstairs_hallway_lights_timer
   mode: single

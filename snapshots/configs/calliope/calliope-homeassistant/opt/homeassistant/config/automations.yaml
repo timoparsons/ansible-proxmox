@@ -569,49 +569,122 @@
   mode: single
 - id: '1673380014833'
   alias: Security – Parking space alert
-  description: ''
+  description: 'Space free: companion critical alert (On my way button) plus Sonos
+    announcement on Office/Lounge/Basement if Tim is home. Reminders (same again)
+    at 2, 5 and 10 minutes while the space is still free, unacknowledged and the alert
+    toggle is on; turning the toggle off cancels. Backups: /config/automation_backups/
+    (Pushover original and 2-minute-repeat versions).'
   triggers:
-  - trigger: state
-    entity_id:
+  - entity_id:
     - input_boolean.car_street_occupancy_debounce
     to: 'off'
-    enabled: true
+    trigger: state
   conditions:
   - condition: state
     entity_id: input_boolean.parking_space_alert
     state: 'on'
-    enabled: true
   actions:
-  - data:
-      url: http://10.1.1.28:5000/api/Front/latest.jpg
-      filename: front_yard.jpg
-      overwrite: true
-    action: downloader.download_file
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 1
-      milliseconds: 0
-  - data:
-      title: Parking
-      message: Your parking space is free
+  - variables:
+      freed_at: '{{ now().strftime(''%H:%M'') }}'
+  - action: notify.mobile_app_tims_iphone
+    data:
       data:
-        attachment: /config/www/cameras/front_yard.jpg
-        priority: 2
-        retry: 60
-        expire: 3600
-      target: tim-iphone
-    action: notify.pushover_tim
-  - data: {}
+        actions:
+        - action: PARKING_ON_MY_WAY
+          title: On my way
+        image: http://10.1.1.28:5000/api/Front/latest.jpg
+        push:
+          sound:
+            critical: 1
+            name: default
+            volume: 0.7
+        tag: parking_space
+      message: Your parking space is free (since {{ freed_at }})
+      title: Parking
+  - if:
+    - condition: state
+      entity_id: person.tim
+      state: home
+    then:
+    - action: media_player.play_media
+      data:
+        announce: true
+        extra:
+          volume: 30
+        media_content_id: /local/sounds/parking_alert_voice.mp3
+        media_content_type: music
+      target:
+        entity_id:
+        - media_player.master_bedroom
+        - media_player.lounge
+        - media_player.celeste
+  - alias: Reminders at 2, 5 and 10 min while unacknowledged, free and armed
+    repeat:
+      for_each:
+      - 2
+      - 3
+      - 5
+      sequence:
+      - alias: Wait for On my way
+        continue_on_timeout: true
+        timeout:
+          minutes: '{{ repeat.item }}'
+        wait_for_trigger:
+        - event_data:
+            action: PARKING_ON_MY_WAY
+          event_type: mobile_app_notification_action
+          trigger: event
+      - else:
+        - action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.parking_space_alert
+        - stop: Acknowledged, space taken or alert cancelled
+        if:
+        - condition: template
+          value_template: '{{ wait.trigger is none }}'
+        - condition: state
+          entity_id: input_boolean.car_street_occupancy_debounce
+          state: 'off'
+        - condition: state
+          entity_id: input_boolean.parking_space_alert
+          state: 'on'
+        then:
+        - action: notify.mobile_app_tims_iphone
+          data:
+            data:
+              actions:
+              - action: PARKING_ON_MY_WAY
+                title: On my way
+              image: http://10.1.1.28:5000/api/Front/latest.jpg
+              push:
+                sound:
+                  critical: 1
+                  name: default
+                  volume: 0.7
+              tag: parking_space
+            message: 'Still free (since {{ freed_at }}): reminder {{ repeat.index
+              }} of 3'
+            title: Parking
+        - if:
+          - condition: state
+            entity_id: person.tim
+            state: home
+          then:
+          - action: media_player.play_media
+            data:
+              announce: true
+              extra:
+                volume: 30
+              media_content_id: /local/sounds/parking_alert_voice.mp3
+              media_content_type: music
+            target:
+              entity_id:
+              - media_player.master_bedroom
+              - media_player.lounge
+              - media_player.celeste
+  - action: input_boolean.turn_off
     target:
       entity_id: input_boolean.parking_space_alert
-    action: input_boolean.turn_off
-  - action: shell_command.sonos_custom
-    data:
-      volume: 60
-      sound: parking_alert_voice.mp3
-      speaker: Office
-    enabled: false
   mode: single
 - id: '1674338058100'
   alias: Security – Door Chime SILENCE for 1hr
@@ -1914,27 +1987,6 @@
         endif %}\n"
       importance: time-sensitive
     action: notify.mobile_app_tims_iphone
-  mode: single
-- id: '1708210727796'
-  alias: Sensor Update – Ferry departures
-  description: Updates merged ferry departure sensors for Devonport and Downtown
-  triggers:
-  - trigger: time_pattern
-    minutes: /1
-  - trigger: homeassistant
-    event: start
-  conditions: []
-  actions:
-  - action: python_script.next_ferries
-    data:
-      entity_id: sensor.ferry_devonport_downtown_pier2
-      secondary_entity_id: sensor.ferry_devonport_downtown_pier4
-      target_id: sensor.devonport_downtown
-  - action: python_script.next_ferries
-    data:
-      entity_id: sensor.ferry_downtown_devonport_pier2
-      secondary_entity_id: sensor.ferry_downtown_devonport_pier4
-      target_id: sensor.downtown_devonport
   mode: single
 - id: '1708766230114'
   alias: Maintenance – Nanoleaf Reset HOMEKIT
@@ -6289,3 +6341,55 @@
     target:
       entity_id: input_boolean.edit_suite_power_override
   mode: single
+- id: security_parking_space_taken
+  alias: Security – Parking space taken
+  description: When the space is occupied again within 30 minutes of a free alert,
+    replace the free notification (tag parking_space) with a quiet taken message.
+  triggers:
+  - entity_id: input_boolean.car_street_occupancy_debounce
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: template
+    value_template: '{{ state_attr(''automation.security_parking_space_alert'', ''last_triggered'')
+      is not none and (now() - state_attr(''automation.security_parking_space_alert'',
+      ''last_triggered'')).total_seconds() < 1800 }}'
+  actions:
+  - action: notify.mobile_app_tims_iphone
+    data:
+      data:
+        push:
+          interruption-level: passive
+        tag: parking_space
+      message: Parking space taken again at {{ now().strftime('%H:%M') }}
+      title: Parking
+  mode: single
+- id: '1794689598191'
+  alias: 433 MHz – Sensor stopped reporting
+  description: 'Alerts Tim when a LilyGO 433 MHz sensor stops reporting. The Last
+    Seen sensors use MQTT expire_after: WH51 soil 1 h, WH32 outdoor 4 h (it is heard
+    about every 15 min but with gaps of up to 2-3 h). If both fire together, the LilyGO
+    gateway is the likely cause.'
+  triggers:
+  - entity_id:
+    - sensor.fineoffset_wh51_0de4e5_last_seen
+    - sensor.fineoffset_wh32_159_last_seen
+    for:
+      minutes: 5
+    not_from:
+    - unknown
+    - unavailable
+    to: unavailable
+    trigger: state
+  conditions: []
+  actions:
+  - action: script.send_dynamic_notification_tims_iphone
+    data:
+      image: ''
+      importance: active
+      message: '{{ trigger.to_state.attributes.friendly_name | default(trigger.entity_id)
+        }}: no packets within its expiry window (WH51 1 h, WH32 4 h). If the other
+        433 sensor is also offline, reset the LilyGO.'
+      title: 433 MHz sensor offline
+      url: ''
+  mode: queued
